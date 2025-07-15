@@ -1,7 +1,13 @@
-import Login from './login/login'
+// src/App.jsx
+import Choferes from './pages/Choferes/Choferes'
+
 
 function App() {
-  return <Login />
+  return (
+    <>
+      <Choferes />
+    </>
+  )
 }
 
 export default App

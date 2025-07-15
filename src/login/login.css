@@ -28,7 +28,7 @@
 
 label {
   font-weight: bold;
-  color: #b14e00;
+  color: #C14600;
 }
 
 input {
@@ -40,7 +40,7 @@ input {
 }
 
 button {
-  background-color: #b14e00;
+  background-color: #C14600;
   color: white;
   border: none;
   padding: 0.5rem;
