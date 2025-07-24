@@ -6,7 +6,7 @@ export default function Choferes() {
     nombre: '',
     apellido: '',
     telefono: '',
-    unidad: { idUnidad: '' },
+    unidad: { idUnidad: null },
     activo: true
   });
 
@@ -34,13 +34,12 @@ export default function Choferes() {
     }
   };
 
-  
   const seleccionarChofer = (chofer) => {
     setFormulario({
       nombre: chofer.nombre,
       apellido: chofer.apellido,
       telefono: chofer.telefono,
-      unidad: { idUnidad: chofer.unidad?.idUnidad || '' },
+      unidad: { idUnidad: chofer.unidad?.idUnidad || null },
       activo: chofer.activo
     });
     setIdChoferEditando(chofer.idChofer);
@@ -53,26 +52,26 @@ export default function Choferes() {
     setError('');
     setMensaje('');
 
-    const { nombre, apellido, telefono, unidad } = formulario;
-    if (!nombre || !apellido || !telefono || !unidad.idUnidad) {
-      setError('Todos los campos son obligatorios');
+    const { nombre, apellido, telefono, unidad, activo } = formulario;
+    if (!nombre || !apellido || !telefono || (activo && !unidad.idUnidad)) {
+      setError('Todos los campos son obligatorios (si el chofer está activo debe tener unidad asignada)');
       return;
     }
 
     try {
       if (idChoferEditando) {
-  console.log('Actualizando chofer:', idChoferEditando, formulario);
-  await ActualizarChofer(idChoferEditando, {
-    nombre: formulario.nombre,
-    apellido: formulario.apellido,
-    telefono: formulario.telefono,
-    activo: formulario.activo,
-    unidad: { idUnidad: formulario.unidad.idUnidad }
-  });
-  setMensaje('Unidad del chofer actualizada');
-}
- else {
-        
+        console.log('Actualizando chofer:', idChoferEditando, formulario);
+        await ActualizarChofer(idChoferEditando, {
+          nombre,
+          apellido,
+          telefono,
+          activo,
+          unidad: activo ? unidad : null 
+        });
+
+        setMensaje('Chofer actualizado correctamente');
+      } else {
+        console.log('Creando nuevo chofer:', formulario);
         await CrearChofer(formulario);
         setMensaje('Chofer registrado correctamente');
       }
@@ -81,7 +80,7 @@ export default function Choferes() {
         nombre: '',
         apellido: '',
         telefono: '',
-        unidad: { idUnidad: '' },
+        unidad: { idUnidad: null },
         activo: true
       });
       setIdChoferEditando(null);
@@ -138,10 +137,35 @@ export default function Choferes() {
           onChange={handleChange}
           placeholder="ID de la unidad"
           className="border px-3 py-2 rounded"
+          disabled={!formulario.activo} // no permitir cambiar unidad si está inactivo
         />
+
+        {/* Checkbox para activar/desactivar solo si está editando */}
+        {idChoferEditando && (
+          <div className="md:col-span-2 flex items-center space-x-2">
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="activo"
+                checked={formulario.activo}
+                onChange={(e) => {
+                  const activo = e.target.checked;
+                  setFormulario((prev) => ({
+                    ...prev,
+                    activo,
+                    unidad: activo ? prev.unidad : { idUnidad: '' } // Si inactivo, limpia unidad
+                  }));
+                }}
+                className="form-checkbox h-5 w-5 text-green-600"
+              />
+              <span className="ml-2">Activo</span>
+            </label>
+          </div>
+        )}
+
         <div className="md:col-span-2">
           <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-            {idChoferEditando ? 'Actualizar Unidad' : 'Guardar Chofer'}
+            {idChoferEditando ? 'Actualizar Chofer' : 'Guardar Chofer'}
           </button>
         </div>
       </form>
