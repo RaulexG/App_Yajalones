@@ -137,3 +137,154 @@ export const ActualizarViaje = async (id, viaje) => {
     throw error;
   }
 }
+
+// Eliminar viaje
+export const EliminarViaje = async (id) => {
+  try {
+    const response = await axios.delete(`/viajes/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error eliminando viaje:', error);
+    throw error;
+  }
+}
+
+// Obtener viaje por ID
+export const ObtenerViajePorId = async (id) => {
+  try {
+    const response = await axios.get(`/viajes/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo viaje por ID:', error);
+    throw error;
+  }
+}
+
+//Paquetes------------------------------------------------------------
+// Listar paquetes
+export const ListarPaquetes = async () => {
+  try {
+    const response = await axios.get('/paquetes');
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo paquetes:', error);
+    throw error;
+  }
+}
+// Crear paquete
+export const crearPaquete = async (paquete) => {   
+  try {
+    const response = await axios.post('/paquetes', paquete);
+    return response.data;
+  } catch (error) {
+    console.error('Error creando paquete:', error);
+    throw error;
+  }
+}
+
+// Actualizar paquete
+export const actualizarPaquete = async (id, paquete) => {
+  try {
+    const response = await axios.put(`/paquetes/${id}`, paquete);
+    return response.data;
+  } catch (error) {
+    console.error('Error actualizando paquete:', error);
+    throw error;
+  }
+}
+
+// Eliminar paquete
+export const eliminarPaquete = async (id) => {
+  try {
+    const response = await axios.delete(`/paquetes/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error eliminando paquete:', error);
+    throw error;
+  }
+}
+
+// Pasajeros------------------------------------------------------------
+// Listar pasajeros
+export const ListarPasajeros = async () => {
+  try {
+    const response = await axios.get('/pasajeros');
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo pasajeros:', error);
+    throw error;
+  }
+}
+
+// Crear pasajeros
+export const CrearPasajeros = async (pasajeroData) => {
+  try {
+    const response = await axios.post('/pasajeros', pasajeroData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creando pasajero:', error);
+    throw error;
+  }
+};
+
+// Actualizar pasajero
+export const ActualizarPasajero = async (id, pasajeroData) => {
+  try {
+    const response = await axios.put(`/pasajeros/${id}`, pasajeroData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error actualizando pasajero:', error);
+    throw error;
+  }
+};
+// Eliminar pasajero
+export const EliminarPasajero = async (id) => {
+  try {
+    const response = await axios.delete(`/pasajeros/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error eliminando pasajero:', error);
+    throw error;
+  }
+};
+
+
+// Turnos------------------------------------------------------------
+// Listar turnos
+export const ListarTurnos = async () => {
+  try {
+    const response = await axios.get('/turnos');
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo turnos:', error);
+    throw error;
+  }
+}
+// Crear turno
+export const CrearTurno = async (turno) => {
+  try {
+    const response = await axios.post('/turnos', turno);
+    return response.data;
+  } catch (error) {
+    console.error('Error creando turno:', error);
+    throw error;
+  }
+}
+// Actualizar turno
+export const ActualizarTurno = async (id, turno) => {
+  try {
+    const response = await axios.put(`/turnos/${id}`, turno);
+    return response.data;
+  } catch (error) {
+    console.error('Error actualizando turno:', error);
+    throw error;
+  }
+}
