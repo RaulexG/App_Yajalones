@@ -1,7 +1,6 @@
 // src/Login/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// 1) Importa tu imagen
 import logo from '../assets/Login.svg';
 
 export default function Login() {
@@ -21,7 +20,6 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
-        {/* 2) Usa la variable logo */}
         <img
           src={logo}
           alt="Yajalones"
