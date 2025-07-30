@@ -1,27 +1,19 @@
-import { useEffect, useState } from 'react';
-import { CrearChofer, ListarChoferes, ActualizarChofer } from '../../services/Admin/adminService';
+import { useEffect, useState } from "react";
+import { CrearChofer, ListarChoferes, ActualizarChofer } from "../../services/Admin/adminService";
 
 export default function Choferes() {
   const [formulario, setFormulario] = useState({
-    nombre: '',
-    apellido: '',
-    telefono: '',
-    unidad: { idUnidad: null },
-    activo: true
+    nombre: "",
+    unidad: "",
+    telefono: "",
   });
 
   const [choferes, setChoferes] = useState([]);
-  const [error, setError] = useState('');
-  const [mensaje, setMensaje] = useState('');
   const [idChoferEditando, setIdChoferEditando] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'idUnidad') {
-      setFormulario({ ...formulario, unidad: { idUnidad: parseInt(value) } });
-    } else {
-      setFormulario({ ...formulario, [name]: value });
-    }
+    setFormulario({ ...formulario, [name]: value });
   };
 
   const cargarChoferes = async () => {
@@ -29,65 +21,33 @@ export default function Choferes() {
       const data = await ListarChoferes();
       setChoferes(data);
     } catch (err) {
-      console.error('Error al obtener choferes:', err);
-      setError('No se pudieron cargar los choferes');
+      console.error("Error al obtener choferes:", err);
     }
   };
 
   const seleccionarChofer = (chofer) => {
     setFormulario({
       nombre: chofer.nombre,
-      apellido: chofer.apellido,
+      unidad: chofer.unidad || "",
       telefono: chofer.telefono,
-      unidad: { idUnidad: chofer.unidad?.idUnidad || null },
-      activo: chofer.activo
     });
     setIdChoferEditando(chofer.idChofer);
-    setMensaje('');
-    setError('');
   };
 
   const guardarChofer = async (e) => {
     e.preventDefault();
-    setError('');
-    setMensaje('');
-
-    const { nombre, apellido, telefono, unidad, activo } = formulario;
-    if (!nombre || !apellido || !telefono || (activo && !unidad.idUnidad)) {
-      setError('Todos los campos son obligatorios (si el chofer está activo debe tener unidad asignada)');
-      return;
-    }
-
     try {
       if (idChoferEditando) {
-        console.log('Actualizando chofer:', idChoferEditando, formulario);
-        await ActualizarChofer(idChoferEditando, {
-          nombre,
-          apellido,
-          telefono,
-          activo,
-          unidad: activo ? unidad : null 
-        });
-
-        setMensaje('Chofer actualizado correctamente');
+        await ActualizarChofer(idChoferEditando, formulario);
       } else {
-        console.log('Creando nuevo chofer:', formulario);
         await CrearChofer(formulario);
-        setMensaje('Chofer registrado correctamente');
       }
 
-      setFormulario({
-        nombre: '',
-        apellido: '',
-        telefono: '',
-        unidad: { idUnidad: null },
-        activo: true
-      });
+      setFormulario({ nombre: "", unidad: "", telefono: "" });
       setIdChoferEditando(null);
       cargarChoferes();
     } catch (err) {
-      console.error('Error al guardar chofer:', err);
-      setError('Error al guardar chofer');
+      console.error("Error al guardar chofer:", err);
     }
   };
 
@@ -96,122 +56,110 @@ export default function Choferes() {
   }, []);
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Registrar Chofer</h2>
-
-      {mensaje && <p className="text-green-600">{mensaje}</p>}
-      {error && <p className="text-red-600">{error}</p>}
-
-      <form onSubmit={guardarChofer} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div className="flex gap-6 p-6">
+      {/* Formulario */}
+      <form
+        onSubmit={guardarChofer}
+        className="w-1/3 bg-[#fff7ec] p-5 rounded-lg shadow-md flex flex-col gap-4"
+      >
+        <label className="text-orange-700 font-semibold">Nombre</label>
         <input
           type="text"
           name="nombre"
           value={formulario.nombre}
           onChange={handleChange}
-          placeholder="Nombre"
-          className="border px-3 py-2 rounded"
-          disabled={!!idChoferEditando}
+          className="p-2 rounded-md bg-[#ffe0b2] outline-none"
+          required
         />
+
+        <label className="text-orange-700 font-semibold">Unidad</label>
         <input
           type="text"
-          name="apellido"
-          value={formulario.apellido}
+          name="unidad"
+          value={formulario.unidad}
           onChange={handleChange}
-          placeholder="Apellido"
-          className="border px-3 py-2 rounded"
-          disabled={!!idChoferEditando}
+          className="p-2 rounded-md bg-[#ffe0b2] outline-none"
+          required
         />
+
+        <label className="text-orange-700 font-semibold">Teléfono</label>
         <input
           type="text"
           name="telefono"
           value={formulario.telefono}
           onChange={handleChange}
-          placeholder="Teléfono"
-          className="border px-3 py-2 rounded"
-          disabled={!!idChoferEditando}
-        />
-        <input
-          type="number"
-          name="idUnidad"
-          value={formulario.unidad.idUnidad}
-          onChange={handleChange}
-          placeholder="ID de la unidad"
-          className="border px-3 py-2 rounded"
-          disabled={!formulario.activo} // no permitir cambiar unidad si está inactivo
+          className="p-2 rounded-md bg-[#ffe0b2] outline-none"
+          required
         />
 
-        {/* Checkbox para activar/desactivar solo si está editando */}
-        {idChoferEditando && (
-          <div className="md:col-span-2 flex items-center space-x-2">
-            <label className="inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                name="activo"
-                checked={formulario.activo}
-                onChange={(e) => {
-                  const activo = e.target.checked;
-                  setFormulario((prev) => ({
-                    ...prev,
-                    activo,
-                    unidad: activo ? prev.unidad : { idUnidad: '' } // Si inactivo, limpia unidad
-                  }));
-                }}
-                className="form-checkbox h-5 w-5 text-green-600"
-              />
-              <span className="ml-2">Activo</span>
-            </label>
-          </div>
-        )}
-
-        <div className="md:col-span-2">
-          <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-            {idChoferEditando ? 'Actualizar Chofer' : 'Guardar Chofer'}
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="bg-[#cc4500] text-white font-semibold px-4 py-2 rounded-md hover:bg-orange-800"
+        >
+          {idChoferEditando ? "Actualizar" : "Guardar"}
+        </button>
       </form>
 
-      <h2 className="text-xl font-semibold mb-2">Choferes Registrados</h2>
+      {/* Tabla */}
+      <div className="w-2/3 bg-white p-4 rounded-lg shadow-md">
+        <h3 className="text-lg font-bold text-orange-700 mb-3">Choferes</h3>
+        <div className="overflow-y-auto max-h-[500px]">
+          <table className="w-full border-collapse text-sm">
+  <thead>
+    <tr className="bg-[#f8c98e]">
+      <th className="p-2 text-center">Nombre</th>
+      <th className="p-2 text-center">Unidad</th>
+      <th className="p-2 text-center">Teléfono</th>
+    </tr>
+  </thead>
+  <tbody>
+    {choferes.map((c, i) => (
+      <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+        <td className="p-2 text-center">{c.nombre}</td>
+        <td className="p-2 text-center">{c.unidad}</td>
+        <td className="p-2 text-center">{c.telefono}</td>
+        {/* Botones de acción (ocultos en encabezado, visibles en filas) */}
+        <td className="p-2 flex gap-4 justify-center">
+          <button
+            onClick={() => seleccionarChofer(c)}
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            Editar
+          </button>
+          <button
+            onClick={() => eliminarChofer(c.idChofer)}
+            className="text-red-600 hover:scale-110 transition"
+            title="Eliminar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill="currentColor"
+                d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+              />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    ))}
+    {choferes.length === 0 && (
+      <tr>
+        <td colSpan="4" className="text-center py-4 text-gray-500">
+          No hay choferes registrados.
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
 
-      <table className="w-full text-sm border shadow">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2 border">#</th>
-            <th className="p-2 border">Nombre</th>
-            <th className="p-2 border">Apellido</th>
-            <th className="p-2 border">Teléfono</th>
-            <th className="p-2 border">Unidad</th>
-            <th className="p-2 border">Activo</th>
-            <th className="p-2 border">Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {choferes.map((c, i) => (
-            <tr key={i} className="text-center">
-              <td className="p-2 border">{i + 1}</td>
-              <td className="p-2 border">{c.nombre}</td>
-              <td className="p-2 border">{c.apellido}</td>
-              <td className="p-2 border">{c.telefono}</td>
-              <td className="p-2 border">{c.unidad?.idUnidad || '—'}</td>
-              <td className="p-2 border">{c.activo ? 'Sí' : 'No'}</td>
-              <td className="p-2 border">
-                <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm"
-                  onClick={() => seleccionarChofer(c)}
-                >
-                  Editar
-                </button>
-              </td>
-            </tr>
-          ))}
-          {choferes.length === 0 && (
-            <tr>
-              <td colSpan="7" className="text-center text-gray-500 py-4">
-                No hay choferes registrados.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+
+        </div>
+      </div>
     </div>
   );
+
 }

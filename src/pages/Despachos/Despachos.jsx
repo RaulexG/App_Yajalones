@@ -64,129 +64,153 @@ export default function Despachos() {
 
 
   return (
-    <div className="p-4 space-y-6">
-      <h2 className="text-2xl font-semibold">Despacho del Día</h2>
-
-      {/* Tabla de Pasajeros */}
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Pasajeros</h3>
-        <table className="w-full table-auto border">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-2 py-1">Folio</th>
-              <th className="border px-2 py-1">Nombre</th>
-              <th className="border px-2 py-1">Tipo</th>
-              <th className="border px-2 py-1">Monto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pasajeros.map((p, i) => (
-              <tr key={i}>
-                <td className="border px-2 py-1">{p.folio}</td>
-                <td className="border px-2 py-1">{p.nombre}</td>
-                <td className="border px-2 py-1">{p.tipo}</td>
-                <td className="border px-2 py-1">${parseFloat(p.importe || 0).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Tabla de Paquetería */}
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Paquetería</h3>
-        <table className="w-full table-auto border">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-2 py-1">Folio</th>
-              <th className="border px-2 py-1">Remitente</th>
-              <th className="border px-2 py-1">Destinatario</th>
-              <th className="border px-2 py-1">Por cobrar</th>
-              <th className="border px-2 py-1">Monto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paquetes.map((p, i) => (
-              <tr key={i}>
-                <td className="border px-2 py-1">{p.folio}</td>
-                <td className="border px-2 py-1">{p.remitente}</td>
-                <td className="border px-2 py-1">{p.destinatario}</td>
-                <td className="border px-2 py-1">{p.porCobrar ? "Sí" : "No"}</td>
-                <td className="border px-2 py-1">${parseFloat(p.importe || 0).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+    <div className="flex gap-6 p-6">
+    {/* Columna izquierda: Formulario y Resumen */}
+    <div className="w-1/3 flex flex-col gap-6">
+      
       {/* Formulario de Descuento */}
-      <div className="border p-4 rounded shadow bg-gray-50">
-        <h3 className="font-semibold mb-2">Agregar Descuento</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <input
-            type="text"
-            placeholder="Concepto"
-            className="border px-2 py-1 rounded"
-            value={nuevoDescuento.concepto}
-            onChange={(e) =>
-              setNuevoDescuento({ ...nuevoDescuento, concepto: e.target.value })
-            }
-          />
-          <input
-            type="text"
-            placeholder="Descripción"
-            className="border px-2 py-1 rounded"
-            value={nuevoDescuento.descripcion}
-            onChange={(e) =>
-              setNuevoDescuento({ ...nuevoDescuento, descripcion: e.target.value })
-            }
-          />
-          <input
-            type="number"
-            placeholder="Importe"
-            className="border px-2 py-1 rounded"
-            value={nuevoDescuento.importe}
-            onChange={(e) =>
-              setNuevoDescuento({ ...nuevoDescuento, importe: parseFloat(e.target.value) })
-            }
-          />
-        </div>
+      <div className="bg-[#fff7ec] p-5 rounded-lg shadow-md">
+        <h3 className="text-orange-700 font-bold mb-3">Agregar Descuento</h3>
+        
+        <label className="block text-orange-700 font-semibold mb-1">Concepto</label>
+        <input
+          type="text"
+          placeholder=""
+          className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3"
+          value={nuevoDescuento.concepto}
+          onChange={(e) =>
+            setNuevoDescuento({ ...nuevoDescuento, concepto: e.target.value })
+          }
+        />
+
+        <label className="block text-orange-700 font-semibold mb-1">Descripción</label>
+        <textarea
+          placeholder=""
+          className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3"
+          value={nuevoDescuento.descripcion}
+          onChange={(e) =>
+            setNuevoDescuento({ ...nuevoDescuento, descripcion: e.target.value })
+          }
+        />
+
+        <label className="block text-orange-700 font-semibold mb-1">Importe</label>
+        <input
+          type="number"
+          placeholder=""
+          className="w-1/3 p-2 rounded-md bg-[#ffe0b2] outline-none mb-4"
+          value={nuevoDescuento.importe}
+          onChange={(e) =>
+            setNuevoDescuento({ ...nuevoDescuento, importe: parseFloat(e.target.value) })
+          }
+        />
+
         <button
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-4 rounded mt-2"
+          className="bg-[#cc4500] text-white font-semibold py-2 px-4 rounded-md w-full hover:bg-orange-800"
           onClick={agregarDescuento}
         >
-          Agregar descuento
+          Guardar descuento
         </button>
       </div>
 
       {/* Resumen del Día */}
-      <div className="border p-4 rounded shadow bg-white">
-        <h3 className="font-semibold text-lg mb-2">Resumen del Día</h3>
-        <ul className="space-y-1">
-          <li>Pasajeros: ${totalPasajeros.toFixed(2)}</li>
-          <li>Paquetería: ${totalPaqueteria.toFixed(2)}</li>
-          <li>Comisión (10%): ${comision.toFixed(2)}</li>
-          <li>Otros descuentos: ${totalDescuentos.toFixed(2)}</li>
-          <li>Paquetes por cobrar: ${paquetesPorCobrar.toFixed(2)}</li>
-          <li>Pagado en Yajalón: ${pagadoEnYajalon.toFixed(2)}</li>
-          <li>Paga al abordar en SCLC: ${pagaAbordarSCLC.toFixed(2)}</li>
-          <li className="font-bold text-lg">
-            Total neto del día: ${total.toFixed(2)}
+      <div className="bg-white p-5 rounded-lg shadow-md">
+        <h3 className="text-orange-700 font-bold mb-3">Resumen del Día</h3>
+        <ul className="space-y-2 text-sm text-orange-800">
+          <li className="flex justify-between">
+            <span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Paquetería</span> <span>${totalPaqueteria.toFixed(2)}</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Comisión (10%)</span> <span>${comision.toFixed(2)}</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Paquetes por cobrar</span> <span>${paquetesPorCobrar.toFixed(2)}</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Pagado en Yajalón</span> <span>${pagadoEnYajalon.toFixed(2)}</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Paga al abordar en SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span>
+          </li>
+          <li className="flex justify-between font-bold text-lg">
+            <span>TOTAL</span> <span>${total.toFixed(2)}</span>
           </li>
         </ul>
-      </div>
 
-      {/* Botón PDF */}
-      <div className="text-right">
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded mt-6"
+          className="bg-[#cc4500] text-white font-semibold py-2 px-4 rounded-md w-full mt-4 hover:bg-orange-800"
           onClick={() => {
-            // Aquí podrías agregar la lógica para generar el PDF
+            // lógica para PDF
           }}
         >
-          Generar PDF
+          PDF
         </button>
       </div>
     </div>
+
+    {/* Columna derecha: Tablas */}
+    <div className="w-2/3 flex flex-col gap-6">
+      {/* Tabla Pasajeros */}
+      <div className="bg-white p-4 rounded-lg shadow-md">
+        <h3 className="text-lg font-bold text-orange-700 mb-3">Pasajeros</h3>
+        <div className="overflow-y-auto max-h-[250px]">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-[#f8c98e]">
+                <th className="p-2 text-center">Folio</th>
+                <th className="p-2 text-center">Nombre</th>
+                <th className="p-2 text-center">Tipo</th>
+                <th className="p-2 text-center">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pasajeros.map((p, i) => (
+                <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+                  <td className="p-2 text-center">{p.folio}</td>
+                  <td className="p-2 text-center">{p.nombre}</td>
+                  <td className="p-2 text-center">{p.tipo}</td>
+                  <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Tabla Paquetería */}
+      <div className="bg-white p-4 rounded-lg shadow-md">
+        <h3 className="text-2xl font-bold text-orange-700 mb-3">Paquetería</h3>
+        <div className="overflow-y-auto max-h-[250px]">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-[#f8c98e]">
+                <th className="p-2 text-center">Folio</th>
+                <th className="p-2 text-center">Remitente</th>
+                <th className="p-2 text-center">Destinatario</th>
+                <th className="p-2 text-center">Por cobrar</th>
+                <th className="p-2 text-center">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paquetes.map((p, i) => (
+                <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+                  <td className="p-2 text-center">{p.folio}</td>
+                  <td className="p-2 text-center">{p.remitente}</td>
+                  <td className="p-2 text-center">{p.destinatario}</td>
+                  <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
+                  <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
   );
 }

@@ -136,22 +136,22 @@ export default function Ajustes() {
             </thead>
             <tbody>
               {filas[mostrarTabla].map((fila, idx) => (
-  <tr key={idx}>
-    {fila.map((cell, i) => {
-      if (i === fila.length - 1 && mostrarTabla !== 'viajes') {
-        return (
-          <td key={i} className="border p-2">
-            <button className="text-blue-600 underline" onClick={() => editar(mostrarTabla, cell)}>Editar</button>
-          </td>
-        );
-      }
-      if (i === fila.length - 1 && mostrarTabla === 'viajes') {
-        return <td key={i} className="border p-2"></td>;
-      }
-      return <td key={i} className="border p-2">{cell}</td>;
-    })}
-  </tr>
-))}
+                <tr key={idx}>
+                  {fila.map((cell, i) => {
+                    if (i === fila.length - 1 && mostrarTabla !== 'viajes') {
+                      return (
+                        <td key={i} className="border p-2">
+                          <button className="text-blue-600 underline" onClick={() => editar(mostrarTabla, cell)}>Editar</button>
+                        </td>
+                      );
+                    }
+                    if (i === fila.length - 1 && mostrarTabla === 'viajes') {
+                      return <td key={i} className="border p-2"></td>;
+                    }
+                    return <td key={i} className="border p-2">{cell}</td>;
+                  })}
+                </tr>
+              ))}
 
             </tbody>
           </table>
@@ -162,98 +162,272 @@ export default function Ajustes() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">Ajustes del sistema</h1>
+      <h1 className="text-2xl font-bold text-orange-800">Ajustes del sistema</h1>
       <p className="text-gray-600">Bienvenido, {nombreCuenta}</p>
 
-      <section>
-        <h2 className="font-bold mb-2 mt-6">Registrar turno</h2>
-        <div className="flex items-center gap-2">
-          <input value={turnoForm.horario} onChange={e => setTurnoForm({ ...turnoForm, horario: e.target.value })} className="border p-1" placeholder="Horario" />
-          <button onClick={handleGuardarTurno} className="bg-green-500 text-white px-3 py-1 rounded">Guardar</button>
-          <button onClick={() => setMostrarTabla('turnos')} className="bg-blue-500 text-white px-3 py-1 rounded">Mostrar turnos</button>
+      
+      {/* Sección Cuenta */}
+      {/*<section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
+        <h2 className="text-orange-700 font-bold text-lg mb-4">Cuenta</h2>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
+              <input
+                type="text"
+                value={cuentaForm.nombre}
+                onChange={(e) => setCuentaForm({ ...cuentaForm, nombre: e.target.value })}
+                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Contraseña</label>
+              <input
+                type="password"
+                value={cuentaForm.contrasena}
+                onChange={(e) => setCuentaForm({ ...cuentaForm, contrasena: e.target.value })}
+                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 justify-center">
+            <button
+              onClick={handleGuardarCuenta}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Guardar
+            </button>
+            <button
+              onClick={handleEliminarCuenta}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Eliminar cuenta
+            </button>
+          </div>
+        </div>
+      </section>*/}
+
+      {/* Sección Tarifas */}
+      {/*<section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
+        <h2 className="text-orange-700 font-bold text-lg mb-4">Tarifas</h2>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Adulto</label>
+              <input
+                type="number"
+                value={tarifas.adulto}
+                onChange={(e) => setTarifas({ ...tarifas, adulto: e.target.value })}
+                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Niño</label>
+              <input
+                type="number"
+                value={tarifas.nino}
+                onChange={(e) => setTarifas({ ...tarifas, nino: e.target.value })}
+                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Incent/Inapam</label>
+              <input
+                type="number"
+                value={tarifas.inapam}
+                onChange={(e) => setTarifas({ ...tarifas, inapam: e.target.value })}
+                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 justify-center">
+            <button
+              onClick={handleGuardarTarifas}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Guardar
+            </button>
+            <button
+              onClick={handleActualizarTarifas}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Actualizar
+            </button>
+          </div>
+        </div>
+      </section>*/}
+
+      {/* Sección Registrar Turno */}
+      <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
+        <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar turno</h2>
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Horario</label>
+            <input
+              value={turnoForm.horario}
+              onChange={(e) => setTurnoForm({ ...turnoForm, horario: e.target.value })}
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+            />
+          </div>
+          <div className="flex gap-4">
+            <button
+              onClick={handleGuardarTurno}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Guardar
+            </button>
+            <button
+              onClick={() => setMostrarTabla('turnos')}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Mostrar turnos
+            </button>
+          </div>
         </div>
       </section>
 
-      <section>
-        <h2 className="font-bold mb-2 mt-6">Registrar unidad</h2>
-        <div className="grid grid-cols-2 gap-2">
-          <input value={unidadForm.nombre} onChange={e => setUnidadForm({ ...unidadForm, nombre: e.target.value })} className="border p-1" placeholder="Nombre" />
-          <input value={unidadForm.descripcion} onChange={e => setUnidadForm({ ...unidadForm, descripcion: e.target.value })} className="border p-1" placeholder="Descripción" />
-          <select value={unidadForm.idTurno} onChange={e => setUnidadForm({ ...unidadForm, idTurno: e.target.value })} className="border p-1">
-            <option value="">Seleccionar turno</option>
-            {turnos.map(t => (
-              <option key={t.idTurno} value={t.idTurno}>{t.horario}</option>
-            ))}
-          </select>
-          <button onClick={handleGuardarUnidad} className="bg-green-500 text-white px-3 py-1 rounded">Guardar</button>
-        </div>
-        <button onClick={() => setMostrarTabla('unidades')} className="mt-2 bg-blue-500 text-white px-3 py-1 rounded">Mostrar unidades</button>
-      </section>
-
-      <section>
-        <h2 className="font-bold mb-2 mt-6">Registrar viaje</h2>
-        <div className="grid grid-cols-2 gap-2">
-          <select
-            value={viajeForm.origen}
-            onChange={(e) => {
-              const origenSeleccionado = e.target.value;
-              const destinoAutomatico = origenSeleccionado === 'Tuxtla Gtz' ? 'Yajalón' : 'Tuxtla Gtz';
-              setViajeForm({
-                ...viajeForm,
-                origen: origenSeleccionado,
-                destino: destinoAutomatico
-              });
-            }}
-            className="border p-1"
-          >
-            <option value="">Seleccionar origen</option>
-            <option value="Tuxtla Gtz">Tuxtla Gtz</option>
-            <option value="Yajalón">Yajalón</option>
-          </select>
-
-          <input
-            value={viajeForm.destino}
-            readOnly
-            className="border p-1 bg-gray-100 text-gray-700"
-            placeholder="Destino automático"
-          />
-
-          <input
-            type="datetime-local"
-            value={viajeForm.fechaSalida}
-            onChange={(e) => setViajeForm({ ...viajeForm, fechaSalida: e.target.value })}
-            className="border p-1"
-          />
-
-          <select
-            value={viajeForm.idUnidad}
-            onChange={(e) => setViajeForm({ ...viajeForm, idUnidad: e.target.value })}
-            className="border p-1"
-          >
-            <option value="">Seleccionar unidad</option>
-            {unidades.map((u) => (
-              <option key={u.idUnidad} value={u.idUnidad}>
-                {u.nombre}
+      {/* Sección Registrar Unidad */}
+      <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
+        <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar unidad</h2>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
+            <input
+              value={unidadForm.nombre}
+              onChange={(e) => setUnidadForm({ ...unidadForm, nombre: e.target.value })}
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Descripción</label>
+            <input
+              value={unidadForm.descripcion}
+              onChange={(e) => setUnidadForm({ ...unidadForm, descripcion: e.target.value })}
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Turno</label>
+            <select
+              value={unidadForm.idTurno}
+              onChange={(e) => setUnidadForm({ ...unidadForm, idTurno: e.target.value })}
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+              required
+            >
+              <option value="" disabled>
+                Seleccionar turno
               </option>
-            ))}
-          </select>
+              {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                <option key={num} value={num}>
+                  Turno {num}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <button
-            onClick={handleGuardarViaje}
-            className="bg-green-500 text-white px-3 py-1 rounded"
-          >
-            Guardar
-          </button>
+
+          <div className="flex gap-4">
+            <button
+              onClick={handleGuardarUnidad}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Guardar
+            </button>
+            <button
+              onClick={() => setMostrarTabla('unidades')}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Mostrar unidades
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setMostrarTabla('viajes')}
-          className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
-        >
-          Mostrar viajes
-        </button>
       </section>
 
+      {/* Sección Registrar Viaje */}
+      <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
+        <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar viaje</h2>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Origen</label>
+            <select
+              value={viajeForm.origen}
+              onChange={(e) => {
+                const origenSeleccionado = e.target.value;
+                const destinoAutomatico =
+                  origenSeleccionado === 'Tuxtla Gtz' ? 'Yajalón' : 'Tuxtla Gtz';
+                setViajeForm({
+                  ...viajeForm,
+                  origen: origenSeleccionado,
+                  destino: destinoAutomatico,
+                });
+              }}
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+            >
+              <option value="" disabled>
+                Selecciona origen
+              </option>
+              <option value="Tuxtla Gtz">Tuxtla Gtz</option>
+              <option value="Yajalón">Yajalón</option>
+              <option value="Yajalón">San Cristóbal</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Destino</label>
+            <input
+              value={viajeForm.destino}
+              readOnly
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+              placeholder="Destino automático"
+            />
+          </div>
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Fecha de salida</label>
+            <input
+              type="datetime-local"
+              value={viajeForm.fechaSalida}
+              onChange={(e) => setViajeForm({ ...viajeForm, fechaSalida: e.target.value })}
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-orange-700 font-semibold mb-1">Unidad</label>
+            <select
+              value={viajeForm.idUnidad}
+              onChange={(e) => setViajeForm({ ...viajeForm, idUnidad: e.target.value })}
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+              required
+            >
+              <option value="" disabled>
+                Seleccione unidad
+              </option>
+              {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                <option key={num} value={num}>
+                  Unidad {num}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={handleGuardarViaje}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Guardar
+            </button>
+            <button
+              onClick={() => setMostrarTabla('viajes')}
+              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+            >
+              Mostrar viajes
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Tabla */}
       <TablaDatos />
     </div>
+
   );
 }
