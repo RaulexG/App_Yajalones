@@ -128,6 +128,8 @@ export default function Pasajeros() {
       alert('Seleccione un viaje');
       return;
     }
+    console.log("Pasajero a crear:", pasajeroFinal);
+
 
     if (idPasajeroEditando) {
       const pasajeroOriginal = viajeSeleccionado.pasajeros.find(p => p.idPasajero === idPasajeroEditando);
@@ -269,7 +271,7 @@ export default function Pasajeros() {
             >
               <option value="PAGADO">Pagado</option>
               <option value="DESTINO">Paga al llegar</option>
-              <option value="SAN_CRISTOBAL">Sube en San Cristóbal</option>
+              <option value="SCLC">Sube en San Cristóbal</option>
             </select>
           </div>
 

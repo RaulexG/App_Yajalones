@@ -197,7 +197,7 @@ export default function Ajustes() {
             value={viajeForm.origen}
             onChange={(e) => {
               const origenSeleccionado = e.target.value;
-              const destinoAutomatico = origenSeleccionado === 'Tuxtla Gtz' ? 'Yajalón' : 'Tuxtla Gtz';
+              const destinoAutomatico = origenSeleccionado === 'Tuxtla Gutierrez' ? 'Yajalon' : 'Tuxtla Gutierrez';
               setViajeForm({
                 ...viajeForm,
                 origen: origenSeleccionado,
@@ -207,8 +207,8 @@ export default function Ajustes() {
             className="border p-1"
           >
             <option value="">Seleccionar origen</option>
-            <option value="Tuxtla Gtz">Tuxtla Gtz</option>
-            <option value="Yajalón">Yajalón</option>
+            <option value="Tuxtla Gutierrez">Tuxtla Gtz</option>
+            <option value="Yajalon">Yajalón</option>
           </select>
 
           <input

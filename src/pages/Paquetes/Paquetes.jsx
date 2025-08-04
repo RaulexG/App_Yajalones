@@ -20,7 +20,8 @@ export default function Paqueteria() {
   });
   const [notas, setNotas] = useState({});
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [folioEditando, setFolioEditando] = useState(null);
+  const [idEditando, setIdEditando] = useState(null);
+
 
   useEffect(() => {
     cargarViajes();
@@ -60,9 +61,10 @@ export default function Paqueteria() {
         idViaje: Number(formulario.viaje)
       },
     };
+    
 
-    if (modoEdicion && folioEditando) {
-      await actualizarPaquete(folioEditando, data);
+    if (modoEdicion && idEditando) {
+      await actualizarPaquete(idEditando, data);
     } else {
       await crearPaquete(data);
     }
@@ -76,7 +78,7 @@ export default function Paqueteria() {
       viaje: ""
     });
     setModoEdicion(false);
-    setFolioEditando(null);
+    setIdEditando(null);
     cargarPaquetes();
     cargarViajes(); // importante para que se actualice la relación viaje -> paquete
   };
@@ -128,15 +130,19 @@ ${nota ? `\nNota: ${nota}` : ""}
       importe: paquete.importe,
       contenido: paquete.contenido,
       porCobrar: paquete.porCobrar,
-      viaje: paquete.viaje?.idViaje || ""
+      viaje: paquete.viaje?.idViaje?.toString() || "",
+      estado: paquete.estado
+
     });
+
     setModoEdicion(true);
-    setFolioEditando(paquete.folio);
+    setIdEditando(paquete.idPaquete);
   };
 
-  const eliminar = async (folio) => {
+  const eliminar = async (id) => {
+    
     if (confirm("¿Estás seguro que deseas eliminar este paquete?")) {
-      await eliminarPaquete(folio);
+      await eliminarPaquete(id);
       cargarPaquetes();
       cargarViajes(); // para eliminarlo también del arreglo paquetes del viaje
     }
@@ -242,7 +248,7 @@ ${nota ? `\nNota: ${nota}` : ""}
               <td>
                 <button onClick={() => prepararEdicion(p)}>Editar</button>{" "}
                 <button onClick={() => imprimirTicket(p)}>Ticket</button>{" "}
-                <button onClick={() => eliminar(p.folio)}>Eliminar</button>
+                <button onClick={() => eliminar(p.idPaquete)}>Eliminar</button>
               </td>
             </tr>
           ))}
