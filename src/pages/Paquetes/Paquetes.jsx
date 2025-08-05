@@ -48,6 +48,7 @@ export default function Paqueteria() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Formulario enviado:", formulario);
     if (!formulario.viaje) return alert("Seleccione una unidad/viaje");
 
     const data = {
@@ -181,36 +182,35 @@ ${nota ? `\nNota: ${nota}` : ""}
           />
         </div>
 
-        {/* Tipo y Unidad */}
+        
         <div className="flex gap-2">
-          <div className="w-1/2">
-            <label className="block text-orange-700 font-semibold mb-1">Tipo</label>
-            <input
-              type="text"
-              name="tipo"
-              value={formulario.tipo || ""}
-              onChange={handleChange}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-            />
-          </div>
-          <div className="w-1/2">
-            <label className="block text-orange-700 font-semibold mb-1">Unidad</label>
+          {/* Viajes */}
+          <div >
+            <label className="block text-orange-700 font-semibold mb-1">Viaje</label>
             <select
-              name="unidad"
-              value={formulario.unidad}
-              onChange={handleChange}
-              className="w-full p-2 rounded-md bg-[#ffe0b2]"
-              required
-            >
-              <option value="">Seleccionar</option>
-              <option value="1">Unidad 1</option>
-              <option value="2">Unidad 2</option>
-              <option value="3">Unidad 3</option>
-              <option value="4">Unidad 4</option>
-              <option value="5">Unidad 5</option>
-              <option value="6">Unidad 6</option>
-              <option value="7">Unidad 7</option>
-            </select>
+  name="viaje"
+  value={formulario.viaje?.idViaje || ''}
+  onChange={(e) => {
+    const viajeSeleccionado = viajes.find(v => v.idViaje === parseInt(e.target.value));
+    setFormulario({
+      ...formulario,
+      viaje: viajeSeleccionado ? { idViaje: viajeSeleccionado.idViaje } : "",           
+    });
+  }}
+  className="w-full p-2 rounded-md bg-[#ffe0b2]"
+  required
+>
+  <option value="">Seleccionar</option>
+  {viajes.map((viaje) => (
+    <option key={viaje.idViaje} value={viaje.idViaje}>
+      {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString('es-MX', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      })}`}
+    </option>
+  ))}
+</select>
+
           </div>
 
         </div>
@@ -291,7 +291,7 @@ ${nota ? `\nNota: ${nota}` : ""}
                   <td className="p-2 text-center">
                     {/* Botón eliminar con ícono */}
                     <button
-                      onClick={() => eliminar(p.folio)}
+                      onClick={() => eliminar(p.idPaquete)}
                       className="text-red-600 hover:scale-110 transition"
                       title="Eliminar"
                     >

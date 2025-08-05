@@ -46,7 +46,7 @@ export default function Despachos() {
 
   // Pasajeros que pagan al abordar en SCLC (tipoPago 'SAN_CRISTOBAL')
   const pagaAbordarSCLC = pasajeros
-    .filter(p => p.tipoPago === "SAN_CRISTOBAL")
+    .filter(p => p.tipoPago === "SCLC")
     .reduce((acc, p) => acc + parseFloat(p.importe || 0), 0);
 
   // Paquetes por cobrar (porCobrar === true)
@@ -165,6 +165,7 @@ export default function Despachos() {
                 <th className="p-2 text-center">Folio</th>
                 <th className="p-2 text-center">Nombre</th>
                 <th className="p-2 text-center">Tipo</th>
+                <th className="p-2 text-center">Pago</th>
                 <th className="p-2 text-center">Monto</th>
               </tr>
             </thead>
@@ -174,6 +175,7 @@ export default function Despachos() {
                   <td className="p-2 text-center">{p.folio}</td>
                   <td className="p-2 text-center">{p.nombre}</td>
                   <td className="p-2 text-center">{p.tipo}</td>
+                  <td className="p-2 text-center">{p.tipoPago}</td>
                   <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
                 </tr>
               ))}

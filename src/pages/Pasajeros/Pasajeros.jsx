@@ -16,9 +16,12 @@ export default function Pasajeros() {
   const [viajeSeleccionado, setViajeSeleccionado] = useState(null);
   const [asientosOcupados, setAsientosOcupados] = useState([]);
   const [idPasajeroEditando, setIdPasajeroEditando] = useState(null);
+  const [turnoSeleccionado, setTurnoSeleccionado] = useState('');
+  
 
   const [formulario, setFormulario] = useState({
     nombre: '',
+    apellido: '',
     origen: '',
     destino: '',
     fechaSalida: '',
@@ -32,6 +35,12 @@ export default function Pasajeros() {
   const [pasajeroTicket, setPasajeroTicket] = useState(null);
   const [choferes, setChoferes] = useState([]);
   const [sobreEquipaje, setSobreEquipaje] = useState('');
+
+
+const viajesFiltrados = turnoSeleccionado
+  ? viajes.filter((viaje) => viaje.unidad.turno?.idTurno === Number(turnoSeleccionado))
+  : [];
+
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -53,9 +62,11 @@ export default function Pasajeros() {
     setFormulario({ ...formulario, asiento: numero });
   };
 
-  const limpiarFormulario = () => {
+ const limpiarFormulario = () => {
+  if (!viajeSeleccionado) {
     setFormulario({
       nombre: '',
+      apellido: '',
       origen: '',
       destino: '',
       fechaSalida: '',
@@ -63,10 +74,31 @@ export default function Pasajeros() {
       tipo: 'ADULTO',
       tipoPago: 'PAGADO',
       asiento: null,
-      viaje: formulario.viaje
+      viaje: null,
     });
     setIdPasajeroEditando(null);
-  };
+    return;
+  }
+
+  const fechaObj = new Date(viajeSeleccionado.fechaSalida);
+  const fechaFormateada = `${fechaObj.getDate().toString().padStart(2, '0')}/${(fechaObj.getMonth() + 1).toString().padStart(2, '0')}/${fechaObj.getFullYear()}`;
+  const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fechaObj.getMinutes().toString().padStart(2, '0')}`;
+
+  setFormulario({
+    nombre: '',
+    apellido: '',
+    origen: viajeSeleccionado.origen,
+    destino: viajeSeleccionado.destino,
+    fechaSalida: fechaFormateada,
+    hora: horaFormateada,
+    tipo: 'ADULTO',
+    tipoPago: 'PAGADO',
+    asiento: null,
+    viaje: viajeSeleccionado,
+  });
+  setIdPasajeroEditando(null);
+};
+
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
@@ -91,30 +123,17 @@ export default function Pasajeros() {
     try {
       let viajeId = formulario.viaje?.idViaje;
 
-      // ✅ Crear viaje si no existe
-      if (!viajeId) {
-        const nuevoViaje = await CrearViaje({
-          origen: formulario.origen,
-          destino: formulario.destino,
-          fechaSalida: formulario.fechaSalida,
-          hora: formulario.hora,
-          unidad: null // puedes cambiar esto si tienes unidad asignada
-        });
-
-        viajeId = nuevoViaje.idViaje;
-        setFormulario((prev) => ({ ...prev, viaje: { idViaje: viajeId } }));
-        setViajeSeleccionado(nuevoViaje);
-      }
-
-      // ✅ Crear pasajero
+      
       const pasajeroFinal = {
         nombre: formulario.nombre,
+        apellido: formulario.apellido,
         tipo: formulario.tipo,
         tipoPago: formulario.tipoPago,
         asiento: formulario.asiento,
         viaje: { idViaje: viajeId }
       };
-
+      
+      console.log('Pasajero a guardar:', pasajeroFinal);
       if (idPasajeroEditando) {
         await ActualizarPasajero(idPasajeroEditando, pasajeroFinal);
         alert('Pasajero actualizado correctamente');
@@ -123,12 +142,15 @@ export default function Pasajeros() {
         alert('Pasajero agregado correctamente');
       }
 
-      // ✅ Actualizar viaje y asientos ocupados
+      
       const viajeActualizado = await ObtenerViajePorId(viajeId);
       setViajeSeleccionado({ ...viajeActualizado });
       setAsientosOcupados(viajeActualizado.pasajeros.map((p) => p.asiento));
+      const pasajeroConImporte = viajeActualizado.pasajeros.find(
+  (p) => p.asiento === formulario.asiento && p.nombre === formulario.nombre && p.apellido === formulario.apellido
+);
 
-      setPasajeroTicket(pasajeroFinal);
+      setPasajeroTicket(pasajeroConImporte);
       limpiarFormulario();
     } catch (error) {
       console.error(error);
@@ -151,14 +173,42 @@ export default function Pasajeros() {
     }
   };
 
-  const imprimirTicket = (pasajero, textoSobreEquipaje = '') => {
+
+
+  const manejarSeleccionViaje = (viaje) => {
+  setViajeSeleccionado(viaje);
+    const fechaHoraISO = viaje.fechaSalida;
+const fechaObj = new Date(fechaHoraISO);
+const fechaFormateada = `${fechaObj.getDate().toString().padStart(2, '0')}/${(fechaObj.getMonth() + 1).toString().padStart(2, '0')}/${fechaObj.getFullYear()}`;
+
+
+const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fechaObj.getMinutes().toString().padStart(2, '0')}`;
+
+  setFormulario({
+    ...formulario,
+    viaje: viaje,
+    origen: viaje.origen,
+    destino: viaje.destino,
+    fechaSalida: fechaFormateada, 
+    hora: horaFormateada,
+    asiento: null 
+  });
+
+  
+  setAsientosOcupados(viaje.pasajeros ? viaje.pasajeros.map(p => p.asiento) : []);
+};
+
+  const imprimirTicket = (pasajero) => {
+    
+    const textoSobreEquipaje = prompt("Ingrese el texto de Sobre Equipaje (opcional):") || '';
     const ventana = window.open('', '', 'width=400,height=600');
     ventana.document.write('<html><head><title>Ticket Pasajero</title></head><body>');
-    ventana.document.write('<h2>Ticket Pasajero</h2>');
-    ventana.document.write(`<p><strong>Nombre:</strong> ${pasajero.nombre}</p>`);
+    ventana.document.write('<h2>Los Yajalones</h2>');
+    ventana.document.write(`<p><strong>Nombre:</strong> ${pasajero.nombre} ${pasajero.apellido}</p>`);
     ventana.document.write(`<p><strong>Tipo:</strong> ${pasajero.tipo}</p>`);
     ventana.document.write(`<p><strong>Tipo de Pago:</strong> ${pasajero.tipoPago}</p>`);
     ventana.document.write(`<p><strong>Asiento:</strong> ${pasajero.asiento}</p>`);
+    ventana.document.write(`<p><strong>Importe:</strong> ${parseFloat(pasajero.importe || 0).toFixed(2)}</p>`);
     if (textoSobreEquipaje.trim()) {
       ventana.document.write('<hr/>');
       ventana.document.write(`<p><strong>Sobre Equipaje:</strong> ${textoSobreEquipaje}</p>`);
@@ -199,6 +249,20 @@ export default function Pasajeros() {
               />
             </div>
 
+            {/* Apellido */}
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Apellido</label>
+              <input
+                type="text"
+                name="apellido"
+                value={formulario.apellido}
+                onChange={manejarCambio}
+                placeholder=""
+                className="w-full p-3 rounded-md bg-orange-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                required
+              />
+            </div>
+
             {/* Origen y Destino */}
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -207,13 +271,13 @@ export default function Pasajeros() {
                   name="origen"
                   value={formulario.origen}
                   onChange={manejarCambio}
+                  disabled
                   className="w-full p-3 rounded-md bg-orange-100 text-gray-800"
                   required
                 >
                   <option value="" disabled>Selecciona origen</option>
-                  <option value="San Cristóbal">San Cristóbal</option>
-                  <option value="Tuxtla Gutiérrez">Tuxtla Gutiérrez</option>
-                  <option value="Yajalón">Yajalón</option>
+                  <option value="Tuxtla Gutierrez">Tuxtla Gutiérrez</option>
+                  <option value="Yajalon">Yajalón</option>
                 </select>
               </div>
 
@@ -224,12 +288,12 @@ export default function Pasajeros() {
                   value={formulario.destino}
                   onChange={manejarCambio}
                   className="w-full p-3 rounded-md bg-orange-100 text-gray-800"
+                  disabled
                   required
                 >
                   <option value="" disabled>Selecciona destino</option>
-                  <option value="San Cristóbal">San Cristóbal</option>
-                  <option value="Tuxtla Gutiérrez">Tuxtla Gutiérrez</option>
-                  <option value="Yajalón">Yajalón</option>
+                  <option value="Tuxtla Gutierrez">Tuxtla Gutiérrez</option>
+                  <option value="Yajalon">Yajalón</option>
                 </select>
               </div>
             </div>
@@ -258,7 +322,7 @@ export default function Pasajeros() {
                   />
                   <span
                     className="absolute right-3 top-3 text-orange-600 cursor-pointer"
-                    onClick={() => document.getElementById("fecha").showPicker()}
+                    onClick={() => {}}
                   >
                     {/* Ícono calendario SVG */}
                     <svg
@@ -294,7 +358,7 @@ export default function Pasajeros() {
                   />
                   <span
                     className="absolute right-3 top-3 text-orange-600 cursor-pointer"
-                    onClick={() => document.getElementById("hora").showPicker()}
+                    onClick={() => {}}
                   >
                     {/* Icono Reloj */}
                     <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24">
@@ -321,17 +385,20 @@ export default function Pasajeros() {
             </div>
 
 
-            <select
-              name="tipoPago"
-              value={formulario.tipoPago}
-              onChange={manejarCambio}
-              className="border p-2 rounded"
-            >
-              <option value="PAGADO">Pagado</option>
-              <option value="DESTINO">Paga al llegar</option>
-              <option value="SAN_CRISTOBAL">Sube en San Cristóbal</option>
-            </select>
-          </div>
+            {/* Tipo de pago */}
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Tipo de pago</label>
+              <select
+                name="tipoPago"
+                value={formulario.tipoPago}
+                onChange={manejarCambio}
+                className="w-full p-3 rounded-md bg-orange-100 text-gray-800"
+              >
+                <option value="PAGADO">Pagado</option>
+                <option value="DESTINO">Paga al llegar</option>
+                <option value="SCLC">Sube en San Cristóbal</option>
+              </select>
+            </div>
 
 
             {/* Selección de Asientos */}
@@ -380,7 +447,7 @@ export default function Pasajeros() {
 
             {/* Unidad */}
             <div className="text-center mt-4 text-orange-700 font-semibold">
-              Unidad {viajeSeleccionado?.unidad?.numeroUnidad || "N/A"}: {choferAsignado ? `${choferAsignado.nombre} ${choferAsignado.apellido}` : "No asignado"}
+              Unidad {viajeSeleccionado?.unidad?.nombre || "N/A"}: {choferAsignado ? `${choferAsignado.nombre} ${choferAsignado.apellido}` : "No asignado"}
             </div>
 
             {/* Botones */}
@@ -393,38 +460,11 @@ export default function Pasajeros() {
                 Guardar
               </button>
 
-              {/* Botón Imprimir Ticket */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (pasajeroTicket) {
-                    imprimirTicket(pasajeroTicket, sobreEquipaje);
-                  } else {
-                    alert("Primero guarde un pasajero para imprimir el ticket.");
-                  }
-                }}
-                className="bg-[#C44706] text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-800 transition"
-              >
-                Imprimir ticket
-              </button>
+              
             </div>
 
-            {/* Botón Sobre Equipaje */}
-            <div className="flex justify-center mt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  const texto = prompt("Ingrese el sobre equipaje:");
-                  if (texto && texto.trim() !== "") {
-                    setSobreEquipaje(texto);
-                    alert("Texto agregado correctamente.");
-                  }
-                }}
-                className="bg-[#C44706] text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-800 transition"
-              >
-                Sobre Equipaje
-              </button>
-            </div>
+            
+            
 
           </form>
         </div>
@@ -441,8 +481,9 @@ export default function Pasajeros() {
                   <th className="p-2 text-center font-bold text-[#452B1C]">Unidad</th>
                   <th className="p-2 text-center font-bold text-[#452B1C]">Asiento</th>
                   <th className="p-2 text-center font-bold text-[#452B1C]">Fecha de salida</th>
-                  <th className="p-2 text-center font-bold text-[#452B1C]">Origen</th>
-                  <th className="p-2 text-center font-bold text-[#452B1C]">Destino</th>
+                  <th className="p-2 text-center font-bold text-[#452B1C]">Nombre</th>
+                  <th className="p-2 text-center font-bold text-[#452B1C]">Pago</th>
+                  <th className="p-2 text-center font-bold text-[#452B1C]">Tipo</th>
                   <th className="p-2 text-center font-bold text-[#452B1C]">Importe</th>
                 </tr>
               </thead>
@@ -456,13 +497,24 @@ export default function Pasajeros() {
                       className={`hover:bg-orange-50 ${index % 2 === 0 ? "bg-orange-50/40" : "bg-white"}`}
                     >
                       <td className="p-3">{p.folio}</td>
+                      
+                      <td className="p-3">{viajeSeleccionado.unidad?.nombre || "N/A"}</td>
                       <td className="p-3">{p.asiento}</td>
-                      <td className="p-3">{viajeSeleccionado.unidad?.numeroUnidad || "N/A"}</td>
                       <td className="p-3">{new Date(viajeSeleccionado.fechaSalida).toLocaleDateString("es-MX")}</td>
-                      <td className="p-3">{viajeSeleccionado.origen}</td>
-                      <td className="p-3">{viajeSeleccionado.destino}</td>
+                      <td className="p-3">{p.nombre} {p.apellido}</td>
+                      <td className="p-3">{p.tipoPago}</td>
+                      <td className="p-3">{p.tipo}</td>
                       <td className="p-3 font-semibold">${parseFloat(p.importe || 0).toFixed(2)}</td>
                       <td className="p-3 text-center">
+                        {/* Botón Ticket */}
+          <button
+            onClick={() => imprimirTicket(p)}
+            className="bg-orange-700 text-white px-3 py-1 rounded hover:bg-orange-800 transition"
+            title="Imprimir ticket"
+          >
+            Ticket
+          </button>
+                        
                         <button
                           onClick={() => eliminarPasajero(p.idPasajero)}
                           className="text-orange-700 hover:text-red-600 transition"
@@ -493,42 +545,54 @@ export default function Pasajeros() {
           <div className="mb-4">
             <label className="block text-orange-700 font-semibold mb-2">Cambio de turno</label>
             <select
-              className="w-48 p-2 rounded-md bg-orange-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            >
-              <option value="">Seleccionar turno</option>
-              {turnos.map((t) => (
-                <option key={t.idTurno} value={t.idTurno}>
-                  {t.horario}
-                </option>
-              ))}
-            </select>
+  className="w-48 p-2 rounded-md bg-orange-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+  value={turnoSeleccionado}
+  onChange={(e) => setTurnoSeleccionado(e.target.value)}
+>
+  <option value="">Seleccionar turno</option>
+  {turnos.map((t) => (
+    <option key={t.idTurno} value={t.idTurno}>
+      {t.horario}
+    </option>
+  ))}
+</select>
+
           </div>
 
-          {/* Tabla de turnos */}
+          {/* Tabla de Viajes */}
           <div>
-            <h4 className="text-orange-700 font-semibold mb-2">Turnos</h4>
+            <h4 className="text-orange-700 font-semibold mb-2">Viajes</h4>
             <div className="overflow-y-auto max-h-[250px] custom-scroll">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-[#FECF9D] text-orange-700 sticky top-0">
                   <tr>
                     <th className="p-2 text-center font-bold text-[#452B1C]">Fecha de salida</th>
                     <th className="p-2 text-center font-bold text-[#452B1C]">Unidad</th>
-                    <th className="p-2 text-center font-bold text-[#452B1C]">Estado</th>
+                    <th className="p-2 text-center font-bold text-[#452B1C]">Destino</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {turnos.length > 0 ? (
-                    turnos.map((turno) => (
-                      <tr key={turno.idTurno} className="hover:bg-orange-50 border-b">
-                        <td className="p-2">{new Date(turno.fechaSalida).toLocaleDateString('es-MX')}</td>
-                        <td className="p-2">{turno.unidad?.numeroUnidad || "N/A"}</td>
-                        <td className="p-2">{turno.estado || "Pendiente"}</td>
+                  {viajesFiltrados.length > 0 ? (
+                    viajesFiltrados.map((v) => (
+                      <tr key={v.idViaje} className="hover:bg-orange-50 border-b">
+                        <td className="p-2">{new Date(v.fechaSalida).toLocaleDateString('es-MX')}</td>
+                        <td className="p-2">{v.unidad?.nombre || "N/A"}</td>
+                        <td className="p-2">{v.destino || "N/A"}</td>
+                        <td className="p-2 text-center">
+                          <button
+  onClick={() => manejarSeleccionViaje(v)}
+  className="text-orange-700 hover:text-blue-600 transition"
+>
+  Seleccionar
+</button>
+
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td colSpan="3" className="text-center text-gray-500 p-4">
-                        No hay turnos disponibles
+                        No hay viajes disponibles
                       </td>
                     </tr>
                   )}

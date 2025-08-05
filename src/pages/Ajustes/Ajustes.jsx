@@ -85,7 +85,7 @@ export default function Ajustes() {
     const columnas = {
       turnos: ['ID', 'Horario', 'Acciones'],
       unidades: ['ID', 'Nombre', 'Descripción', 'Turno', 'Acciones'],
-      viajes: ['ID', 'Origen', 'Destino', 'Unidad', 'Acciones']
+      viajes: ['ID', 'Origen', 'Destino', 'Unidad', 'Fecha de Salida']
     };
 
     const datos = { turnos, unidades, viajes };
@@ -114,7 +114,7 @@ export default function Ajustes() {
     const filas = {
       turnos: turnos.map(t => [t.idTurno, t.horario, t]),
       unidades: unidades.map(u => [u.idUnidad, u.nombre, u.descripcion, u.turno?.horario || '', u]),
-      viajes: viajes.map(v => [v.idViaje, v.origen, v.destino, v.unidad?.nombre || '', v])
+      viajes: viajes.map(v => [v.idViaje, v.origen, v.destino, v.unidad?.nombre,v.fechaSalida.toLocaleString() || '', v])
     };
 
     if (!mostrarTabla) return null;
@@ -317,9 +317,9 @@ export default function Ajustes() {
               <option value="" disabled>
                 Seleccionar turno
               </option>
-              {[1, 2, 3, 4, 5, 6, 7].map((num) => (
-                <option key={num} value={num}>
-                  Turno {num}
+              {turnos.map((t) => (
+                <option key={t.idTurno} value={t.idTurno}>
+                  {t.horario}
                 </option>
               ))}
             </select>
@@ -354,7 +354,7 @@ export default function Ajustes() {
               onChange={(e) => {
                 const origenSeleccionado = e.target.value;
                 const destinoAutomatico =
-                  origenSeleccionado === 'Tuxtla Gtz' ? 'Yajalón' : 'Tuxtla Gtz';
+                  origenSeleccionado === 'Tuxtla Gutierrez' ? 'Yajalón' : 'Tuxtla Gutierrez';
                 setViajeForm({
                   ...viajeForm,
                   origen: origenSeleccionado,
@@ -366,9 +366,9 @@ export default function Ajustes() {
               <option value="" disabled>
                 Selecciona origen
               </option>
-              <option value="Tuxtla Gtz">Tuxtla Gtz</option>
-              <option value="Yajalón">Yajalón</option>
-              <option value="Yajalón">San Cristóbal</option>
+              <option value="Tuxtla Gutierrez">Tuxtla Gtz</option>
+              <option value="Yajalon">Yajalón</option>
+              
             </select>
           </div>
           <div>
@@ -400,9 +400,9 @@ export default function Ajustes() {
               <option value="" disabled>
                 Seleccione unidad
               </option>
-              {[1, 2, 3, 4, 5, 6, 7].map((num) => (
-                <option key={num} value={num}>
-                  Unidad {num}
+              {unidades.map((u) => (
+                <option key={u.idUnidad} value={u.idUnidad}>
+                  {u.nombre}
                 </option>
               ))}
             </select>
