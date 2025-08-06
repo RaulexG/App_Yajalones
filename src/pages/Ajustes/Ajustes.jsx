@@ -8,7 +8,8 @@ import {
   ListarViajes,
   ActualizarTurno,
   ActualizarUnidad,
-  ActualizarViaje
+  ActualizarViaje,
+  EliminarViaje
 } from '../../services/Admin/adminService';
 
 export default function Ajustes() {
@@ -146,8 +147,24 @@ export default function Ajustes() {
                       );
                     }
                     if (i === fila.length - 1 && mostrarTabla === 'viajes') {
-                      return <td key={i} className="border p-2"></td>;
-                    }
+  const viaje = cell;
+  return (
+    <td key={i} className="border p-2">
+      <button
+        className="text-red-600 underline mr-2"
+        onClick={async () => {
+          if (window.confirm('¿Estás seguro de eliminar este viaje?')) {
+            await EliminarViaje(viaje.idViaje);
+            cargarDatos();
+          }
+        }}
+      >
+        Eliminar
+      </button>
+    </td>
+  );
+}
+
                     return <td key={i} className="border p-2">{cell}</td>;
                   })}
                 </tr>
@@ -354,7 +371,7 @@ export default function Ajustes() {
               onChange={(e) => {
                 const origenSeleccionado = e.target.value;
                 const destinoAutomatico =
-                  origenSeleccionado === 'Tuxtla Gutierrez' ? 'Yajalón' : 'Tuxtla Gutierrez';
+                  origenSeleccionado === 'Tuxtla Gutierrez' ? 'Yajalon' : 'Tuxtla Gutierrez';
                 setViajeForm({
                   ...viajeForm,
                   origen: origenSeleccionado,

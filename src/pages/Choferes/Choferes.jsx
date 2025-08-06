@@ -38,7 +38,7 @@ export default function Choferes() {
       setFormulario((prev) => ({
         ...prev,
         activo: checked,
-        unidad: checked ? prev.unidad : "", // si no está activo, se borra unidad
+        unidad: checked ? prev.unidad : "", 
       }));
     } else {
       setFormulario({ ...formulario, [name]: value });

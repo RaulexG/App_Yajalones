@@ -133,7 +133,7 @@ const viajesFiltrados = turnoSeleccionado
         viaje: { idViaje: viajeId }
       };
       
-      console.log('Pasajero a guardar:', pasajeroFinal);
+      
       if (idPasajeroEditando) {
         await ActualizarPasajero(idPasajeroEditando, pasajeroFinal);
         alert('Pasajero actualizado correctamente');
@@ -204,6 +204,7 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
     const ventana = window.open('', '', 'width=400,height=600');
     ventana.document.write('<html><head><title>Ticket Pasajero</title></head><body>');
     ventana.document.write('<h2>Los Yajalones</h2>');
+    ventana.document.write(`<p><strong>Folio:</strong> ${pasajero.folio}</p>`);
     ventana.document.write(`<p><strong>Nombre:</strong> ${pasajero.nombre} ${pasajero.apellido}</p>`);
     ventana.document.write(`<p><strong>Tipo:</strong> ${pasajero.tipo}</p>`);
     ventana.document.write(`<p><strong>Tipo de Pago:</strong> ${pasajero.tipoPago}</p>`);

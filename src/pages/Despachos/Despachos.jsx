@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ListarPaquetes, ListarPasajeros } from "../../services/Admin/adminService";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function Despachos() {
   const [pasajeros, setPasajeros] = useState([]);
@@ -25,6 +27,21 @@ export default function Despachos() {
       console.error("Error al cargar datos:", error);
     }
   };
+  function obtenerFechaFormateada() {
+  const fecha = new Date();
+  const dia = fecha.getDate().toString().padStart(2, '0');
+
+  const meses = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
+  
+  const mes = meses[fecha.getMonth()];
+  const año = fecha.getFullYear();
+
+  return `${dia} de ${mes}, ${año}`;
+}
+
 
   const agregarDescuento = () => {
     if (nuevoDescuento.importe > 0) {
@@ -61,6 +78,105 @@ export default function Despachos() {
   - pagadoEnYajalon
   - pagaAbordarSCLC
   - paquetesPorCobrar;
+
+
+const generarPDF = () => {
+  const observaciones = prompt("Escriba alguna observación(opcional):") || '';
+  const fechaHoy = obtenerFechaFormateada();
+  const doc = new jsPDF();
+
+  // 1. Datos de la empresa
+  doc.setFontSize(14);
+  doc.text('TRANSPORTES LOS YAJALONES S.A. DE C.V.', 20, 20);
+  doc.setFontSize(10);
+  doc.text('Dirección: 15 Oriente esquina 7 sur #817, Tuxtla Gutiérrez, Chiapas', 20, 26);
+  doc.text('Teléfono: 9613023642 ', 20, 32);
+
+  let y = 40;
+
+  // 2. Tabla de Pasajeros
+  doc.setFontSize(12);
+  doc.text('Pasajeros', 20, y);
+  y += 4;
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Folio', 'Nombre', 'Tipo', 'Pago', 'Importe']],
+    body: pasajeros.map(p => [
+      p.folio,
+      p.nombre,
+      p.tipo,
+      p.tipoPago,
+      `$${parseFloat(p.importe || 0).toFixed(2)}`
+    ]),
+    theme: 'grid',
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // 3. Tabla de Paquetería
+  doc.setFontSize(12);
+  doc.text('Paquetería', 20, y);
+  y += 4;
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Folio', 'Remitente', 'Destinatario', 'Por cobrar', 'Importe']],
+    body: paquetes.map(p => [
+      p.folio,
+      p.remitente,
+      p.destinatario,
+      p.porCobrar ? 'Sí' : 'No',
+      `$${parseFloat(p.importe || 0).toFixed(2)}`
+    ]),
+    theme: 'grid',
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // 4. Observaciones
+  if (observaciones.trim()) {
+    doc.setFontSize(12);
+    doc.text('Observaciones:', 20, y);
+    y += 6;
+
+    doc.setFontSize(10);
+    const lines = doc.splitTextToSize(observaciones, 170);
+    doc.text(lines, 20, y);
+    y += lines.length * 5 + 5;
+  }
+
+  // 5. Resumen del día
+  doc.setFontSize(12);
+  doc.text('Resumen del Día', 20, y);
+  y += 6;
+
+  const resumen = [
+    ['Pasajeros', `$${totalPasajeros.toFixed(2)}`],
+    ['Paquetería', `$${totalPaqueteria.toFixed(2)}`],
+    ['Comisión (10%)', `$${comision.toFixed(2)}`],
+    ['Paquetes por cobrar', `$${paquetesPorCobrar.toFixed(2)}`],
+    ['Pagado en Yajalón', `$${pagadoEnYajalon.toFixed(2)}`],
+    ['Otros descuentos', `$${totalDescuentos.toFixed(2)}`],
+    ['Paga al abordar en SCLC', `$${pagaAbordarSCLC.toFixed(2)}`],
+    ['TOTAL', `$${total.toFixed(2)}`],
+  ];
+
+  resumen.forEach(([etiqueta, valor]) => {
+    doc.setFontSize(10);
+    doc.text(`${etiqueta}:`, 25, y);
+    doc.text(valor, 150, y, { align: 'right' });
+    y += 6;
+  });
+
+  // 6. Fecha de corte
+  doc.setFontSize(10);
+  doc.text('Fecha de corte:', 20, y);
+  doc.text(fechaHoy, 55, y);
+
+  // 7. Guardar
+  doc.save('CorteDia.pdf');
+};
 
 
   return (
@@ -144,9 +260,7 @@ export default function Despachos() {
 
         <button
           className="bg-[#cc4500] text-white font-semibold py-2 px-4 rounded-md w-full mt-4 hover:bg-orange-800"
-          onClick={() => {
-            // lógica para PDF
-          }}
+          onClick={generarPDF}
         >
           PDF
         </button>
