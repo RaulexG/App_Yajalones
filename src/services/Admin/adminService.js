@@ -268,23 +268,78 @@ export const ListarTurnos = async () => {
     throw error;
   }
 }
-// Crear turno
+
+// turnos mejorados
+
+
+// Crear turno 
 export const CrearTurno = async (turno) => {
   try {
-    const response = await axios.post('/turnos', turno);
+    // Acepta tanto un string "HH:mm:ss" como un objeto { horario, activo }
+    const body = typeof turno === 'string'
+      ? { horario: turno, activo: true }
+      : {
+          horario: turno?.horario,
+          activo: typeof turno?.activo === 'boolean' ? turno.activo : true,
+        };
+
+    const response = await axios.post('/turnos', body);
     return response.data;
   } catch (error) {
     console.error('Error creando turno:', error);
     throw error;
   }
-}
+};
+
 // Actualizar turno
 export const ActualizarTurno = async (id, turno) => {
   try {
-    const response = await axios.put(`/turnos/${id}`, turno);
+    const body = {
+      horario: turno?.horario ?? turno, // permite pasar string
+      activo: typeof turno?.activo === 'boolean' ? turno.activo : true,
+    };
+    const response = await axios.put(`/turnos/${id}`, body);
     return response.data;
   } catch (error) {
     console.error('Error actualizando turno:', error);
     throw error;
   }
-}
+};
+
+//Agregar opcion
+
+// Eliminar turno
+export const EliminarTurno = async (id) => {
+  try {
+    const response = await axios.delete(`/turnos/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error eliminando turno:', error);
+    throw error;
+  }
+};
+
+//----------------login-----
+
+// Login (POST /inicioSesion) → devuelve access_token (JWT)
+export const inicioSesion = async (nombreUsuario, password) => {
+  try {
+    const response = await axios.post('/inicioSesion', { nombreUsuario, password });
+    // La API sólo devuelve el token en "access_token"
+    return response.data?.access_token || null;
+  } catch (error) {
+    console.error('Error iniciando sesión:', error);
+    throw error;
+  }
+};
+
+// Logout (POST /logout) → no devuelve nada, sólo invalida el token
+export const logout = async () => {
+  try {
+    await axios.post('/logout');
+    return true; // Logout exitoso
+  } catch (error) {
+    console.error('Error cerrando sesión:', error);
+    throw error;
+  }
+};
