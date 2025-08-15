@@ -69,8 +69,9 @@ export default function Ajustes() {
       origen: viajeForm.origen,
       destino: viajeForm.destino,
       fechaSalida: viajeForm.fechaSalida,
-      unidad: { idUnidad: parseInt(viajeForm.idUnidad) }
+      idUnidad:parseInt(viajeForm.idUnidad)
     };
+    console.log('Datos del viaje:', datos);
     if (viajeForm.idViaje) {
       await ActualizarViaje(viajeForm.idViaje, datos);
     } else {
@@ -402,7 +403,14 @@ export default function Ajustes() {
             <input
               type="datetime-local"
               value={viajeForm.fechaSalida}
-              onChange={(e) => setViajeForm({ ...viajeForm, fechaSalida: e.target.value })}
+              onChange={(e) => {
+    let valor = e.target.value;
+    // Si no tiene segundos, se los agregamos
+    if (valor && valor.length === 16) { // formato YYYY-MM-DDTHH:mm → 16 caracteres
+      valor = valor + ":00";
+    }
+    setViajeForm({ ...viajeForm, fechaSalida: valor });
+  }}
               className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
             />
           </div>

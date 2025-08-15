@@ -130,8 +130,9 @@ const viajesFiltrados = turnoSeleccionado
         tipo: formulario.tipo,
         tipoPago: formulario.tipoPago,
         asiento: formulario.asiento,
-        viaje: { idViaje: viajeId }
+        idViaje: viajeId,
       };
+      
       
       
       if (idPasajeroEditando) {
