@@ -69,7 +69,7 @@ export default function Ajustes() {
       origen: viajeForm.origen,
       destino: viajeForm.destino,
       fechaSalida: viajeForm.fechaSalida,
-      idUnidad:parseInt(viajeForm.idUnidad)
+      idUnidad: parseInt(viajeForm.idUnidad)
     };
     console.log('Datos del viaje:', datos);
     if (viajeForm.idViaje) {
@@ -85,9 +85,9 @@ export default function Ajustes() {
 
   const TablaDatos = () => {
     const columnas = {
-      turnos: ['ID', 'Horario', 'Acciones'],
-      unidades: ['ID', 'Nombre', 'Descripción', 'Turno', 'Acciones'],
-      viajes: ['ID', 'Origen', 'Destino', 'Unidad', 'Fecha de Salida']
+      turnos: ['ID', 'Horario', ''],
+      unidades: ['ID', 'Nombre', 'Descripción', 'Turno', ''],
+      viajes: ['ID', 'Origen', 'Destino', 'Unidad', 'Fecha de Salida', '']
     };
 
     const datos = { turnos, unidades, viajes };
@@ -116,74 +116,148 @@ export default function Ajustes() {
     const filas = {
       turnos: turnos.map(t => [t.idTurno, t.horario, t]),
       unidades: unidades.map(u => [u.idUnidad, u.nombre, u.descripcion, u.turno?.horario || '', u]),
-      viajes: viajes.map(v => [v.idViaje, v.origen, v.destino, v.unidad?.nombre,v.fechaSalida.toLocaleString() || '', v])
+      viajes: viajes.map(v => [v.idViaje, v.origen, v.destino, v.unidad?.nombre, v.fechaSalida.toLocaleString() || '', v])
     };
 
     if (!mostrarTabla) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-4 rounded w-full max-w-4xl">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold capitalize">Lista de {mostrarTabla}</h3>
-            <button onClick={cerrarTabla} className="text-red-500 font-bold">X</button>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="">
+          {/*Tabla*/}
+          <div className="">
+            {/* Card */}
+            <div className="bg-white rounded-2xl w-[92vw] max-w-3xl shadow-2xl overflow-hidden">
+
+              {/* Encabezado */}
+              <div className="flex items-center justify-between px-6 py-4">
+                <h2 className="text-xl font-bold text-orange-800 capitalize">
+                  Lista de {mostrarTabla}
+                </h2>
+
+                <button
+                  onClick={cerrarTabla}
+                  aria-label="Cerrar"
+                  className="p-2 rounded-md text-orange-700 hover:bg-orange-100 focus:outline-none focus:ring-0"
+                >
+                  {/* ícono X */}
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                    <path
+                      fill="currentColor"
+                      d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Contenido: tabla */}
+              <div className="px-6 pb-6">
+                <div className="overflow-hidden rounded-xl ring-1 ring-orange-200">
+                  <table className="w-full table-auto border-collapse">
+                    {/* encabezado*/}
+                    <thead className="sticky top-0 bg-orange-100 text-orange-900">
+                      <tr>
+                        {columnas[mostrarTabla].map((col) => (
+                          <th key={col} className="px-4 py-3 text-left font-semibold">
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+
+                    {/* filas zebra + hover */}
+                    <tbody className="divide-y divide-orange-100">
+                      {filas[mostrarTabla].map((fila, idx) => (
+                        <tr
+                          key={idx}
+                          className="odd:bg-white even:bg-orange-50/40 hover:bg-orange-100 transition-colors"
+                        >
+                          {fila.map((cell, i) => {
+                            const esUltima = i === fila.length - 1;
+
+                            // Turnos/Unidades: última celda = Editar
+                            if (esUltima && mostrarTabla !== 'viajes') {
+                              return (
+                                <td key={i} className="px-4 py-2 text-left">
+                                  <button
+                                    onClick={() => editar(mostrarTabla, cell)}
+                                    aria-label="Editar"
+                                    title="Editar"
+                                    className="inline-flex items-center justify-center w-9 h-9 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+                                  >
+                                    {/* Ícono editar */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                      className="w-5 h-5">
+                                      <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                                        <path d="m16.475 5.408 2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
+                                        <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
+                                      </g>
+                                    </svg>
+                                  </button>
+                                </td>
+                              );
+                            }
+
+                            if (esUltima && mostrarTabla === 'viajes') {
+                              const viaje = cell;
+                              return (
+                                <td key={i} className="px-4 py-2 text-right">
+                                  <button
+                                    onClick={async () => {
+                                      if (window.confirm('¿Estás seguro de eliminar este viaje?')) {
+                                        await EliminarViaje(viaje.idViaje);
+                                        cargarDatos();
+                                      }
+                                    }}
+                                    aria-label="Eliminar viaje"
+                                    title="Eliminar"
+                                    className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+                                  >
+                                    {/* Reemplaza la X por el ícono de bote */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                      <path
+                                        fill="currentColor"
+                                        d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                      />
+                                    </svg>
+                                  </button>
+                                </td>
+                              );
+                            }
+
+                            // celdas normales
+                            return (
+                              <td key={i} className="px-4 py-2 text-left text-gray-800">
+                                {cell}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
-          <table className="w-full border">
-            <thead>
-              <tr>
-                {columnas[mostrarTabla].map(col => (
-                  <th key={col} className="border p-2 bg-gray-100">{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filas[mostrarTabla].map((fila, idx) => (
-                <tr key={idx}>
-                  {fila.map((cell, i) => {
-                    if (i === fila.length - 1 && mostrarTabla !== 'viajes') {
-                      return (
-                        <td key={i} className="border p-2">
-                          <button className="text-blue-600 underline" onClick={() => editar(mostrarTabla, cell)}>Editar</button>
-                        </td>
-                      );
-                    }
-                    if (i === fila.length - 1 && mostrarTabla === 'viajes') {
-  const viaje = cell;
-  return (
-    <td key={i} className="border p-2">
-      <button
-        className="text-red-600 underline mr-2"
-        onClick={async () => {
-          if (window.confirm('¿Estás seguro de eliminar este viaje?')) {
-            await EliminarViaje(viaje.idViaje);
-            cargarDatos();
-          }
-        }}
-      >
-        Eliminar
-      </button>
-    </td>
-  );
-}
 
-                    return <td key={i} className="border p-2">{cell}</td>;
-                  })}
-                </tr>
-              ))}
 
-            </tbody>
-          </table>
+
+
         </div>
       </div>
     );
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-orange-800">Ajustes del sistema</h1>
-      <p className="text-gray-600">Bienvenido, {nombreCuenta}</p>
+    <div className="p-6 space-y-6 w-full">
 
-      
+      {/*Encabezado*/}
+      <div>
+        <h1 className="text-2xl font-bold text-orange-800">Ajustes del sistema</h1>
+        <p className="text-gray-600">Bienvenido, {nombreCuenta}</p>
+      </div>
+
       {/* Sección Cuenta */}
       {/*<section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
         <h2 className="text-orange-700 font-bold text-lg mb-4">Cuenta</h2>
@@ -275,183 +349,212 @@ export default function Ajustes() {
         </div>
       </section>*/}
 
-      {/* Sección Registrar Turno */}
-      <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
-        <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar turno</h2>
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Horario</label>
-            <input
-              value={turnoForm.horario}
-              onChange={(e) => setTurnoForm({ ...turnoForm, horario: e.target.value })}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-            />
-          </div>
-          <div className="flex gap-4">
-            <button
-              onClick={handleGuardarTurno}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Guardar
-            </button>
-            <button
-              onClick={() => setMostrarTabla('turnos')}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Mostrar turnos
-            </button>
-          </div>
-        </div>
-      </section>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Sección Registrar Turno */}
+        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-113">
+          <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar turno</h2>
+          <div className="flex flex-col gap-4">
 
-      {/* Sección Registrar Unidad */}
-      <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
-        <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar unidad</h2>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
-            <input
-              value={unidadForm.nombre}
-              onChange={(e) => setUnidadForm({ ...unidadForm, nombre: e.target.value })}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-            />
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Horario</label>
+              <div className="flex items-center bg-[#ffe0b2] rounded-md px-2 w-100">
+                <input
+                  value={turnoForm.horario}
+                  onChange={(e) => setTurnoForm({ ...turnoForm, horario: e.target.value })}
+                  className="w-full p-2 bg-transparent outline-none"
+                />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="1.5em"
+                  height="1.5em"
+                  viewBox="0 0 24 24"
+                  className="ml-2 shrink-0 text-[#C14600]"
+                >
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0m9 0l-3 2m3-7v5"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={handleGuardarTurno}
+                className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={() => setMostrarTabla('turnos')}
+                className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+              >
+                Mostrar turnos
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Descripción</label>
-            <input
-              value={unidadForm.descripcion}
-              onChange={(e) => setUnidadForm({ ...unidadForm, descripcion: e.target.value })}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Turno</label>
-            <select
-              value={unidadForm.idTurno}
-              onChange={(e) => setUnidadForm({ ...unidadForm, idTurno: e.target.value })}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-              required
-            >
-              <option value="" disabled>
-                Seleccionar turno
-              </option>
-              {turnos.map((t) => (
-                <option key={t.idTurno} value={t.idTurno}>
-                  {t.horario}
+        </section>
+
+        {/* Sección Registrar Unidad */}
+        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-113">
+          <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar unidad</h2>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
+              <input
+                value={unidadForm.nombre}
+                onChange={(e) => setUnidadForm({ ...unidadForm, nombre: e.target.value })}
+                className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Descripción</label>
+              <input
+                value={unidadForm.descripcion}
+                onChange={(e) => setUnidadForm({ ...unidadForm, descripcion: e.target.value })}
+                className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Turno</label>
+              <select
+                value={unidadForm.idTurno}
+                onChange={(e) => setUnidadForm({ ...unidadForm, idTurno: e.target.value })}
+                className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
+                required
+              >
+                <option value="" disabled>
+                  Seleccionar turno
                 </option>
-              ))}
-            </select>
-          </div>
+                {turnos.map((t) => (
+                  <option key={t.idTurno} value={t.idTurno}>
+                    {t.horario}
+                  </option>
+                ))}
+              </select>
+            </div>
 
+            <div className="flex gap-4 justify-center mt-">
+              <button
+                onClick={handleGuardarUnidad}
+                className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={() => setMostrarTabla('unidades')}
+                className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+              >
+                Mostrar unidades
+              </button>
+            </div>
+          </div>
+        </section>
 
-          <div className="flex gap-4">
-            <button
-              onClick={handleGuardarUnidad}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Guardar
-            </button>
-            <button
-              onClick={() => setMostrarTabla('unidades')}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Mostrar unidades
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Sección Registrar Viaje */}
-      <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
-        <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar viaje</h2>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Origen</label>
-            <select
-              value={viajeForm.origen}
-              onChange={(e) => {
-                const origenSeleccionado = e.target.value;
-                const destinoAutomatico =
-                  origenSeleccionado === 'Tuxtla Gutierrez' ? 'Yajalon' : 'Tuxtla Gutierrez';
-                setViajeForm({
-                  ...viajeForm,
-                  origen: origenSeleccionado,
-                  destino: destinoAutomatico,
-                });
-              }}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-            >
-              <option value="" disabled>
-                Selecciona origen
-              </option>
-              <option value="Tuxtla Gutierrez">Tuxtla Gtz</option>
-              <option value="Yajalon">Yajalón</option>
-              
-            </select>
-          </div>
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Destino</label>
-            <input
-              value={viajeForm.destino}
-              readOnly
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-              placeholder="Destino automático"
-            />
-          </div>
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Fecha de salida</label>
-            <input
-              type="datetime-local"
-              value={viajeForm.fechaSalida}
-              onChange={(e) => {
-    let valor = e.target.value;
-    // Si no tiene segundos, se los agregamos
-    if (valor && valor.length === 16) { // formato YYYY-MM-DDTHH:mm → 16 caracteres
-      valor = valor + ":00";
-    }
-    setViajeForm({ ...viajeForm, fechaSalida: valor });
-  }}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-orange-700 font-semibold mb-1">Unidad</label>
-            <select
-              value={viajeForm.idUnidad}
-              onChange={(e) => setViajeForm({ ...viajeForm, idUnidad: e.target.value })}
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-              required
-            >
-              <option value="" disabled>
-                Seleccione unidad
-              </option>
-              {unidades.map((u) => (
-                <option key={u.idUnidad} value={u.idUnidad}>
-                  {u.nombre}
+        {/* Sección Registrar Viaje */}
+        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-113">
+          <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar viaje</h2>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Origen</label>
+              <select
+                value={viajeForm.origen}
+                onChange={(e) => {
+                  const origenSeleccionado = e.target.value;
+                  const destinoAutomatico =
+                    origenSeleccionado === 'Tuxtla Gutierrez' ? 'Yajalon' : 'Tuxtla Gutierrez';
+                  setViajeForm({
+                    ...viajeForm,
+                    origen: origenSeleccionado,
+                    destino: destinoAutomatico,
+                  });
+                }}
+                className="w-100 p-2 rounded-md bg-[#ffe0b2] outline-none"
+              >
+                <option value="" disabled>
+                  Selecciona origen
                 </option>
-              ))}
-            </select>
-          </div>
+                <option value="Tuxtla Gutierrez">Tuxtla Gtz</option>
+                <option value="Yajalon">Yajalón</option>
 
-          <div className="flex gap-4">
-            <button
-              onClick={handleGuardarViaje}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Guardar
-            </button>
-            <button
-              onClick={() => setMostrarTabla('viajes')}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Mostrar viajes
-            </button>
-          </div>
-        </div>
-      </section>
+              </select>
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Destino</label>
+              <input
+                value={viajeForm.destino}
+                readOnly
+                className="w-100 p-2 rounded-md bg-[#ffe0b2] outline-none"
 
-      {/* Tabla */}
-      <TablaDatos />
+              />
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Fecha de salida</label>
+              <input
+                type="datetime-local"
+                value={viajeForm.fechaSalida}
+                onChange={(e) => {
+                  let valor = e.target.value;
+                  // Si no tiene segundos, se los agregamos
+                  if (valor && valor.length === 16) { // formato YYYY-MM-DDTHH:mm → 16 caracteres
+                    valor = valor + ":00";
+                  }
+                  setViajeForm({ ...viajeForm, fechaSalida: valor });
+                }}
+                className="
+  w-100 p-2 rounded-md bg-[#ffe0b2] outline-none
+  pr-16
+  [&::-webkit-calendar-picker-indicator]:opacity-100
+  [&::-webkit-calendar-picker-indicator]:cursor-pointer
+  [&::-webkit-calendar-picker-indicator]:filter-[invert(21%)_sepia(85%)_saturate(2989%)_hue-rotate(9deg)_brightness(96%)_contrast(104%)]
+  [&::-webkit-calendar-picker-indicator]:[transform:translateX(55px)]
+"
+              />
+            </div>
+            <div>
+              <label className="block text-orange-700 font-semibold mb-1">Unidad</label>
+              <select
+                value={viajeForm.idUnidad}
+                onChange={(e) => setViajeForm({ ...viajeForm, idUnidad: e.target.value })}
+                className="w-100 p-2 rounded-md bg-[#ffe0b2] outline-none"
+                required
+              >
+                <option value="" disabled>
+                  Seleccione unidad
+                </option>
+                {unidades.map((u) => (
+                  <option key={u.idUnidad} value={u.idUnidad}>
+                    {u.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={handleGuardarViaje}
+                className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={() => setMostrarTabla('viajes')}
+                className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
+              >
+                Mostrar viajes
+              </button>
+            </div>
+          </div>
+        </section>
+
+
+        {/* Tabla */}
+        <TablaDatos />
+      </div>
     </div>
 
   );

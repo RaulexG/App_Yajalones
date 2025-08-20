@@ -17,7 +17,7 @@ export default function Pasajeros() {
   const [asientosOcupados, setAsientosOcupados] = useState([]);
   const [idPasajeroEditando, setIdPasajeroEditando] = useState(null);
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('');
-  
+
 
   const [formulario, setFormulario] = useState({
     nombre: '',
@@ -37,9 +37,9 @@ export default function Pasajeros() {
   const [sobreEquipaje, setSobreEquipaje] = useState('');
 
 
-const viajesFiltrados = turnoSeleccionado
-  ? viajes.filter((viaje) => viaje.unidad.turno?.idTurno === Number(turnoSeleccionado))
-  : [];
+  const viajesFiltrados = turnoSeleccionado
+    ? viajes.filter((viaje) => viaje.unidad.turno?.idTurno === Number(turnoSeleccionado))
+    : [];
 
 
   useEffect(() => {
@@ -62,42 +62,42 @@ const viajesFiltrados = turnoSeleccionado
     setFormulario({ ...formulario, asiento: numero });
   };
 
- const limpiarFormulario = () => {
-  if (!viajeSeleccionado) {
+  const limpiarFormulario = () => {
+    if (!viajeSeleccionado) {
+      setFormulario({
+        nombre: '',
+        apellido: '',
+        origen: '',
+        destino: '',
+        fechaSalida: '',
+        hora: '',
+        tipo: 'ADULTO',
+        tipoPago: 'PAGADO',
+        asiento: null,
+        viaje: null,
+      });
+      setIdPasajeroEditando(null);
+      return;
+    }
+
+    const fechaObj = new Date(viajeSeleccionado.fechaSalida);
+    const fechaFormateada = `${fechaObj.getDate().toString().padStart(2, '0')}/${(fechaObj.getMonth() + 1).toString().padStart(2, '0')}/${fechaObj.getFullYear()}`;
+    const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fechaObj.getMinutes().toString().padStart(2, '0')}`;
+
     setFormulario({
       nombre: '',
       apellido: '',
-      origen: '',
-      destino: '',
-      fechaSalida: '',
-      hora: '',
+      origen: viajeSeleccionado.origen,
+      destino: viajeSeleccionado.destino,
+      fechaSalida: fechaFormateada,
+      hora: horaFormateada,
       tipo: 'ADULTO',
       tipoPago: 'PAGADO',
       asiento: null,
-      viaje: null,
+      viaje: viajeSeleccionado,
     });
     setIdPasajeroEditando(null);
-    return;
-  }
-
-  const fechaObj = new Date(viajeSeleccionado.fechaSalida);
-  const fechaFormateada = `${fechaObj.getDate().toString().padStart(2, '0')}/${(fechaObj.getMonth() + 1).toString().padStart(2, '0')}/${fechaObj.getFullYear()}`;
-  const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fechaObj.getMinutes().toString().padStart(2, '0')}`;
-
-  setFormulario({
-    nombre: '',
-    apellido: '',
-    origen: viajeSeleccionado.origen,
-    destino: viajeSeleccionado.destino,
-    fechaSalida: fechaFormateada,
-    hora: horaFormateada,
-    tipo: 'ADULTO',
-    tipoPago: 'PAGADO',
-    asiento: null,
-    viaje: viajeSeleccionado,
-  });
-  setIdPasajeroEditando(null);
-};
+  };
 
 
   const manejarEnvio = async (e) => {
@@ -123,7 +123,7 @@ const viajesFiltrados = turnoSeleccionado
     try {
       let viajeId = formulario.viaje?.idViaje;
 
-      
+
       const pasajeroFinal = {
         nombre: formulario.nombre,
         apellido: formulario.apellido,
@@ -132,9 +132,9 @@ const viajesFiltrados = turnoSeleccionado
         asiento: formulario.asiento,
         idViaje: viajeId,
       };
-      
-      
-      
+
+
+
       if (idPasajeroEditando) {
         await ActualizarPasajero(idPasajeroEditando, pasajeroFinal);
         alert('Pasajero actualizado correctamente');
@@ -143,13 +143,13 @@ const viajesFiltrados = turnoSeleccionado
         alert('Pasajero agregado correctamente');
       }
 
-      
+
       const viajeActualizado = await ObtenerViajePorId(viajeId);
       setViajeSeleccionado({ ...viajeActualizado });
       setAsientosOcupados(viajeActualizado.pasajeros.map((p) => p.asiento));
       const pasajeroConImporte = viajeActualizado.pasajeros.find(
-  (p) => p.asiento === formulario.asiento && p.nombre === formulario.nombre && p.apellido === formulario.apellido
-);
+        (p) => p.asiento === formulario.asiento && p.nombre === formulario.nombre && p.apellido === formulario.apellido
+      );
 
       setPasajeroTicket(pasajeroConImporte);
       limpiarFormulario();
@@ -177,30 +177,30 @@ const viajesFiltrados = turnoSeleccionado
 
 
   const manejarSeleccionViaje = (viaje) => {
-  setViajeSeleccionado(viaje);
+    setViajeSeleccionado(viaje);
     const fechaHoraISO = viaje.fechaSalida;
-const fechaObj = new Date(fechaHoraISO);
-const fechaFormateada = `${fechaObj.getDate().toString().padStart(2, '0')}/${(fechaObj.getMonth() + 1).toString().padStart(2, '0')}/${fechaObj.getFullYear()}`;
+    const fechaObj = new Date(fechaHoraISO);
+    const fechaFormateada = `${fechaObj.getDate().toString().padStart(2, '0')}/${(fechaObj.getMonth() + 1).toString().padStart(2, '0')}/${fechaObj.getFullYear()}`;
 
 
-const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fechaObj.getMinutes().toString().padStart(2, '0')}`;
+    const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fechaObj.getMinutes().toString().padStart(2, '0')}`;
 
-  setFormulario({
-    ...formulario,
-    viaje: viaje,
-    origen: viaje.origen,
-    destino: viaje.destino,
-    fechaSalida: fechaFormateada, 
-    hora: horaFormateada,
-    asiento: null 
-  });
+    setFormulario({
+      ...formulario,
+      viaje: viaje,
+      origen: viaje.origen,
+      destino: viaje.destino,
+      fechaSalida: fechaFormateada,
+      hora: horaFormateada,
+      asiento: null
+    });
 
-  
-  setAsientosOcupados(viaje.pasajeros ? viaje.pasajeros.map(p => p.asiento) : []);
-};
+
+    setAsientosOcupados(viaje.pasajeros ? viaje.pasajeros.map(p => p.asiento) : []);
+  };
 
   const imprimirTicket = (pasajero) => {
-    
+
     const textoSobreEquipaje = prompt("Ingrese el texto de Sobre Equipaje (opcional):") || '';
     const ventana = window.open('', '', 'width=400,height=600');
     ventana.document.write('<html><head><title>Ticket Pasajero</title></head><body>');
@@ -229,14 +229,78 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
 
   return (
     <div className="p-4">
-      {/* Contenedor en 2 columnas */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 max-w-[1400px] mx-auto">
+      {/* Contenedor en 3 columnas */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-6 max-w-[1600px] mx-auto">
 
-        {/* Columna izquierda: Formulario + asientos + botones */}
+        {/* Tabla de cambio de turno */}
+        <div className="bg-[#FDF7F0] p-4 rounded-md shadow-md mt-6">
+          {/* Select Cambio de turno */}
+          <div className="mb-4">
+            <label className="block text-orange-700 font-semibold mb-2">Cambio de turno</label>
+            <select
+              className="w-48 p-2 rounded-md bg-orange-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              value={turnoSeleccionado}
+              onChange={(e) => setTurnoSeleccionado(e.target.value)}
+            >
+              <option value="">Seleccionar turno</option>
+              {turnos.map((t) => (
+                <option key={t.idTurno} value={t.idTurno}>
+                  {t.horario}
+                </option>
+              ))}
+            </select>
+
+          </div>
+
+          {/* Tabla de Viajes */}
+          <div>
+            <h4 className="text-orange-700 font-semibold mb-2">Viajes</h4>
+            <div className="overflow-y-auto max-h-[250px] custom-scroll">
+              <table className="w-full border-collapse text-sm">
+                <thead className="bg-[#FECF9D] text-orange-700 sticky top-0">
+                  <tr>
+                    <th className="p-2 text-center font-bold text-[#452B1C]">Fecha de salida</th>
+                    <th className="p-2 text-center font-bold text-[#452B1C]">Unidad</th>
+                    <th className="p-2 text-center font-bold text-[#452B1C]">Destino</th>
+                    <th className="p-2 text-center font-bold text-[#452B1C]"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viajesFiltrados.length > 0 ? (
+                    viajesFiltrados.map((v) => (
+                      <tr key={v.idViaje} className="hover:bg-orange-50 border-b">
+                        <td className="p-2">{new Date(v.fechaSalida).toLocaleDateString('es-MX')}</td>
+                        <td className="p-2">{v.unidad?.nombre || "N/A"}</td>
+                        <td className="p-2">{v.destino || "N/A"}</td>
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => manejarSeleccionViaje(v)}
+                            className="text-orange-700 hover:text-blue-600 transition"
+                          >
+                            Seleccionar
+                          </button>
+
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="3" className="text-center text-gray-500 p-4">
+                        No hay viajes disponibles
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Formulario*/}
         <div>
           <form
             onSubmit={manejarEnvio}
-            className="bg-white p-4 rounded-md shadow-md w-full max-w-[500px] space-y-4">
+            className="bg-white p-6 rounded-md shadow-md w-full space-y-4">
             {/* Nombre */}
             <div>
               <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
@@ -324,7 +388,7 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
                   />
                   <span
                     className="absolute right-3 top-3 text-orange-600 cursor-pointer"
-                    onClick={() => {}}
+                    onClick={() => { }}
                   >
                     {/* Ícono calendario SVG */}
                     <svg
@@ -360,7 +424,7 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
                   />
                   <span
                     className="absolute right-3 top-3 text-orange-600 cursor-pointer"
-                    onClick={() => {}}
+                    onClick={() => { }}
                   >
                     {/* Icono Reloj */}
                     <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24">
@@ -461,21 +525,16 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
               >
                 Guardar
               </button>
-
-              
             </div>
-
-            
-            
-
           </form>
         </div>
 
         {/* Columna derecha: Tabla */}
-        <div className="bg-white p-4 rounded-md shadow-md w-full max-w-[900px] mx-auto">
+        <div className="bg-white p-4 rounded-md shadow-md w-full mx-auto">
           <h3 className="text-lg font-bold text-orange-700 mb-3">Lista de pasajeros</h3>
-          <div className="overflow-y-auto max-h-[500px] custom-scroll">
-            <table className="w-full border-collapse text-sm">
+          <div className="overflow-x-auto overflow-y-auto max-h-[500px] custom-scroll">
+            <table className="min-w-[900px] w-full border-collapse text-sm">
+
               {/* Encabezado */}
               <thead className="bg-[#FECF9D] text-orange-700 sticky top-0">
                 <tr>
@@ -487,6 +546,7 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
                   <th className="p-2 text-center font-bold text-[#452B1C]">Pago</th>
                   <th className="p-2 text-center font-bold text-[#452B1C]">Tipo</th>
                   <th className="p-2 text-center font-bold text-[#452B1C]">Importe</th>
+                  <th className="p-2 text-center font-bold text-[#452B1C]"></th>
                 </tr>
               </thead>
 
@@ -499,27 +559,38 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
                       className={`hover:bg-orange-50 ${index % 2 === 0 ? "bg-orange-50/40" : "bg-white"}`}
                     >
                       <td className="p-3">{p.folio}</td>
-                      
-                      <td className="p-3">{viajeSeleccionado.unidad?.nombre || "N/A"}</td>
-                      <td className="p-3">{p.asiento}</td>
-                      <td className="p-3">{new Date(viajeSeleccionado.fechaSalida).toLocaleDateString("es-MX")}</td>
-                      <td className="p-3">{p.nombre} {p.apellido}</td>
-                      <td className="p-3">{p.tipoPago}</td>
-                      <td className="p-3">{p.tipo}</td>
-                      <td className="p-3 font-semibold">${parseFloat(p.importe || 0).toFixed(2)}</td>
+
+                      <td className="p-3 text-center">{viajeSeleccionado.unidad?.nombre || "N/A"}</td>
+                      <td className="p-3 text-center">{p.asiento}</td>
+                      <td className="p-3 text-center">{new Date(viajeSeleccionado.fechaSalida).toLocaleDateString("es-MX")}</td>
+                      <td className="p-3 text-center">{p.nombre} {p.apellido}</td>
+                      <td className="p-3 text-center">{p.tipoPago}</td>
+                      <td className="p-3 text-center">{p.tipo}</td>
+                      <td className="p-3 text-center font-semibold">${parseFloat(p.importe || 0).toFixed(2)}</td>
+
                       <td className="p-3 text-center">
-                        {/* Botón Ticket */}
-          <button
-            onClick={() => imprimirTicket(p)}
-            className="bg-orange-700 text-white px-3 py-1 rounded hover:bg-orange-800 transition"
-            title="Imprimir ticket"
-          >
-            Ticket
-          </button>
-                        
+                        {/* Botón Ticket*/}
+                        <button
+                          onClick={() => imprimirTicket(p)}
+                          className="p-2 text-[#C14600] hover:text-orange-800 transition"
+                          title="Imprimir ticket"
+                          aria-label="Imprimir ticket"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
+                            <g fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />
+                              <path d="M6 20.306V12c0-.943 0-1.414.293-1.707S7.057 10 8 10h8c.943 0 1.414 0 1.707.293S18 11.057 18 12v8.306c0 .317 0 .475-.104.55s-.254.025-.554-.075l-2.184-.728c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.684.894c-.078.026-.117.04-.158.04s-.08-.014-.158-.04l-2.684-.894c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.184.728c-.3.1-.45.15-.554.075S6 20.623 6 20.306ZM18 7V5.88c0-1.008 0-1.512-.196-1.897a1.8 1.8 0 0 0-.787-.787C16.632 3 16.128 3 15.12 3H8.88c-1.008 0-1.512 0-1.897.196a1.8 1.8 0 0 0-.787.787C6 4.368 6 4.872 6 5.88V7" />
+                              <path strokeLinecap="round" d="M10 14h3m-3 3h4.5" />
+                            </g>
+                          </svg>
+                        </button>
+
+
                         <button
                           onClick={() => eliminarPasajero(p.idPasajero)}
-                          className="text-orange-700 hover:text-red-600 transition"
+                          className="p-2 text-[#C14600] hover:text-orange-800 transition"
+                          title="Eliminar"
+                          aria-label="Eliminar"
                         >
                           {/* Icono eliminar */}
                           <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
@@ -541,68 +612,7 @@ const horaFormateada = `${fechaObj.getHours().toString().padStart(2, '0')}:${fec
           </div>
         </div>
 
-        {/* Tabla de cambio de turno */}
-        <div className="bg-[#FDF7F0] p-4 rounded-md shadow-md mt-6">
-          {/* Select Cambio de turno */}
-          <div className="mb-4">
-            <label className="block text-orange-700 font-semibold mb-2">Cambio de turno</label>
-            <select
-  className="w-48 p-2 rounded-md bg-orange-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
-  value={turnoSeleccionado}
-  onChange={(e) => setTurnoSeleccionado(e.target.value)}
->
-  <option value="">Seleccionar turno</option>
-  {turnos.map((t) => (
-    <option key={t.idTurno} value={t.idTurno}>
-      {t.horario}
-    </option>
-  ))}
-</select>
 
-          </div>
-
-          {/* Tabla de Viajes */}
-          <div>
-            <h4 className="text-orange-700 font-semibold mb-2">Viajes</h4>
-            <div className="overflow-y-auto max-h-[250px] custom-scroll">
-              <table className="w-full border-collapse text-sm">
-                <thead className="bg-[#FECF9D] text-orange-700 sticky top-0">
-                  <tr>
-                    <th className="p-2 text-center font-bold text-[#452B1C]">Fecha de salida</th>
-                    <th className="p-2 text-center font-bold text-[#452B1C]">Unidad</th>
-                    <th className="p-2 text-center font-bold text-[#452B1C]">Destino</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {viajesFiltrados.length > 0 ? (
-                    viajesFiltrados.map((v) => (
-                      <tr key={v.idViaje} className="hover:bg-orange-50 border-b">
-                        <td className="p-2">{new Date(v.fechaSalida).toLocaleDateString('es-MX')}</td>
-                        <td className="p-2">{v.unidad?.nombre || "N/A"}</td>
-                        <td className="p-2">{v.destino || "N/A"}</td>
-                        <td className="p-2 text-center">
-                          <button
-  onClick={() => manejarSeleccionViaje(v)}
-  className="text-orange-700 hover:text-blue-600 transition"
->
-  Seleccionar
-</button>
-
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="3" className="text-center text-gray-500 p-4">
-                        No hay viajes disponibles
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
 
       </div>

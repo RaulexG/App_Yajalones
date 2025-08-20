@@ -276,11 +276,11 @@ const generarPDF = () => {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-[#f8c98e]">
-                <th className="p-2 text-center">Folio</th>
-                <th className="p-2 text-center">Nombre</th>
-                <th className="p-2 text-center">Tipo</th>
-                <th className="p-2 text-center">Pago</th>
-                <th className="p-2 text-center">Monto</th>
+                <th className="p-2 text-center text-[#452B1C]">Folio</th>
+                <th className="p-2 text-center text-[#452B1C]">Nombre</th>
+                <th className="p-2 text-center text-[#452B1C]">Tipo</th>
+                <th className="p-2 text-center text-[#452B1C]">Pago</th>
+                <th className="p-2 text-center text-[#452B1C]">Monto</th>
               </tr>
             </thead>
             <tbody>
@@ -305,11 +305,11 @@ const generarPDF = () => {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-[#f8c98e]">
-                <th className="p-2 text-center">Folio</th>
-                <th className="p-2 text-center">Remitente</th>
-                <th className="p-2 text-center">Destinatario</th>
-                <th className="p-2 text-center">Por cobrar</th>
-                <th className="p-2 text-center">Monto</th>
+                <th className="p-2 text-center text-[#452B1C]">Folio</th>
+                <th className="p-2 text-center text-[#452B1C]">Remitente</th>
+                <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
+                <th className="p-2 text-center text-[#452B1C]">Por cobrar</th>
+                <th className="p-2 text-center text-[#452B1C]">Monto</th>
               </tr>
             </thead>
             <tbody>

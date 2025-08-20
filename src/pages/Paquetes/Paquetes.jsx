@@ -27,8 +27,8 @@ export default function Paqueteria() {
   const [idEditando, setIdEditando] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modalAsignar, setModalAsignar] = useState(false);
-const [paqueteAsignando, setPaqueteAsignando] = useState(null);
-const [viajeSeleccionado, setViajeSeleccionado] = useState("");
+  const [paqueteAsignando, setPaqueteAsignando] = useState(null);
+  const [viajeSeleccionado, setViajeSeleccionado] = useState("");
 
 
   useEffect(() => {
@@ -62,7 +62,7 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
 
     if (formulario.pendiente) {
       const dataPendiente = {
@@ -90,7 +90,7 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
         porCobrar: formulario.porCobrar,
         idViaje: parseInt(formulario.idViaje)
       };
-      
+
       if (modoEdicion && idEditando) {
         await actualizarPaquete(idEditando, data);
       } else {
@@ -136,19 +136,19 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
     }
   };
   const confirmarAsignacion = async () => {
-  if (!viajeSeleccionado) return alert("Seleccione un viaje");
-  try {
-    await asignarPaqueteAViaje(paqueteAsignando.idPaquete, parseInt(viajeSeleccionado));
-    setPendientes(prev => prev.filter(p => p.idPaquete !== paqueteAsignando.idPaquete));
-    await cargarPaquetes();
-    setModalAsignar(false);
-    setViajeSeleccionado("");
-    setPaqueteAsignando(null);
-    
-  } catch (error) {
-    console.error("Error asignando paquete:", error);
-  }
-};
+    if (!viajeSeleccionado) return alert("Seleccione un viaje");
+    try {
+      await asignarPaqueteAViaje(paqueteAsignando.idPaquete, parseInt(viajeSeleccionado));
+      setPendientes(prev => prev.filter(p => p.idPaquete !== paqueteAsignando.idPaquete));
+      await cargarPaquetes();
+      setModalAsignar(false);
+      setViajeSeleccionado("");
+      setPaqueteAsignando(null);
+
+    } catch (error) {
+      console.error("Error asignando paquete:", error);
+    }
+  };
 
 
   const obtenerNombreUnidad = (paquete) => {
@@ -160,7 +160,7 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
     return "Unidad no encontrada";
   };
 
-    const obtenerFechaSalida = (paquete) => {
+  const obtenerFechaSalida = (paquete) => {
     for (const viaje of viajes) {
       if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
         return new Date(viaje.fechaSalida).toLocaleDateString("es-MX") || "-";
@@ -211,7 +211,10 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
           disabled={formulario.pendiente}
           required={!formulario.pendiente}
         >
-          <option value="">Seleccionar</option>
+
+          <option value="" disabled>Seleccionar viaje</option>
+
+
           {viajes.map((viaje) => (
             <option key={viaje.idViaje} value={viaje.idViaje}>
               {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
@@ -244,88 +247,153 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
 
         <div className="flex gap-3">
           <button type="submit" className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2">Guardar</button>
-          <button type="button" onClick={cargarPendientes} className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2">Pendiente</button>
+          <button type="button" onClick={cargarPendientes} className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2">Paquetes pendientes</button>
         </div>
       </form>
 
       {/* Modal de pendientes */}
       {mostrarModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-[90%] max-w-3xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Paquetes Pendientes</h2>
-            <table className="w-full border">
-              <thead>
-                <tr>
-                  <th className="p-2 border">Folio</th>
-                  <th className="p-2 border">Remitente</th>
-                  <th className="p-2 border">Contenido</th>
-                  <th className="p-2 border">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendientes.map((paquete) => (
-                  <tr key={paquete.idPaquete}>
-                    <td className="p-2 border">{paquete.folio}</td>
-                    <td className="p-2 border">{paquete.remitente}</td>
-                    <td className="p-2 border">{paquete.contenido}</td>
-                    <td className="p-2 border">
-                      <button
-  className="bg-blue-600 text-white px-3 py-1 rounded"
-  onClick={() => {
-    setPaqueteAsignando(paquete);
-    setModalAsignar(true);
-  }}
->
-  Asignar viaje
-</button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-[92vw] max-w-3xl max-h-[90vh] shadow-xl overflow-hidden">
 
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button onClick={() => setMostrarModal(false)} className="bg-gray-500 text-white px-4 py-2 rounded mt-4">Cerrar</button>
+            {/* Encabezado */}
+            <div className="flex items-center justify-between px-6 py-4">
+              <h2 className="text-xl font-bold text-orange-800">Paquetes pendientes</h2>
+              <button
+                onClick={() => setMostrarModal(false)}
+                aria-label="Cerrar"
+                className="p-2 rounded-md text-orange-700 hover:bg-orange-100"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5"
+                >
+                  <path
+                    fill="currentColor"
+                    d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6">
+              <div className="overflow-hidden rounded-xl ring-1 ring-orange-200">
+                <table className="w-full table-auto border-collapse">
+                  <thead className="sticky top-0 bg-orange-100 text-orange-900">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold ">Folio</th>
+                      <th className="px-4 py-3 text-left font-semibold">Remitente</th>
+                      <th className="px-4 py-3 text-left font-semibold">Contenido</th>
+                      <th className="px-4 py-3 text-center font-semibold"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-orange-100">
+                    {pendientes.map((paquete) => (
+                      <tr
+                        key={paquete.idPaquete}
+                        className="odd:bg-white even:bg-orange-50/40 hover:bg-orange-100 transition-colors"
+                      >
+                        <td className="px-4 py-2">{paquete.folio}</td>
+                        <td className="px-4 py-2">{paquete.remitente}</td>
+                        <td className="px-4 py-2">{paquete.contenido}</td>
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-[#cc4500] hover:bg-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+                            onClick={() => {
+                              setPaqueteAsignando(paquete);
+                              setModalAsignar(true);
+                            }}
+                          >
+                            Asignar viaje
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
       {modalAsignar && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div className="bg-white p-6 rounded-lg w-[400px]">
-      <h2 className="text-lg font-bold mb-4">Asignar viaje a paquete</h2>
-      <p><strong>Folio:</strong> {paqueteAsignando?.folio}</p>
-      <p><strong>Remitente:</strong> {paqueteAsignando?.remitente}</p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-[92vw] max-w-md shadow-xl overflow-hidden">
 
-      <label className="block mt-4">Seleccione un viaje:</label>
-      <select
-        value={viajeSeleccionado}
-        onChange={(e) => setViajeSeleccionado(e.target.value)}
-        className="w-full p-2 border rounded"
-      >
-        <option value="">-- Seleccionar --</option>
-        {viajes.map((v) => (
-          <option key={v.idViaje} value={v.idViaje}>
-            {`${v.origen} → ${v.destino} | ${new Date(v.fechaSalida).toLocaleString("es-MX")}`}
-          </option>
-        ))}
-      </select>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4">
+              <h2 className="text-xl font-bold text-orange-800">Asignar viaje a paquete</h2>
+              <button
+                onClick={() => setModalAsignar(false)}
+                aria-label="Cerrar"
+                className="p-2 rounded-md text-orange-700 hover:bg-transparent focus:outline-none focus:ring-0"
+              >
+                {/*SVG*/}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                  <path
+                    fill="currentColor"
+                    d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
+                  />
+                </svg>
+              </button>
+            </div>
 
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={confirmarAsignacion}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Confirmar
-        </button>
-        <button
-          onClick={() => setModalAsignar(false)}
-          className="bg-gray-500 text-white px-4 py-2 rounded"
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            {/* Body */}
+            <div className="px-6 pb-6">
+              <div className="space-y-1 text-sm">
+                <p><span className="font-semibold text-orange-700">Folio:</span> {paqueteAsignando?.folio}</p>
+                <p><span className="font-semibold text-orange-700">Remitente:</span> {paqueteAsignando?.remitente}</p>
+              </div>
+
+              <label className="block mt-4 mb-1 font-medium text-orange-700">
+                Seleccione un viaje
+              </label>
+              <div className="relative">
+                <select
+                  value={viajeSeleccionado}
+                  onChange={(e) => setViajeSeleccionado(e.target.value)}
+                  className="w-full appearance-none p-2.5 pr-10 rounded-md bg-[#ffe0b2] outline-none ring-1 ring-orange-200 focus:ring-2 focus:ring-orange-300"
+                >
+
+                  <option value="" disabled>Seleccione viaje</option>
+
+                  {viajes.map((v) => (
+                    <option key={v.idViaje} value={v.idViaje}>
+                      {`${v.origen} → ${v.destino} | ${new Date(v.fechaSalida).toLocaleString("es-MX")}`}
+                    </option>
+                  ))}
+                </select>
+
+                {/* caret */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-700">
+                  <path fill="currentColor" d="M7 10l5 5 5-5z" />
+                </svg>
+              </div>
+
+
+              {/* Actions */}
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setModalAsignar(false)}
+                  className="px-4 py-2 rounded-md text-orange-800 bg-orange-100 hover:bg-orange-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarAsignacion}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-white bg-[#cc4500] hover:bg-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {/* Tabla paquetes */}
@@ -335,14 +403,14 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-[#f8c98e]">
-                <th className="p-2 text-center">Folio</th>
-                <th className="p-2 text-center">Unidad</th>
-                <th className="p-2 text-center">Remitente</th>
-                <th className="p-2 text-center">Destinatario</th>
-                <th className="p-2 text-center">Contenido</th>
-                <th className="p-2 text-center">Fecha de salida</th>
-                <th className="p-2 text-center">Importe</th>
-                <th className="p-2 text-center">Acciones</th>
+                <th className="p-2 text-center text-[#452B1C]">Folio</th>
+                <th className="p-2 text-center text-[#452B1C]">Unidad</th>
+                <th className="p-2 text-center text-[#452B1C]">Remitente</th>
+                <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
+                <th className="p-2 text-center text-[#452B1C]">Contenido</th>
+                <th className="p-2 text-center text-[#452B1C]">Fecha de salida</th>
+                <th className="p-2 text-center text-[#452B1C]">Importe</th>
+                <th className="p-2 text-center"></th>
               </tr>
             </thead>
             <tbody>
@@ -355,11 +423,55 @@ const [viajeSeleccionado, setViajeSeleccionado] = useState("");
                   <td className="p-2 text-center">{p.contenido}</td>
                   <td className="p-2 text-center">{obtenerFechaSalida(p)}</td>
                   <td className="p-2 text-center">${p.importe.toFixed(2)}</td>
-                  <td className="p-2 text-center flex gap-1 justify-center">
-                    <button onClick={() => prepararEdicion(p)} className="bg-orange-700 text-white px-3 py-1 rounded hover:bg-orange-800">Editar</button>
-                    <button onClick={() => imprimirTicket(p)} className="bg-orange-700 text-white px-3 py-1 rounded hover:bg-orange-800">Ticket</button>
-                    <button onClick={() => eliminar(p.idPaquete)} className="text-red-600 hover:scale-110 transition">🗑</button>
+                  <td className="p-2 text-center flex gap-2 justify-center">
+
+                    {/* Ticket (icono) */}
+                    <button
+                      onClick={() => imprimirTicket(p)}
+                      className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
+                      aria-label="Imprimir ticket"
+                      title="Imprimir ticket"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />
+                        <path d="M6 20.306V12c0-.943 0-1.414.293-1.707S7.057 10 8 10h8c.943 0 1.414 0 1.707.293S18 11.057 18 12v8.306c0 .317 0 .475-.104.55s-.254.025-.554-.075l-2.184-.728c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.684.894c-.078.026-.117.04-.158.04s-.08-.014-.158-.04l-2.684-.894c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.184.728c-.3.1-.45.15-.554.075S6 20.623 6 20.306ZM18 7V5.88c0-1.008 0-1.512-.196-1.897a1.8 1.8 0 0 0-.787-.787C16.632 3 16.128 3 15.12 3H8.88c-1.008 0-1.512 0-1.897.196a1.8 1.8 0 0 0-.787.787C6 4.368 6 4.872 6 5.88V7" />
+                        <path d="M10 14h3m-3 3h4.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+
+                    {/* Editar*/}
+                    <button
+                      onClick={() => prepararEdicion(p)}
+                      aria-label="Editar"
+                      title="Editar"
+                      className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5">
+                        <path fill="currentColor" d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1L377.9 88L407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9l46.1 46.1l-134.3 134.2c-2.9 2.9-6.5 5-10.4 6.1L186.9 325l16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25c-28.1-28.1-73.7-28.1-101.8 0M88 64c-48.6 0-88 39.4-88 88v272c0 48.6 39.4 88 88 88h272c48.6 0 88-39.4 88-88V312c0-13.3-10.7-24-24-24s-24 10.7-24 24v112c0 22.1-17.9 40-40 40H88c-22.1 0-40-17.9-40-40V152c0-22.1 17.9-40 40-40h112c13.3 0 24-10.7 24-24s-10.7-24-24-24z" />
+                      </svg>
+                    </button>
+
+                    {/* Eliminar*/}
+                    <button
+                      onClick={() => eliminar(p.idPaquete)}
+                      aria-label="Eliminar"
+                      title="Eliminar"
+                      className="p-2 rounded-md hover:bg-red-50 text-red-600"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                        className="w-5 h-5">
+                        <path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
+                      </svg>
+                    </button>
                   </td>
+
                 </tr>
               ))}
               {paquetes.length === 0 && (

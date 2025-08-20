@@ -20,14 +20,14 @@ export default function Choferes() {
   const [unidades, setUnidades] = useState([]);
 
   useEffect(() => {
-  ListarUnidades()
-    .then((res) => {
-      setUnidades(res); // Asegúrate que `res` sea un array de unidades
-    })
-    .catch((err) => {
-      console.error('Error al cargar unidades:', err);
-    });
-}, []);
+    ListarUnidades()
+      .then((res) => {
+        setUnidades(res); // Asegúrate que `res` sea un array de unidades
+      })
+      .catch((err) => {
+        console.error('Error al cargar unidades:', err);
+      });
+  }, []);
 
 
   const handleChange = (e) => {
@@ -38,7 +38,7 @@ export default function Choferes() {
       setFormulario((prev) => ({
         ...prev,
         activo: checked,
-        unidad: checked ? prev.unidad : "", 
+        unidad: checked ? prev.unidad : "",
       }));
     } else {
       setFormulario({ ...formulario, [name]: value });
@@ -54,25 +54,25 @@ export default function Choferes() {
     }
   };
 
-const seleccionarChofer = (chofer) => {
-  setFormulario({
-    nombre: chofer.nombre || "",
-    apellido: chofer.apellido || "",
-    unidad: chofer.unidad?.idUnidad || "",
-    telefono: chofer.telefono,
-    activo: chofer.activo ?? true,
-  });
-  setIdChoferEditando(chofer.idChofer);
-};
+  const seleccionarChofer = (chofer) => {
+    setFormulario({
+      nombre: chofer.nombre || "",
+      apellido: chofer.apellido || "",
+      unidad: chofer.unidad?.idUnidad || "",
+      telefono: chofer.telefono,
+      activo: chofer.activo ?? true,
+    });
+    setIdChoferEditando(chofer.idChofer);
+  };
 
 
   const guardarChofer = async (e) => {
     e.preventDefault();
     try {
       const unidadSeleccionada = unidades.find(
-      (u) => u.idUnidad === parseInt(formulario.unidad)
-    );
-      
+        (u) => u.idUnidad === parseInt(formulario.unidad)
+      );
+
 
       const datos = {
         nombre: formulario.nombre,
@@ -81,7 +81,7 @@ const seleccionarChofer = (chofer) => {
         telefono: formulario.telefono,
         activo: formulario.activo,
       };
-      
+
 
       if (idChoferEditando) {
         await ActualizarChofer(idChoferEditando, datos);
@@ -135,21 +135,21 @@ const seleccionarChofer = (chofer) => {
         />
 
         <label className="text-orange-700 font-semibold">Unidad</label>
-<select
-  name="unidad"
-  value={formulario.unidad}
-  onChange={handleChange}
-  className="p-2 rounded-md bg-[#ffe0b2] outline-none"
-  required={formulario.activo}
-  disabled={!formulario.activo}
->
-  <option value="">Selecciona una unidad</option>
-  {unidades.map((unidad) => (
-    <option key={unidad.idUnidad} value={unidad.idUnidad}>
-      {unidad.nombre}
-    </option>
-  ))}
-</select>
+        <select
+          name="unidad"
+          value={formulario.unidad}
+          onChange={handleChange}
+          className="p-2 rounded-md bg-[#ffe0b2] outline-none"
+          required={formulario.activo}
+          disabled={!formulario.activo}
+        >
+          <option value="" disabled>Selecciona una unidad</option>
+          {unidades.map((unidad) => (
+            <option key={unidad.idUnidad} value={unidad.idUnidad}>
+              {unidad.nombre}
+            </option>
+          ))}
+        </select>
 
 
         <label className="text-orange-700 font-semibold">Teléfono</label>
@@ -190,9 +190,10 @@ const seleccionarChofer = (chofer) => {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-[#f8c98e]">
-                <th className="p-2 text-center">Nombre</th>
-                <th className="p-2 text-center">Unidad</th>
-                <th className="p-2 text-center">Teléfono</th>
+                <th className="p-2 text-center text-[#452B1C]">Nombre</th>
+                <th className="p-2 text-center text-[#452B1C]">Unidad</th>
+                <th className="p-2 text-center text-[#452B1C]">Teléfono</th>
+                <th className="p-2 text-center"></th>
               </tr>
             </thead>
             <tbody>
@@ -204,10 +205,19 @@ const seleccionarChofer = (chofer) => {
                   <td className="p-2 flex gap-4 justify-center">
                     <button
                       onClick={() => seleccionarChofer(c)}
-                      className="text-blue-600 font-semibold hover:underline"
+                      aria-label="Editar chofer"
+                      title="Editar"
+                      className="inline-flex items-center justify-center p-2 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
                     >
-                      Editar
+                      {/* Ícono Editar */}
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                        <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                          <path d="m16.475 5.408l2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
+                          <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
+                        </g>
+                      </svg>
                     </button>
+
                     <button
                       onClick={() => eliminarChofer(c.idChofer)}
                       className="text-red-600 hover:scale-110 transition"
