@@ -69,14 +69,8 @@ const pagadoEnTuxtla = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoTuxtl
 
 // Descuentos los mantienes manuales
 const totalDescuentos = descuentos.reduce((acc, d) => acc + parseFloat(d.importe || 0), 0);
-
-// TOTAL (ya sin recalcular pasajeros/paquetes uno por uno)
-const total = totalPasajeros + totalPaqueteria
-  - comision
-  - totalDescuentos
-  - pagadoEnYajalon
-  - pagaAbordarSCLC
-  - paquetesPorCobrar;
+// Total general
+const total = viajesTuxtla.reduce((acc, v) => acc + (v.totalViaje || 0)-totalDescuentos, 0);
 
 
 const generarPDF = () => {

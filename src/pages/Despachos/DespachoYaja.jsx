@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ListarPaquetes, ListarPasajeros } from "../../services/Admin/adminService";
+import { ListarPaquetes, ListarPasajeros, ListarViajes
+} from "../../services/Admin/adminService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -12,6 +13,8 @@ export default function Despachos() {
     descripcion: "",
     importe: 0
   });
+  const [viajes, setViajes] = useState([]);
+
 
   useEffect(() => {
     cargarDatos();
@@ -21,8 +24,10 @@ export default function Despachos() {
     try {
       const listaPasajeros = await ListarPasajeros();
       const listaPaquetes = await ListarPaquetes();
+      const listaViajes = await ListarViajes();
       setPasajeros(listaPasajeros);
       setPaquetes(listaPaquetes);
+      setViajes(listaViajes);
     } catch (error) {
       console.error("Error al cargar datos:", error);
     }
@@ -50,34 +55,22 @@ export default function Despachos() {
     }
   };
 
-  // Cálculos para resumen
-  const totalPasajeros = pasajeros.reduce((acc, p) => acc + parseFloat(p.importe || 0), 0);
-  const totalPaqueteria = paquetes.reduce((acc, p) => acc + parseFloat(p.importe || 0), 0);
-  const comision = (totalPasajeros + totalPaqueteria) * 0.10;
-  const totalDescuentos = descuentos.reduce((acc, d) => acc + parseFloat(d.importe || 0), 0);
+// Filtrar viajes que salen de Tuxtla
+const viajesTuxtla = viajes.filter(v => v.origen === "Tuxtla");
 
-  // Ahora "pagado en Yajalón" es cualquier pasajero cuyo tipoPago sea "DESTINO"
-  const pagadoEnYajalon = pasajeros
-    .filter(p => p.tipoPago === "DESTINO")
-    .reduce((acc, p) => acc + parseFloat(p.importe || 0), 0);
+// Totales sumando los viajes
+const totalPasajeros = viajesTuxtla.reduce((acc, v) => acc + (v.totalPasajeros || 0), 0);
+const totalPaqueteria = viajesTuxtla.reduce((acc, v) => acc + (v.totalPaqueteria || 0), 0);
+const comision = viajesTuxtla.reduce((acc, v) => acc + (v.comision || 0), 0);
+const paquetesPorCobrar = viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
+const pagadoEnYajalon = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0);
+const pagaAbordarSCLC = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0);
+const pagadoEnTuxtla = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0);
 
-  // Pasajeros que pagan al abordar en SCLC (tipoPago 'SAN_CRISTOBAL')
-  const pagaAbordarSCLC = pasajeros
-    .filter(p => p.tipoPago === "SCLC")
-    .reduce((acc, p) => acc + parseFloat(p.importe || 0), 0);
-
-  // Paquetes por cobrar (porCobrar === true)
-  const paquetesPorCobrar = paquetes
-  .filter(p => p.porCobrar)
-  .reduce((acc, p) => acc + (Number(p.importe) || 0), 0);
-
-
-  const total = totalPasajeros + totalPaqueteria
-  - comision
-  - totalDescuentos
-  - pagadoEnYajalon
-  - pagaAbordarSCLC
-  - paquetesPorCobrar;
+// Descuentos los mantienes manuales
+const totalDescuentos = descuentos.reduce((acc, d) => acc + parseFloat(d.importe || 0), 0);
+// Total general
+const total = viajesTuxtla.reduce((acc, v) => acc + (v.totalViaje || 0), 0);
 
 
 const generarPDF = () => {
@@ -85,7 +78,7 @@ const generarPDF = () => {
   const fechaHoy = obtenerFechaFormateada();
   const doc = new jsPDF();
 
-  // 1. Datos de la empresa
+  // 1. Encabezado
   doc.setFontSize(14);
   doc.text('TRANSPORTES LOS YAJALONES S.A. DE C.V.', 20, 20);
   doc.setFontSize(10);
@@ -94,47 +87,28 @@ const generarPDF = () => {
 
   let y = 40;
 
-  // 2. Tabla de Pasajeros
+  // 2. Tabla de Viajes Tuxtla
   doc.setFontSize(12);
-  doc.text('Pasajeros', 20, y);
+  doc.text('Resumen de Viajes (Tuxtla)', 20, y);
   y += 4;
 
   autoTable(doc, {
     startY: y,
-    head: [['Folio', 'Nombre', 'Tipo', 'Pago', 'Importe']],
-    body: pasajeros.map(p => [
-      p.folio,
-      p.nombre,
-      p.tipo,
-      p.tipoPago,
-      `$${parseFloat(p.importe || 0).toFixed(2)}`
+    head: [['ID Viaje', 'Origen', 'Destino', 'Pasajeros', 'Paquetería', 'Comisión']],
+    body: viajesTuxtla.map(v => [
+      v.idViaje,
+      v.origen,
+      v.destino,
+      `$${parseFloat(v.totalPasajeros || 0).toFixed(2)}`,
+      `$${parseFloat(v.totalPaqueteria || 0).toFixed(2)}`,
+      `$${parseFloat(v.comision || 0).toFixed(2)}`
     ]),
     theme: 'grid',
   });
 
   y = doc.lastAutoTable.finalY + 10;
 
-  // 3. Tabla de Paquetería
-  doc.setFontSize(12);
-  doc.text('Paquetería', 20, y);
-  y += 4;
-
-  autoTable(doc, {
-    startY: y,
-    head: [['Folio', 'Remitente', 'Destinatario', 'Por cobrar', 'Importe']],
-    body: paquetes.map(p => [
-      p.folio,
-      p.remitente,
-      p.destinatario,
-      p.porCobrar ? 'Sí' : 'No',
-      `$${parseFloat(p.importe || 0).toFixed(2)}`
-    ]),
-    theme: 'grid',
-  });
-
-  y = doc.lastAutoTable.finalY + 10;
-
-  // 4. Observaciones
+  // 3. Observaciones
   if (observaciones.trim()) {
     doc.setFontSize(12);
     doc.text('Observaciones:', 20, y);
@@ -146,9 +120,9 @@ const generarPDF = () => {
     y += lines.length * 5 + 5;
   }
 
-  // 5. Resumen del día
+  // 4. Resumen final
   doc.setFontSize(12);
-  doc.text('Resumen del Día', 20, y);
+  doc.text('Resumen del Día (solo Tuxtla)', 20, y);
   y += 6;
 
   const resumen = [
@@ -157,8 +131,9 @@ const generarPDF = () => {
     ['Comisión (10%)', `$${comision.toFixed(2)}`],
     ['Paquetes por cobrar', `$${paquetesPorCobrar.toFixed(2)}`],
     ['Pagado en Yajalón', `$${pagadoEnYajalon.toFixed(2)}`],
-    ['Otros descuentos', `$${totalDescuentos.toFixed(2)}`],
+    ['Pagado en Tuxtla', `$${pagadoEnTuxtla.toFixed(2)}`],
     ['Paga al abordar en SCLC', `$${pagaAbordarSCLC.toFixed(2)}`],
+    ['Otros descuentos', `$${totalDescuentos.toFixed(2)}`],
     ['TOTAL', `$${total.toFixed(2)}`],
   ];
 
@@ -169,14 +144,14 @@ const generarPDF = () => {
     y += 6;
   });
 
-  // 6. Fecha de corte
+  // 5. Fecha
   doc.setFontSize(10);
   doc.text('Fecha de corte:', 20, y);
   doc.text(fechaHoy, 55, y);
 
-  // 7. Guardar
   doc.save('CorteDia.pdf');
 };
+
 
 
   return (

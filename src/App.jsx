@@ -7,7 +7,7 @@ import Layout from './layouts/Layout';
 
 import Pasajeros from './pages/Pasajeros/Pasajeros';
 import Paqueteria from './pages/Paquetes/Paquetes';
-import Despachos from './pages/Despachos/DespachoYaja';
+import Despachos from './pages/Despachos/DespachoTux';
 import Choferes from './pages/Choferes/Choferes';
 import Ajustes from './pages/Ajustes/Ajustes';
 
