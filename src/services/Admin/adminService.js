@@ -217,6 +217,17 @@ export const paquetePendiente = async (data) => {
   }
 };
 
+// Poner paquete como pendiente
+export const ponerPaqueteComoPendiente = async (idPaquete,idViaje) => {
+  try {
+    const response = await axios.put(`/paquetes/baja/${idPaquete}/${idViaje}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error poniendo paquete como pendiente:', error);
+    throw error;
+  }
+}
+
 
 // Obtener paquetes pendientes
 export const obtenerPaquetesPendientes = async () => {

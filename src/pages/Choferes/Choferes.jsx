@@ -4,6 +4,7 @@ import {
   ListarChoferes,
   ActualizarChofer,
   ListarUnidades,
+  EliminarChofer
 } from "../../services/Admin/adminService";
 
 export default function Choferes() {
@@ -64,6 +65,16 @@ export default function Choferes() {
     });
     setIdChoferEditando(chofer.idChofer);
   };
+
+  const eliminarChofer = async (id) => {
+    if (window.confirm("¿Estás seguro de eliminar este chofer?")) {
+      try {
+        await EliminarChofer(id);
+        cargarChoferes();
+      } catch (err) {
+        console.error("Error al eliminar chofer:", err);
+      }
+    }}
 
 
   const guardarChofer = async (e) => {

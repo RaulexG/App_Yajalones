@@ -7,7 +7,8 @@ import {
   eliminarPaquete,
   paquetePendiente,
   obtenerPaquetesPendientes,
-  asignarPaqueteAViaje
+  asignarPaqueteAViaje,
+  ponerPaqueteComoPendiente
 } from "../../services/Admin/adminService";
 
 export default function Paqueteria() {
@@ -61,72 +62,88 @@ export default function Paqueteria() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
+  if (formulario.pendiente) {
+    const dataPendiente = {
+      remitente: formulario.remitente,
+      destinatario: formulario.destinatario,
+      importe: parseFloat(formulario.importe),
+      contenido: formulario.contenido,
+      porCobrar: formulario.porCobrar,
+      idViaje: formulario.idViaje ? parseInt(formulario.idViaje) : null
+    };
+    
 
-    if (formulario.pendiente) {
-      const dataPendiente = {
-        remitente: formulario.remitente,
-        destinatario: formulario.destinatario,
-        importe: parseFloat(formulario.importe),
-        contenido: formulario.contenido,
-        porCobrar: formulario.porCobrar
-      };
-      console.log("Datos del paquete:", dataPendiente);
-      if (modoEdicion && idEditando) {
-        await actualizarPaquete(idEditando, dataPendiente);
-        setPendientes(prev => prev.filter(p => p.idPaquete !== idEditando));
-      } else {
-        await paquetePendiente(dataPendiente);
-      }
-      await cargarPendientes();
+    if (modoEdicion && idEditando) {
+      
+      await ponerPaqueteComoPendiente(idEditando, dataPendiente.idViaje);
+
     } else {
-      if (!formulario.idViaje) return alert("Seleccione un viaje");
-      const data = {
-        remitente: formulario.remitente,
-        destinatario: formulario.destinatario,
-        importe: parseFloat(formulario.importe),
-        contenido: formulario.contenido,
-        porCobrar: formulario.porCobrar,
-        idViaje: parseInt(formulario.idViaje)
-      };
-
-      if (modoEdicion && idEditando) {
-        await actualizarPaquete(idEditando, data);
-      } else {
-        await crearPaquete(data);
-      }
+      await paquetePendiente(dataPendiente);
     }
 
-    setFormulario({
-      remitente: "",
-      destinatario: "",
-      importe: 70,
-      contenido: "",
-      pendiente: false,
-      porCobrar: false,
-      idViaje: ""
-    });
-    setModoEdicion(false);
-    setIdEditando(null);
-    cargarPaquetes();
-    cargarViajes();
-  };
+    await cargarPendientes();
+  } else {
+    if (!formulario.idViaje) return alert("Seleccione un viaje");
 
-  const prepararEdicion = (paquete) => {
-    setFormulario({
-      remitente: paquete.remitente,
-      destinatario: paquete.destinatario,
-      importe: paquete.importe,
-      contenido: paquete.contenido,
-      pendiente: paquete.pendiente || false,
-      porCobrar: paquete.porCobrar || false,
-      idViaje: paquete.idViaje || ""
-    });
-    setModoEdicion(true);
-    setIdEditando(paquete.idPaquete);
-    setMostrarModal(false);
-  };
+    const data = {
+      remitente: formulario.remitente,
+      destinatario: formulario.destinatario,
+      importe: parseFloat(formulario.importe),
+      contenido: formulario.contenido,
+      porCobrar: formulario.porCobrar,
+      idViaje: parseInt(formulario.idViaje)
+    };
+
+    if (modoEdicion && idEditando) {
+      await actualizarPaquete(idEditando, data);
+    } else {
+      await crearPaquete(data);
+    }
+  }
+
+  // Resetear formulario
+  setFormulario({
+    remitente: "",
+    destinatario: "",
+    importe: 70,
+    contenido: "",
+    pendiente: false,
+    porCobrar: false,
+    idViaje: ""
+  });
+  setModoEdicion(false);
+  setIdEditando(null);
+  cargarPaquetes();
+  cargarViajes();
+};
+
+
+const prepararEdicion = (paquete) => {
+  // buscar idViaje del paquete en la lista de viajes
+  let idViajeEncontrado = "";
+  for (const viaje of viajes) {
+    if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
+      idViajeEncontrado = viaje.idViaje;
+      break;
+    }
+  }
+
+  setFormulario({
+    remitente: paquete.remitente,
+    destinatario: paquete.destinatario,
+    importe: paquete.importe,
+    contenido: paquete.contenido,
+    pendiente: paquete.pendiente || false,
+    porCobrar: paquete.porCobrar || false,
+    idViaje: idViajeEncontrado
+  });
+  setModoEdicion(true);
+  setIdEditando(paquete.idPaquete);
+  setMostrarModal(false);
+};
+
 
   const eliminar = async (id) => {
     if (confirm("¿Estás seguro que deseas eliminar este paquete?")) {
@@ -408,6 +425,7 @@ export default function Paqueteria() {
                 <th className="p-2 text-center text-[#452B1C]">Remitente</th>
                 <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
                 <th className="p-2 text-center text-[#452B1C]">Contenido</th>
+                <th className="p-2 text-center text-[#452B1C]">Por Cobrar</th>
                 <th className="p-2 text-center text-[#452B1C]">Fecha de salida</th>
                 <th className="p-2 text-center text-[#452B1C]">Importe</th>
                 <th className="p-2 text-center"></th>
@@ -421,6 +439,7 @@ export default function Paqueteria() {
                   <td className="p-2 text-center">{p.remitente}</td>
                   <td className="p-2 text-center">{p.destinatario}</td>
                   <td className="p-2 text-center">{p.contenido}</td>
+                  <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
                   <td className="p-2 text-center">{obtenerFechaSalida(p)}</td>
                   <td className="p-2 text-center">${p.importe.toFixed(2)}</td>
                   <td className="p-2 text-center flex gap-2 justify-center">
