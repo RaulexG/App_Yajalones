@@ -366,6 +366,39 @@ export const EliminarTurno = async (id) => {
   }
 };
 
+//Descuentos------------------------------------------------------------
+// Listar descuentos
+export const ListarDescuentos = async () => {
+  try {
+    const response = await axios.get('/descuentos');
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo descuentos:', error);
+    throw error;
+  }
+}
+// Crear descuentoTuxtla
+export const CrearDescuentoTuxtla = async (descuento) => {   
+  try {
+    const response = await axios.post('/descuentos/tuxtla', descuento);
+    return response.data;
+  } catch (error) {
+    console.error('Error creando descuento:', error);
+    throw error;
+  }
+}
+
+//Crear descuentoYajalon
+export const CrearDescuentoYajalon = async (descuento) => {   
+  try {
+    const response = await axios.post('/descuentos/yajalon', descuento);
+    return response.data;
+  } catch (error) {
+    console.error('Error creando descuento:', error);
+    throw error;
+  }
+}
+
 //----------------login-----
 
 // Login (POST /inicioSesion) → devuelve access_token (JWT)

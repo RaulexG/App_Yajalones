@@ -18,6 +18,10 @@ export default function Pasajeros() {
   const [idPasajeroEditando, setIdPasajeroEditando] = useState(null);
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('');
 
+    useEffect(() => {
+    console.log('electronAPI:', window.electronAPI);
+  }, []);
+
 
   const [formulario, setFormulario] = useState({
     nombre: '',
@@ -199,29 +203,9 @@ export default function Pasajeros() {
     setAsientosOcupados(viaje.pasajeros ? viaje.pasajeros.map(p => p.asiento) : []);
   };
 
-  const imprimirTicket = (pasajero) => {
+  
 
-    const textoSobreEquipaje = prompt("Ingrese el texto de Sobre Equipaje (opcional):") || '';
-    const ventana = window.open('', '', 'width=400,height=600');
-    ventana.document.write('<html><head><title>Ticket Pasajero</title></head><body>');
-    ventana.document.write('<h2>Los Yajalones</h2>');
-    ventana.document.write(`<p><strong>Folio:</strong> ${pasajero.folio}</p>`);
-    ventana.document.write(`<p><strong>Nombre:</strong> ${pasajero.nombre} ${pasajero.apellido}</p>`);
-    ventana.document.write(`<p><strong>Tipo:</strong> ${pasajero.tipo}</p>`);
-    ventana.document.write(`<p><strong>Tipo de Pago:</strong> ${pasajero.tipoPago}</p>`);
-    ventana.document.write(`<p><strong>Asiento:</strong> ${pasajero.asiento}</p>`);
-    ventana.document.write(`<p><strong>Importe:</strong> ${parseFloat(pasajero.importe || 0).toFixed(2)}</p>`);
-    if (textoSobreEquipaje.trim()) {
-      ventana.document.write('<hr/>');
-      ventana.document.write(`<p><strong>Sobre Equipaje:</strong> ${textoSobreEquipaje}</p>`);
-    }
-    ventana.document.write('<hr/><p>Gracias por su preferencia.</p>');
-    ventana.document.write('</body></html>');
-    ventana.document.close();
-    ventana.focus();
-    ventana.print();
-    ventana.close();
-  };
+
 
   const choferAsignado = viajeSeleccionado
     ? choferes.find((c) => c.unidad?.idUnidad === viajeSeleccionado.unidad?.idUnidad)
@@ -230,8 +214,8 @@ export default function Pasajeros() {
   return (
     <div className="p-4">
       {/* Contenedor en 3 columnas */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr] gap-6 max-w-[1600px] mx-auto">
-
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 max-w-[1600px] mx-auto">
+        <div className="flex flex-col gap-6">
         {/* Tabla de cambio de turno */}
         <div className="bg-[#FDF7F0] p-4 rounded-md shadow-md mt-6">
           {/* Select Cambio de turno */}
@@ -342,7 +326,7 @@ export default function Pasajeros() {
                   required
                 >
                   <option value="" disabled>Selecciona origen</option>
-                  <option value="Tuxtla Gutierrez">Tuxtla Gutiérrez</option>
+                  <option value="Tuxtla">Tuxtla Gutiérrez</option>
                   <option value="Yajalon">Yajalón</option>
                 </select>
               </div>
@@ -358,7 +342,7 @@ export default function Pasajeros() {
                   required
                 >
                   <option value="" disabled>Selecciona destino</option>
-                  <option value="Tuxtla Gutierrez">Tuxtla Gutiérrez</option>
+                  <option value="Tuxtla">Tuxtla Gutiérrez</option>
                   <option value="Yajalon">Yajalón</option>
                 </select>
               </div>
@@ -462,7 +446,7 @@ export default function Pasajeros() {
               >
                 <option value="PAGADO">Pagado</option>
                 <option value="DESTINO">Paga al llegar</option>
-                <option value="SCLC">Sube en San Cristóbal</option>
+                <option value="SCLC">San Cristóbal</option>
               </select>
             </div>
 
@@ -528,6 +512,7 @@ export default function Pasajeros() {
             </div>
           </form>
         </div>
+        </div>
 
         {/* Columna derecha: Tabla */}
         <div className="bg-white p-4 rounded-md shadow-md w-full mx-auto">
@@ -571,7 +556,18 @@ export default function Pasajeros() {
                       <td className="p-3 text-center">
                         {/* Botón Ticket*/}
                         <button
-                          onClick={() => imprimirTicket(p)}
+                          onClick={async () => {
+  try {
+    await window.electronAPI.imprimirTicketPasajero(
+      p,
+      viajes.find(v => v.idViaje === p.idViaje)
+    );
+    alert('Ticket impreso correctamente');
+  } catch (err) {
+    console.error(err);
+    alert('Error al imprimir ticket'+ err);
+  }
+}}
                           className="p-2 text-[#C14600] hover:text-orange-800 transition"
                           title="Imprimir ticket"
                           aria-label="Imprimir ticket"

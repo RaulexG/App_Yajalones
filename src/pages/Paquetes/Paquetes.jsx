@@ -186,28 +186,7 @@ const prepararEdicion = (paquete) => {
     return "Fecha no encontrada";
   };
 
-  const imprimirTicket = (paquete) => {
-    const Nota = prompt("Ingrese Nota (opcional):") || '';
-    const ventana = window.open('', '', 'width=400,height=600');
-    ventana.document.write('<html><head><title>Envío de paquetería</title></head><body>');
-    ventana.document.write('<h2>Los Yajalones</h2>');
-    ventana.document.write(`<p><strong>Folio:</strong> ${paquete.folio}</p>`);
-    ventana.document.write(`<p><strong>Remitente:</strong> ${paquete.remitente}</p>`);
-    ventana.document.write(`<p><strong>Destinatario:</strong> ${paquete.destinatario}</p>`);
-    ventana.document.write(`<p><strong>Contenido:</strong> ${paquete.contenido}</p>`);
-    ventana.document.write(`<p><strong>Por cobrar:</strong> ${paquete.porCobrar ? "Sí" : "No"}</p>`);
-    ventana.document.write(`<p><strong>Importe:</strong> ${parseFloat(paquete.importe || 0).toFixed(2)}</p>`);
-    if (Nota.trim()) {
-      ventana.document.write('<hr/>');
-      ventana.document.write(`<p><strong>Nota:</strong> ${Nota}</p>`);
-    }
-    ventana.document.write('<hr/><p>Gracias por su preferencia.</p>');
-    ventana.document.write('</body></html>');
-    ventana.document.close();
-    ventana.focus();
-    ventana.print();
-    ventana.close();
-  };
+
 
   return (
     <div className="flex gap-6 p-6">
@@ -446,7 +425,12 @@ const prepararEdicion = (paquete) => {
 
                     {/* Ticket (icono) */}
                     <button
-                      onClick={() => imprimirTicket(p)}
+                      onClick={() =>
+    window.electronAPI.imprimirTicketPaquete(
+      p,
+      viajes.find(v => v.idViaje === p.idViaje)
+    )
+  }
                       className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
                       aria-label="Imprimir ticket"
                       title="Imprimir ticket"

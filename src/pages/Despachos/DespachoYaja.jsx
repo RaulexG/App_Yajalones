@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ListarPaquetes, ListarPasajeros, ListarViajes
+import {CrearDescuentoYajalon, ListarViajes
 } from "../../services/Admin/adminService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -8,10 +8,10 @@ export default function Despachos() {
   const [pasajeros, setPasajeros] = useState([]);
   const [paquetes, setPaquetes] = useState([]);
   const [descuentos, setDescuentos] = useState([]);
-  const [nuevoDescuento, setNuevoDescuento] = useState({
+  const [formulario, setFormulario] = useState({
     concepto: "",
     descripcion: "",
-    importe: 0
+    importe: 0,
   });
   const [viajes, setViajes] = useState([]);
 
@@ -22,12 +22,32 @@ export default function Despachos() {
 
   const cargarDatos = async () => {
     try {
-      const listaPasajeros = await ListarPasajeros();
-      const listaPaquetes = await ListarPaquetes();
+
+
       const listaViajes = await ListarViajes();
-      setPasajeros(listaPasajeros);
-      setPaquetes(listaPaquetes);
+      const todosPasajeros = listaViajes.flatMap(viaje =>
+      (viaje.pasajeros || []).map(p => ({
+        ...p,
+        origen: viaje.origen,
+        destino: viaje.destino,
+        idViaje: viaje.idViaje
+      }))
+    );
+    const todosPaquetes = listaViajes.flatMap(viaje =>
+      (viaje.paquetes || []).map(p => ({
+        ...p,
+        origen: viaje.origen,
+        destino: viaje.destino,
+        idViaje: viaje.idViaje
+      }))
+    );
+
+
       setViajes(listaViajes);
+       setPasajeros(todosPasajeros);
+        setPaquetes(todosPaquetes);
+
+      
     } catch (error) {
       console.error("Error al cargar datos:", error);
     }
@@ -48,29 +68,68 @@ export default function Despachos() {
 }
 
 
-  const agregarDescuento = () => {
-    if (nuevoDescuento.importe > 0) {
-      setDescuentos([...descuentos, nuevoDescuento]);
-      setNuevoDescuento({ concepto: "", descripcion: "", importe: 0 });
+
+  const agregarDescuento = (e) => {
+  e.preventDefault();
+  try {
+    if (!formulario.concepto || !formulario.importe) {
+      alert("Por favor, complete los campos de concepto e importe.");
+      return;
     }
-  };
 
-// Filtrar viajes que salen de Tuxtla
+    const nuevoDescuento = {
+      concepto: formulario.concepto,
+      descripcion: formulario.descripcion,
+      importe: parseFloat(formulario.importe),
+    };
+
+    setDescuentos((prev) => [...prev, nuevoDescuento]);
+    setFormulario({ concepto: "", descripcion: "", importe: 0 });
+
+    CrearDescuentoYajalon(nuevoDescuento);
+  } catch (error) {
+    console.error("Error al agregar descuento:", error);
+  }
+};
+
+
+// Filtrar viajes 
 const viajesTuxtla = viajes.filter(v => v.origen === "Tuxtla");
+const viajesYajalon = viajes.filter(v => v.origen === "Yajalon");
 
-// Totales sumando los viajes
-const totalPasajeros = viajesTuxtla.reduce((acc, v) => acc + (v.totalPasajeros || 0), 0);
-const totalPaqueteria = viajesTuxtla.reduce((acc, v) => acc + (v.totalPaqueteria || 0), 0);
-const comision = viajesTuxtla.reduce((acc, v) => acc + (v.comision || 0), 0);
-const paquetesPorCobrar = viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
-const pagadoEnYajalon = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0);
+// Totales para viajes Yajalon
+const totalPasajeros = viajesYajalon.reduce((acc, v) => acc + (v.totalPasajeros || 0), 0) +
+viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0) + 
+viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0) +
+viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0);
+const totalPaqueteria = viajesYajalon.reduce((acc, v) => acc + (v.totalPaqueteria || 0), 0) + 
+viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
+const comision = viajesYajalon.reduce((acc, v) => acc + (v.comision || 0), 0);
+const paquetesPorCobrar = viajesYajalon.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
+
+
+const pagadoEnYajalon = 
+  // de viajes de Tuxtla
+  viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0) +
+
+  // y además, lo pagado en SCLC pero de viajes Yajalón
+  viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0) +
+  viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0);
+
+const pagadoEnTuxtla =
+  // de viajes de Tuxtla
+  viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0) +
+  // y además, lo pagado en destino pero de viajes Yajalón
+  viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0);
+
 const pagaAbordarSCLC = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0);
-const pagadoEnTuxtla = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0);
 
-// Descuentos los mantienes manuales
+
 const totalDescuentos = descuentos.reduce((acc, d) => acc + parseFloat(d.importe || 0), 0);
-// Total general
-const total = viajesTuxtla.reduce((acc, v) => acc + (v.totalViaje || 0), 0);
+
+
+const total =  - totalDescuentos+ pagadoEnYajalon + viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0) + 
+pagaAbordarSCLC - comision;
 
 
 const generarPDF = () => {
@@ -87,15 +146,15 @@ const generarPDF = () => {
 
   let y = 40;
 
-  // 2. Tabla de Viajes Tuxtla
+  // 2. Tabla de Viajes Yajalon
   doc.setFontSize(12);
-  doc.text('Resumen de Viajes (Tuxtla)', 20, y);
+  doc.text('Resumen de Viajes (Yajalón)', 20, y);
   y += 4;
 
   autoTable(doc, {
     startY: y,
     head: [['ID Viaje', 'Origen', 'Destino', 'Pasajeros', 'Paquetería', 'Comisión']],
-    body: viajesTuxtla.map(v => [
+    body: viajesYajalon.map(v => [
       v.idViaje,
       v.origen,
       v.destino,
@@ -130,9 +189,8 @@ const generarPDF = () => {
     ['Paquetería', `$${totalPaqueteria.toFixed(2)}`],
     ['Comisión (10%)', `$${comision.toFixed(2)}`],
     ['Paquetes por cobrar', `$${paquetesPorCobrar.toFixed(2)}`],
-    ['Pagado en Yajalón', `$${pagadoEnYajalon.toFixed(2)}`],
     ['Pagado en Tuxtla', `$${pagadoEnTuxtla.toFixed(2)}`],
-    ['Paga al abordar en SCLC', `$${pagaAbordarSCLC.toFixed(2)}`],
+    ['Viajes de SCLC', `$${pagaAbordarSCLC.toFixed(2)}`],
     ['Otros descuentos', `$${totalDescuentos.toFixed(2)}`],
     ['TOTAL', `$${total.toFixed(2)}`],
   ];
@@ -168,9 +226,9 @@ const generarPDF = () => {
           type="text"
           placeholder=""
           className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3"
-          value={nuevoDescuento.concepto}
+          value={formulario.concepto}
           onChange={(e) =>
-            setNuevoDescuento({ ...nuevoDescuento, concepto: e.target.value })
+            setFormulario({ ...formulario, concepto: e.target.value })
           }
         />
 
@@ -178,9 +236,9 @@ const generarPDF = () => {
         <textarea
           placeholder=""
           className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3"
-          value={nuevoDescuento.descripcion}
+          value={formulario.descripcion}
           onChange={(e) =>
-            setNuevoDescuento({ ...nuevoDescuento, descripcion: e.target.value })
+            setFormulario({ ...formulario, descripcion: e.target.value })
           }
         />
 
@@ -189,9 +247,9 @@ const generarPDF = () => {
           type="number"
           placeholder=""
           className="w-1/3 p-2 rounded-md bg-[#ffe0b2] outline-none mb-4"
-          value={nuevoDescuento.importe}
+          value={formulario.importe}
           onChange={(e) =>
-            setNuevoDescuento({ ...nuevoDescuento, importe: parseFloat(e.target.value) })
+            setFormulario({ ...formulario, importe: parseFloat(e.target.value) })
           }
         />
 
@@ -220,13 +278,13 @@ const generarPDF = () => {
             <span>Paquetes por cobrar</span> <span>${paquetesPorCobrar.toFixed(2)}</span>
           </li>
           <li className="flex justify-between">
-            <span>Pagado en Yajalón</span> <span>${pagadoEnYajalon.toFixed(2)}</span>
+            <span>Pagado en Tuxtla</span> <span>${pagadoEnTuxtla.toFixed(2)}</span>
           </li>
           <li className="flex justify-between">
             <span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span>
           </li>
           <li className="flex justify-between">
-            <span>Paga al abordar en SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span>
+            <span>Viajes de SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span>
           </li>
           <li className="flex justify-between font-bold text-lg">
             <span>TOTAL</span> <span>${total.toFixed(2)}</span>
@@ -253,6 +311,8 @@ const generarPDF = () => {
               <tr className="bg-[#f8c98e]">
                 <th className="p-2 text-center text-[#452B1C]">Folio</th>
                 <th className="p-2 text-center text-[#452B1C]">Nombre</th>
+                <th className="p-2 text-center text-[#452B1C]">Origen</th>
+                <th className="p-2 text-center text-[#452B1C]">Destino</th>
                 <th className="p-2 text-center text-[#452B1C]">Tipo</th>
                 <th className="p-2 text-center text-[#452B1C]">Pago</th>
                 <th className="p-2 text-center text-[#452B1C]">Monto</th>
@@ -263,6 +323,8 @@ const generarPDF = () => {
                 <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
                   <td className="p-2 text-center">{p.folio}</td>
                   <td className="p-2 text-center">{p.nombre}</td>
+                  <td className="p-2 text-center">{p.origen}</td>
+                    <td className="p-2 text-center">{p.destino}</td>
                   <td className="p-2 text-center">{p.tipo}</td>
                   <td className="p-2 text-center">{p.tipoPago}</td>
                   <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
@@ -283,6 +345,8 @@ const generarPDF = () => {
                 <th className="p-2 text-center text-[#452B1C]">Folio</th>
                 <th className="p-2 text-center text-[#452B1C]">Remitente</th>
                 <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
+                <th className="p-2 text-center text-[#452B1C]">Origen</th>
+                <th className="p-2 text-center text-[#452B1C]">Destino</th>
                 <th className="p-2 text-center text-[#452B1C]">Por cobrar</th>
                 <th className="p-2 text-center text-[#452B1C]">Monto</th>
               </tr>
@@ -293,6 +357,8 @@ const generarPDF = () => {
                   <td className="p-2 text-center">{p.folio}</td>
                   <td className="p-2 text-center">{p.remitente}</td>
                   <td className="p-2 text-center">{p.destinatario}</td>
+                    <td className="p-2 text-center">{p.origen}</td>
+                    <td className="p-2 text-center">{p.destino}</td>
                   <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
                   <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
                 </tr>
