@@ -194,6 +194,21 @@ export default function Ajustes() {
                                       </g>
                                     </svg>
                                   </button>
+
+                                  <button className="text-red-600 hover:text-red-800">
+                                    {/* Ícono eliminar */}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      className="w-6 h-6 cursor-pointer"
+                                      style={{ color: "#C14600" }}
+                                    >
+                                      <path
+                                        fill="currentColor"
+                                        d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                      />
+                                    </svg>
+                                  </button>
                                 </td>
                               );
                             }
@@ -202,6 +217,28 @@ export default function Ajustes() {
                               const viaje = cell;
                               return (
                                 <td key={i} className="px-4 py-2 text-right">
+                                  {/* Botón Editar */}
+                                  <button
+                                    aria-label="Editar viaje"
+                                    title="Editar"
+                                    className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+                                  >
+                                    {/* Ícono editar */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                      <g
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                      >
+                                        <path d="m16.475 5.408 2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
+                                        <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
+                                      </g>
+                                    </svg>
+                                  </button>
+
+
                                   <button
                                     onClick={async () => {
                                       if (window.confirm('¿Estás seguro de eliminar este viaje?')) {
@@ -213,7 +250,7 @@ export default function Ajustes() {
                                     title="Eliminar"
                                     className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
                                   >
-                                    {/* Reemplaza la X por el ícono de bote */}
+                                    {/* basura icono */}
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
                                       <path
                                         fill="currentColor"
