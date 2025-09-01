@@ -141,7 +141,7 @@ const fmt = (n) =>
 
 const generarPDF = async () => {
   try {
-    const observaciones = prompt("Escriba alguna observación (opcional):") || "";
+    
     const fechaHoy = obtenerFechaFormateada();
     const doc = new jsPDF({ unit: "pt", format: "letter" }); // tamaño carta en puntos
 
@@ -154,11 +154,12 @@ const generarPDF = async () => {
       doc.text("TRANSPORTES LOS YAJALONES S.A. DE C.V.", M.l, M.t);
       doc.setFontSize(9);
       doc.text(
-        "Dirección: 15 Oriente esquina 7 sur #817, Tuxtla Gutiérrez, Chiapas",
+        "Dirección: Segunda calle Poniente Norte s/n, Centro. Yajalón, Chiapas",
         M.l,
         M.t + 16
       );
-      doc.text("Teléfono: 9613023642", M.l, M.t + 30);
+      doc.text("Teléfono fijo: 919 674 21 14", M.l, M.t + 30);
+      doc.text("Teléfono Celular: 919 145 97 11", M.l, M.t + 30);
 
       // Fecha alineada a la derecha
       doc.text(
@@ -226,29 +227,65 @@ const generarPDF = async () => {
 
     let y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 16 : M.t + 90;
 
-    // ====== Observaciones (si hay) ======
-    if (observaciones.trim()) {
-      doc.setFontSize(12);
-      doc.text("Observaciones:", M.l, y);
-      y += 8;
+// === Tabla de Pasajeros ===
+doc.setFontSize(12);
+doc.text("Pasajeros", M.l, y);
+y += 8;
 
-      autoTable(doc, {
-        startY: y,
-        body: [[{ content: observaciones }]],
-        theme: "plain",
-        styles: { fontSize: 10, cellPadding: 8, lineColor: [200, 200, 200], lineWidth: 0.5 },
-        margin: { left: M.l, right: M.r },
-        didDrawPage: (data) => {
-          if (data.pageNumber > 1) drawHeader();
-        },
-      });
+autoTable(doc, {
+  startY: y,
+  head: [["Folio", "Nombre","Origen","Destino", "Tipo", "Pago", "Monto"]],
+  body: pasajeros.map((p) => [
+    p.folio,
+    p.nombre,
+    p.origen,
+    p.destino,
+    p.tipo,
+    p.tipoPago,
+    fmt(p.importe)
+  ]),
+  theme: "grid",
+  styles: { fontSize: 9, cellPadding: 5 },
+  headStyles: { fillColor: [248, 201, 142], textColor: [69, 43, 28] },
+  margin: { left: M.l, right: M.r },
+  didDrawPage: (data) => {
+    if (data.pageNumber > 1) drawHeader();
+  },
+});
 
-      y = doc.lastAutoTable.finalY + 16;
-    }
+y = doc.lastAutoTable.finalY + 20;
+
+// === Tabla de Paquetería ===
+doc.setFontSize(12);
+doc.text("Paquetería", M.l, y);
+y += 8;
+
+autoTable(doc, {
+  startY: y,
+  head: [["Folio", "Remitente", "Destinatario","Origen","Destino", "Por Cobrar", "Monto"]],
+  body: paquetes.map((p) => [
+    p.folio,
+    p.remitente,
+    p.destinatario,
+    p.origen,
+    p.destino,
+    p.porCobrar ? "Sí" : "No",
+    fmt(p.importe)
+  ]),
+  theme: "grid",
+  styles: { fontSize: 9, cellPadding: 5 },
+  headStyles: { fillColor: [248, 201, 142], textColor: [69, 43, 28] },
+  margin: { left: M.l, right: M.r },
+  didDrawPage: (data) => {
+    if (data.pageNumber > 1) drawHeader();
+  },
+});
+
+y = doc.lastAutoTable.finalY + 30;
 
     // ====== Resumen del Día (igual que tu panel, pero en PDF) ======
     doc.setFontSize(12);
-    doc.text("Resumen del Día (solo Tuxtla)", M.l, y);
+    doc.text("Resumen del Día ", M.l, y);
     y += 8;
 
     const resumen = [
@@ -286,13 +323,16 @@ const generarPDF = async () => {
     const w = doc.internal.pageSize.getWidth();
     const colW = (w - M.l - M.r) / 2 - 20;
 
+    doc.setFontSize(10);
+    doc.text("Corte del dia: "+ fechaHoy, M.l + colW / 2, y, { align: "center" });
+
     doc.setLineWidth(0.7);
-    doc.line(M.l, y, M.l + colW, y);
-    doc.line(M.l + colW + 40, y, M.l + colW + 40 + colW, y);
+    doc.line(M.l, y +35, M.l + colW, y+35);
+    doc.line(M.l + colW + 40, y+35, M.l + colW + 40 + colW, y +35);
 
     doc.setFontSize(10);
-    doc.text("Elaboró", M.l + colW / 2, y + 14, { align: "center" });
-    doc.text("Recibió", M.l + colW + 40 + colW / 2, y + 14, { align: "center" });
+    doc.text("Elaboró", M.l + colW / 2, y + 55, { align: "center" });
+    doc.text("Recibió", M.l + colW + 40 + colW / 2, y + 55, { align: "center" });
 
     // ====== Paginación ======
     drawFooter();
@@ -320,7 +360,7 @@ const generarPDF = async () => {
     }
   } catch (err) {
     console.error("Error al generar PDF:", err);
-    alert("Ocurrió un error al generar el PDF.");
+    alert("Ocurrió un error al generar el PDF."+ err);
   }
 };
 

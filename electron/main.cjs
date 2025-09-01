@@ -64,7 +64,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      preload: path.join(__dirname, 'preload.js'), // <-- usa el nombre real que tengas
+      preload: path.join(__dirname, 'preload.cjs'), // <-- usa el nombre real que tengas
     },
   });
 
@@ -84,6 +84,88 @@ function createWindow() {
   mainWindow.removeMenu();
 }
 
+//------------- IPCs de ticket -------------
+ipcMain.handle('imprimir-ticket-pasajero', async (_e, { pasajero, viaje }) => {
+  // Genera el HTML del ticket
+  const ticketHtml = `
+    <div style="font-family: monospace; font-size: 14px;">
+    <h2 style="text-align:center;">Los Yajalones</h2>
+      <h2 style="text-align:center;">Pasajero</h2>
+      <hr>
+      <div>Folio: ${pasajero.folio ?? ''}</div>
+      <div>Nombre: ${pasajero.nombre ?? ''} ${pasajero.apellido ?? ''}</div>
+      <div>Asiento: ${pasajero.asiento ?? ''}</div>
+      <div>Unidad: ${viaje?.unidad?.nombre ?? ''}</div>
+      <div>Origen: ${viaje?.origen ?? ''}</div>
+      <div>Destino: ${viaje?.destino ?? ''}</div>
+      <div>Fecha: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString('es-MX') : ''}</div>
+      <div>Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString('es-MX') : ''}</div>
+      <div>Tipo: ${pasajero.tipo ?? ''}</div>
+      <div>Pago: ${pasajero.tipoPago ?? ''}</div>
+      <div>Importe: $${parseFloat(pasajero.importe ?? 0).toFixed(2)}</div>
+      <hr>
+      <div style="text-align:center;">¡Buen viaje!</div>
+    </div>
+  `;
+
+  // Crea una ventana oculta para imprimir
+  const printWindow = new BrowserWindow({
+    show: false,
+    webPreferences: { nodeIntegration: true }
+  });
+
+  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(ticketHtml));
+  printWindow.webContents.on('did-finish-load', () => {
+    printWindow.webContents.print({
+      silent: false, // true para no mostrar diálogo
+      printBackground: false,
+      // deviceName: 'Nombre_de_tu_impresora' // Opcional: pon el nombre exacto de tu impresora
+    }, () => {
+      printWindow.close();
+    });
+  });
+
+  return true;
+});
+//------------- IPCs de ticket Paquete-------------
+ipcMain.handle('imprimir-ticket-paquete', async (_e, { paquete, viaje }) => {
+  const ticketHtml = `
+    <div style="font-family: monospace; font-size: 14px;">
+    <h2 style="text-align:center;">Los Yajalones</h2>
+      <h2 style="text-align:center;">Paquete</h2>
+      <hr>
+      <div>Folio: ${paquete.folio ?? ''}</div>
+      <div>Remitente: ${paquete.remitente ?? ''}</div>
+      <div>Destinatario: ${paquete.destinatario ?? ''}</div>
+      <div>Origen: ${viaje?.origen ?? ''}</div>
+      <div>Destino: ${viaje?.destino ?? ''}</div>
+      <div>Fecha: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString('es-MX') : ''}</div>
+      <div>Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString('es-MX') : ''}</div>
+      <div>Por Cobrar: ${paquete.porCobrar ? 'Si': 'No' ?? ''}</div>
+      <div>Importe: $${parseFloat(paquete.importe ?? 0).toFixed(2)}</div>
+      <hr>
+      <div style="text-align:center;">¡Gracias por confiar en nosotros!</div>
+    </div>
+  `;
+
+  const printWindow = new BrowserWindow({
+    show: false,
+    webPreferences: { nodeIntegration: true }
+  });
+
+  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(ticketHtml));
+  printWindow.webContents.on('did-finish-load', () => {
+    printWindow.webContents.print({
+      silent: false,
+      printBackground: false,
+      // deviceName: 'Nombre_de_tu_impresora'
+    }, () => {
+      printWindow.close();
+    });
+  });
+
+  return true;
+});
 // ------------ IPCs no-PDF ------------
 ipcMain.handle('app:set-title', (_e, t) => {
   if (mainWindow && typeof t === 'string') mainWindow.setTitle(t);

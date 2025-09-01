@@ -557,21 +557,21 @@ export default function Pasajeros() {
                         {/* Botón Ticket*/}
                         <button
                           onClick={async () => {
-  try {
-    await window.electronAPI.imprimirTicketPasajero(
-      p,
-      viajes.find(v => v.idViaje === p.idViaje)
-    );
-    alert('Ticket impreso correctamente');
-  } catch (err) {
-    console.error(err);
-    alert('Error al imprimir ticket'+ err);
-  }
-}}
-                          className="p-2 text-[#C14600] hover:text-orange-800 transition"
-                          title="Imprimir ticket"
-                          aria-label="Imprimir ticket"
-                        >
+    try {
+      await window.ticket.imprimirPasajero(
+        p,
+        viajeSeleccionado // <-- usa el viaje seleccionado, que tiene todos los datos
+      );
+      alert('Ticket impreso correctamente');
+    } catch (err) {
+      console.error(err);
+      alert('Error al imprimir ticket: ' + err);
+    }
+  }}
+  className="p-2 text-[#C14600] hover:text-orange-800 transition"
+  title="Imprimir ticket"
+  aria-label="Imprimir ticket"
+>
                           <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
                             <g fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />

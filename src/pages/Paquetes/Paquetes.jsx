@@ -425,16 +425,19 @@ const prepararEdicion = (paquete) => {
 
                     {/* Ticket (icono) */}
                     <button
-                      onClick={() =>
-    window.electronAPI.imprimirTicketPaquete(
-      p,
-      viajes.find(v => v.idViaje === p.idViaje)
-    )
-  }
-                      className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
-                      aria-label="Imprimir ticket"
-                      title="Imprimir ticket"
-                    >
+                      onClick={async () => {
+    try {
+      const viaje = viajes.find(v => v.paquetes?.some(paq => paq.folio === p.folio));
+      await window.ticketPaquete.imprimir({paquete: p,viaje});
+      alert('Ticket de paquete impreso correctamente');
+    } catch (err) {
+      alert('Error al imprimir ticket de paquete');
+    }
+  }}
+  className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
+  aria-label="Imprimir ticket"
+  title="Imprimir ticket"
+>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
