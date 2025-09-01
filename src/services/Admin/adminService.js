@@ -399,27 +399,28 @@ export const CrearDescuentoYajalon = async (descuento) => {
   }
 }
 
-//----------------login-----
 
-// Login (POST /inicioSesion) → devuelve access_token (JWT)
+//----------------login-----
+async function loginRequest(nombreUsuario, password) {
+  // Backend: POST /inicio-sesion → { access_token }  (endpoint y campo exactos) 
+  const response = await axios.post('/inicio-sesion', { nombreUsuario, password });
+  return response.data?.access_token || null;
+}
+
 export const inicioSesion = async (nombreUsuario, password) => {
-  try {
-    const response = await axios.post('/inicioSesion', { nombreUsuario, password });
-    // La API sólo devuelve el token en "access_token"
-    return response.data?.access_token || null;
-  } catch (error) {
-    console.error('Error iniciando sesión:', error);
-    throw error;
+  if (typeof window !== 'undefined' && window.auth?.login) {
+    const res = await window.auth.login({ nombreUsuario, password });
+    if (!res?.ok) throw new Error(res?.message || 'No se pudo iniciar sesión');
+    return true; // token queda en memoria (main)
   }
+  // Fallback (solo dev web)
+  const token = await loginRequest(nombreUsuario, password);
+  if (!token) throw new Error('Respuesta inválida del servidor');
+  try { localStorage.setItem('token', token); } catch {}
+  return true;
 };
 
-// Logout (POST /logout) → no devuelve nada, sólo invalida el token
 export const logout = async () => {
-  try {
-    await axios.post('/logout');
-    return true; // Logout exitoso
-  } catch (error) {
-    console.error('Error cerrando sesión:', error);
-    throw error;
-  }
+  try { if (window?.auth?.logout) await window.auth.logout(); }
+  finally { if (typeof window !== 'undefined') window.location.hash = '#/login'; }
 };

@@ -260,7 +260,7 @@ const generarPDF = () => {
 
       {/* Resumen del Día */}
       <div className="bg-white p-5 rounded-lg shadow-md">
-        <h3 className="text-orange-700 font-bold mb-3">Resumen del Día</h3>
+        <h3 className="text-orange-700 font-bold mb-3">Resumen del Día Tuxtla</h3>
         <ul className="space-y-2 text-sm text-orange-800">
           <li className="flex justify-between">
             <span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span>

@@ -131,88 +131,205 @@ const totalDescuentos = descuentos.reduce((acc, d) => acc + parseFloat(d.importe
 const total =  - totalDescuentos+ pagadoEnYajalon + viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0) + 
 pagaAbordarSCLC - comision;
 
+// ✅ Formato moneda MXN
+const fmt = (n) =>
+  new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    minimumFractionDigits: 2,
+  }).format(Number(n || 0));
 
-const generarPDF = () => {
-  const observaciones = prompt("Escriba alguna observación(opcional):") || '';
-  const fechaHoy = obtenerFechaFormateada();
-  const doc = new jsPDF();
+const generarPDF = async () => {
+  try {
+    const observaciones = prompt("Escriba alguna observación (opcional):") || "";
+    const fechaHoy = obtenerFechaFormateada();
+    const doc = new jsPDF({ unit: "pt", format: "letter" }); // tamaño carta en puntos
 
-  // 1. Encabezado
-  doc.setFontSize(14);
-  doc.text('TRANSPORTES LOS YAJALONES S.A. DE C.V.', 20, 20);
-  doc.setFontSize(10);
-  doc.text('Dirección: 15 Oriente esquina 7 sur #817, Tuxtla Gutiérrez, Chiapas', 20, 26);
-  doc.text('Teléfono: 9613023642 ', 20, 32);
+    // Márgenes
+    const M = { l: 40, r: 40, t: 40, b: 40 };
 
-  let y = 40;
+    // ====== Encabezado (repite en cada página) ======
+    const drawHeader = () => {
+      doc.setFontSize(12);
+      doc.text("TRANSPORTES LOS YAJALONES S.A. DE C.V.", M.l, M.t);
+      doc.setFontSize(9);
+      doc.text(
+        "Dirección: 15 Oriente esquina 7 sur #817, Tuxtla Gutiérrez, Chiapas",
+        M.l,
+        M.t + 16
+      );
+      doc.text("Teléfono: 9613023642", M.l, M.t + 30);
 
-  // 2. Tabla de Viajes Yajalon
-  doc.setFontSize(12);
-  doc.text('Resumen de Viajes (Yajalón)', 20, y);
-  y += 4;
+      // Fecha alineada a la derecha
+      doc.text(
+        `Fecha de corte: ${fechaHoy}`,
+        doc.internal.pageSize.getWidth() - M.r,
+        M.t,
+        { align: "right" }
+      );
+      doc.setLineWidth(0.5);
+      doc.line(M.l, M.t + 40, doc.internal.pageSize.getWidth() - M.r, M.t + 40);
+    };
 
-  autoTable(doc, {
-    startY: y,
-    head: [['ID Viaje', 'Origen', 'Destino', 'Pasajeros', 'Paquetería', 'Comisión']],
-    body: viajesYajalon.map(v => [
-      v.idViaje,
-      v.origen,
-      v.destino,
-      `$${parseFloat(v.totalPasajeros || 0).toFixed(2)}`,
-      `$${parseFloat(v.totalPaqueteria || 0).toFixed(2)}`,
-      `$${parseFloat(v.comision || 0).toFixed(2)}`
-    ]),
-    theme: 'grid',
-  });
+    // ====== Pie de página (paginación) ======
+    const drawFooter = () => {
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const w = doc.internal.pageSize.getWidth();
+        const h = doc.internal.pageSize.getHeight();
+        doc.setFontSize(8);
+        doc.text(`Página ${i} de ${pageCount}`, w / 2, h - 20, { align: "center" });
+      }
+    };
 
-  y = doc.lastAutoTable.finalY + 10;
+    // Dibuja encabezado inicial
+    drawHeader();
 
-  // 3. Observaciones
-  if (observaciones.trim()) {
+    // ====== Tabla: Viajes Yajalón ======
     doc.setFontSize(12);
-    doc.text('Observaciones:', 20, y);
-    y += 6;
+    doc.text("Resumen de Viajes (Yajalón)", M.l, M.t + 60);
+
+    autoTable(doc, {
+      startY: M.t + 70,
+      head: [["ID Viaje", "Origen", "Destino", "Pasajeros", "Paquetería", "Comisión"]],
+      body: viajesYajalon.map((v) => [
+        v.idViaje,
+        v.origen,
+        v.destino,
+        fmt(v.totalPasajeros),
+        fmt(v.totalPaqueteria),
+        fmt(v.comision),
+      ]),
+      foot: [
+        [
+          { content: "Totales", colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
+          fmt(viajesYajalon.reduce((a, v) => a + (v.totalPasajeros || 0), 0)),
+          fmt(viajesYajalon.reduce((a, v) => a + (v.totalPaqueteria || 0), 0)),
+          fmt(viajesYajalon.reduce((a, v) => a + (v.comision || 0), 0)),
+        ],
+      ],
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 6, overflow: "linebreak" },
+      headStyles: { fillColor: [248, 201, 142], textColor: [69, 43, 28] },
+      footStyles: { fillColor: [240, 240, 240], fontStyle: "bold" },
+      margin: { left: M.l, right: M.r },
+      columnStyles: {
+        0: { cellWidth: "auto" },
+        1: { cellWidth: "auto" },
+        2: { cellWidth: "auto" },
+      },
+      didDrawPage: (data) => {
+        if (data.pageNumber > 1) drawHeader();
+      },
+    });
+
+    let y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 16 : M.t + 90;
+
+    // ====== Observaciones (si hay) ======
+    if (observaciones.trim()) {
+      doc.setFontSize(12);
+      doc.text("Observaciones:", M.l, y);
+      y += 8;
+
+      autoTable(doc, {
+        startY: y,
+        body: [[{ content: observaciones }]],
+        theme: "plain",
+        styles: { fontSize: 10, cellPadding: 8, lineColor: [200, 200, 200], lineWidth: 0.5 },
+        margin: { left: M.l, right: M.r },
+        didDrawPage: (data) => {
+          if (data.pageNumber > 1) drawHeader();
+        },
+      });
+
+      y = doc.lastAutoTable.finalY + 16;
+    }
+
+    // ====== Resumen del Día (igual que tu panel, pero en PDF) ======
+    doc.setFontSize(12);
+    doc.text("Resumen del Día (solo Tuxtla)", M.l, y);
+    y += 8;
+
+    const resumen = [
+      ["Pasajeros", fmt(totalPasajeros)],
+      ["Paquetería", fmt(totalPaqueteria)],
+      ["Comisión (10%)", fmt(comision)],
+      ["Paquetes por cobrar", fmt(paquetesPorCobrar)],
+      ["Pagado en Tuxtla", fmt(pagadoEnTuxtla)],
+      ["Viajes de SCLC", fmt(pagaAbordarSCLC)],
+      ["Otros descuentos", fmt(totalDescuentos)],
+      ["TOTAL", fmt(total)],
+    ];
+
+    autoTable(doc, {
+      startY: y,
+      body: resumen.map(([k, v]) => [
+        { content: k, styles: { halign: "left" } },
+        { content: v, styles: { halign: "right" } },
+      ]),
+      theme: "grid",
+      styles: { fontSize: 10, cellPadding: 6 },
+      columnStyles: {
+        0: { cellWidth: 240 },
+        1: { cellWidth: 160 },
+      },
+      margin: { left: M.l, right: M.r },
+      didDrawPage: (data) => {
+        if (data.pageNumber > 1) drawHeader();
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 30;
+
+    // ====== Firmas ======
+    const w = doc.internal.pageSize.getWidth();
+    const colW = (w - M.l - M.r) / 2 - 20;
+
+    doc.setLineWidth(0.7);
+    doc.line(M.l, y, M.l + colW, y);
+    doc.line(M.l + colW + 40, y, M.l + colW + 40 + colW, y);
 
     doc.setFontSize(10);
-    const lines = doc.splitTextToSize(observaciones, 170);
-    doc.text(lines, 20, y);
-    y += lines.length * 5 + 5;
+    doc.text("Elaboró", M.l + colW / 2, y + 14, { align: "center" });
+    doc.text("Recibió", M.l + colW + 40 + colW / 2, y + 14, { align: "center" });
+
+    // ====== Paginación ======
+    drawFooter();
+
+    // ====== Guardar (web + Electron) ======
+    try {
+      if (window?.pdf?.saveBuffer) {
+        const ab = doc.output("arraybuffer");         // jsPDF -> ArrayBuffer
+        await window.pdf.saveBuffer(ab, "CorteDia.pdf"); // diálogo de guardar en la app
+      } else {
+        doc.save("CorteDia.pdf"); // web
+      }
+    } catch (e) {
+      // Fallback web por si acaso
+      const ab = doc.output("arraybuffer");
+      const blob = new Blob([ab], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "CorteDia.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+  } catch (err) {
+    console.error("Error al generar PDF:", err);
+    alert("Ocurrió un error al generar el PDF.");
   }
-
-  // 4. Resumen final
-  doc.setFontSize(12);
-  doc.text('Resumen del Día (solo Tuxtla)', 20, y);
-  y += 6;
-
-  const resumen = [
-    ['Pasajeros', `$${totalPasajeros.toFixed(2)}`],
-    ['Paquetería', `$${totalPaqueteria.toFixed(2)}`],
-    ['Comisión (10%)', `$${comision.toFixed(2)}`],
-    ['Paquetes por cobrar', `$${paquetesPorCobrar.toFixed(2)}`],
-    ['Pagado en Tuxtla', `$${pagadoEnTuxtla.toFixed(2)}`],
-    ['Viajes de SCLC', `$${pagaAbordarSCLC.toFixed(2)}`],
-    ['Otros descuentos', `$${totalDescuentos.toFixed(2)}`],
-    ['TOTAL', `$${total.toFixed(2)}`],
-  ];
-
-  resumen.forEach(([etiqueta, valor]) => {
-    doc.setFontSize(10);
-    doc.text(`${etiqueta}:`, 25, y);
-    doc.text(valor, 150, y, { align: 'right' });
-    y += 6;
-  });
-
-  // 5. Fecha
-  doc.setFontSize(10);
-  doc.text('Fecha de corte:', 20, y);
-  doc.text(fechaHoy, 55, y);
-
-  doc.save('CorteDia.pdf');
 };
 
 
 
+
+
   return (
+    
     <div className="flex gap-6 p-6">
     {/* Columna izquierda: Formulario y Resumen */}
     <div className="w-1/3 flex flex-col gap-6">
@@ -263,7 +380,7 @@ const generarPDF = () => {
 
       {/* Resumen del Día */}
       <div className="bg-white p-5 rounded-lg shadow-md">
-        <h3 className="text-orange-700 font-bold mb-3">Resumen del Día</h3>
+        <h3 className="text-orange-700 font-bold mb-3">Resumen del Día Yajalon</h3>
         <ul className="space-y-2 text-sm text-orange-800">
           <li className="flex justify-between">
             <span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span>

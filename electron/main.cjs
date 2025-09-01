@@ -1,165 +1,160 @@
-// electron/main.js  (o main.cjs si así lo nombras)
+// electron/main.cjs
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const axios = require('axios');
+const { registerPDFIpc } = require('./pdf.cjs'); // IPCs de PDF
 
-// ====== CONFIG ======
 const isDev = !app.isPackaged;
-// Usa la base del backend desde variable de entorno si existe
 const API_BASE = process.env.VITE_API_BASE || 'http://localhost:8081';
+const APP_ICON = path.join(__dirname, 'assets', 'icono.ico');
 
-// Ruta del ícono de la app (PNG/ICO). Reemplaza por tu archivo real.
-// Sugerido: coloca un PNG (256x256) en electron/assets/yajalones.png
-const APP_ICON = path.join(__dirname, 'assets', 'yajalones.ico');
+const authState = { token: null, exp: null, timer: null };
+const currentUser = { username: null, terminal: null };
 
-// ====== AUTH STATE (en memoria, no en disco) ======
-const authState = {
-  token: null,
-  exp: null,         // epoch seconds
-  timer: null,       // setTimeout ref
-};
-
-// Decodifica el payload del JWT sin dependencias externas
+// ------------ utilidades ------------
 function decodeJwtPayload(token) {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const json = Buffer.from(base64, 'base64').toString('utf8');
-    return JSON.parse(json); // { exp, sub, rol, ... }
-  } catch {
-    return null;
-  }
+    return JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+  } catch { return null; }
 }
 
-function clearAuth(reason = 'logout') {
-  authState.token = null;
-  authState.exp = null;
-  if (authState.timer) {
-    clearTimeout(authState.timer);
-    authState.timer = null;
-  }
-  // Notificar al renderer que la sesión terminó
-  if (BrowserWindow.getAllWindows().length) {
-    const win = BrowserWindow.getAllWindows()[0];
-    win.webContents.send('auth:session-expired', { reason });
+function broadcast(channel, payload) {
+  for (const w of BrowserWindow.getAllWindows()) {
+    try { w.webContents.send(channel, payload); } catch {}
   }
 }
 
 function scheduleAutoLogout(exp) {
   if (!exp) return;
-  const now = Math.floor(Date.now() / 1000);
-  const ms = Math.max(0, (exp - now) * 1000);
+  const ms = Math.max(0, (exp - Math.floor(Date.now() / 1000)) * 1000);
   if (authState.timer) clearTimeout(authState.timer);
-  authState.timer = setTimeout(() => {
-    clearAuth('expired');
-  }, ms);
+  authState.timer = setTimeout(() => clearAuth('expired'), ms);
 }
 
-// ====== WINDOW ======
-let mainWindow = null;
+let clearedOnce = false;
+function clearAuth(reason = 'logout') {
+  if (clearedOnce) return;         // evita doble ejecución
+  clearedOnce = true;
 
+  authState.token = null;
+  authState.exp = null;
+  if (authState.timer) { clearTimeout(authState.timer); authState.timer = null; }
+  currentUser.username = null;
+  currentUser.terminal = null;
+
+  // notifica a TODOS los renderers
+  broadcast('auth:session-expired', { reason });
+  broadcast('auth:session-closed', { reason });
+}
+
+// ------------ ventana principal ------------
+let mainWindow = null;
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
     minWidth: 900,
     minHeight: 600,
-    show: false, // mostramos tras ready-to-show para evitar parpadeo
+    show: false,
     title: 'Yajalones',
-    icon: APP_ICON, // afecta icono de ventana y taskbar (en Windows usa .ico si prefieres)
+    icon: APP_ICON,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.js'), // <-- usa el nombre real que tengas
     },
   });
 
-  // Carga dev o build
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
   mainWindow.once('ready-to-show', () => {
-    try {
-      // Maximiza al abrir
-      mainWindow.maximize();
-      mainWindow.show();
-    } catch {}
+    try { mainWindow.maximize(); mainWindow.show(); } catch {}
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
-  // (Opcional) quitar menú
+  // 🔒 al cerrar la ventana, limpia sesión
+  mainWindow.on('close', () => { clearAuth('window-closed'); });
+  mainWindow.on('closed', () => { mainWindow = null; });
   mainWindow.removeMenu();
 }
 
-// ====== IPC: título app (por si desde renderer quieres cambiarlo) ======
-ipcMain.handle('app:set-title', (_e, title) => {
-  if (mainWindow && typeof title === 'string') {
-    mainWindow.setTitle(title);
-  }
+// ------------ IPCs no-PDF ------------
+ipcMain.handle('app:set-title', (_e, t) => {
+  if (mainWindow && typeof t === 'string') mainWindow.setTitle(t);
 });
 
-// ====== IPC: AUTH ======
-
-// Login: recibe credenciales, llama al backend y guarda el token en memoria
-ipcMain.handle('auth:login', async (_event, { nombreUsuario, password }) => {
+ipcMain.handle('auth:login', async (_e, { nombreUsuario, password }) => {
   try {
-    const { data } = await axios.post(`${API_BASE}/inicioSesion`, {
-      nombreUsuario,
-      password,
-    }, { headers: { 'Content-Type': 'application/json' } });
-
-    const token = data && data.access_token;
-    if (!token) {
-      return { ok: false, message: 'Respuesta inválida del servidor' };
-    }
+    const { data } = await axios.post(
+      `${API_BASE}/inicio-sesion`,
+      { nombreUsuario, password },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
+    );
+    const token = data?.access_token;
+    if (!token) return { ok: false, message: 'Respuesta inválida del servidor' };
 
     const payload = decodeJwtPayload(token);
-    if (!payload || !payload.exp) {
-      return { ok: false, message: 'Token inválido' };
-    }
+    if (!payload?.exp) return { ok: false, message: 'Token inválido' };
 
-    // Guardar en memoria y programar auto-logout
     authState.token = token;
     authState.exp = payload.exp;
     scheduleAutoLogout(payload.exp);
 
+    const username = String(nombreUsuario || '').toLowerCase();
+    currentUser.username = username;
+    currentUser.terminal =
+      username.includes('yajalon') ? 'YAJALON' :
+      username.includes('tuxtla') ? 'TUXTLA' : null;
+
+    clearedOnce = false; // nueva sesión -> permite limpiar de nuevo
     return { ok: true };
-  } catch (err) {
-    // Mensaje simple para no filtrar detalles internos
+  } catch {
     return { ok: false, message: 'Credenciales inválidas o servidor no disponible' };
   }
 });
 
-// Devuelve token sólo si no está vencido
 ipcMain.handle('auth:getToken', async () => {
   if (!authState.token || !authState.exp) return null;
-  const now = Math.floor(Date.now() / 1000);
-  if (authState.exp <= now) {
+  if (authState.exp <= Math.floor(Date.now() / 1000)) {
     clearAuth('expired');
     return null;
   }
   return authState.token;
 });
 
-// Logout explícito
 ipcMain.handle('auth:logout', async () => {
   clearAuth('logout');
   return true;
 });
 
-// ====== APP LIFE ======
-app.whenReady().then(createWindow);
-
-app.on('window-all-closed', () => {
-  // Política: cerrar app = cerrar sesión (borramos token)
-  clearAuth('app-closed');
-  if (process.platform !== 'darwin') app.quit();
+ipcMain.handle('session:getUser', async () => {
+  if (!authState.token) return null;
+  return { ...currentUser };
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+// ------------ PDF ------------
+registerPDFIpc();
+
+// ------------ ciclo de vida app ------------
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+// al intentar salir (menú/sistema), notifica y limpia
+app.on('before-quit', () => { clearAuth('before-quit'); });
+
+// cuando no queden ventanas, limpia y termina
+app.on('window-all-closed', () => {
+  clearAuth('app-closed');
+  if (process.platform !== 'darwin') app.quit();
 });
