@@ -118,7 +118,7 @@ ipcMain.handle('imprimir-ticket-pasajero', async (_e, { pasajero, viaje }) => {
   printWindow.webContents.on('did-finish-load', () => {
     printWindow.webContents.print({
       silent: false, // true para no mostrar diálogo
-      printBackground: false,
+      printBackground: true,
       // deviceName: 'Nombre_de_tu_impresora' // Opcional: pon el nombre exacto de tu impresora
     }, () => {
       printWindow.close();
@@ -128,44 +128,14 @@ ipcMain.handle('imprimir-ticket-pasajero', async (_e, { pasajero, viaje }) => {
   return true;
 });
 //------------- IPCs de ticket Paquete-------------
-ipcMain.handle('imprimir-ticket-paquete', async (_e, { paquete, viaje }) => {
-  const ticketHtml = `
-    <div style="font-family: monospace; font-size: 14px;">
-    <h2 style="text-align:center;">Los Yajalones</h2>
-      <h2 style="text-align:center;">Paquete</h2>
-      <hr>
-      <div>Folio: ${paquete.folio ?? ''}</div>
-      <div>Remitente: ${paquete.remitente ?? ''}</div>
-      <div>Destinatario: ${paquete.destinatario ?? ''}</div>
-      <div>Origen: ${viaje?.origen ?? ''}</div>
-      <div>Destino: ${viaje?.destino ?? ''}</div>
-      <div>Fecha: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString('es-MX') : ''}</div>
-      <div>Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString('es-MX') : ''}</div>
-      <div>Por Cobrar: ${paquete.porCobrar ? 'Si': 'No' ?? ''}</div>
-      <div>Importe: $${parseFloat(paquete.importe ?? 0).toFixed(2)}</div>
-      <hr>
-      <div style="text-align:center;">¡Gracias por confiar en nosotros!</div>
-    </div>
-  `;
 
-  const printWindow = new BrowserWindow({
-    show: false,
-    webPreferences: { nodeIntegration: true }
-  });
-
-  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(ticketHtml));
-  printWindow.webContents.on('did-finish-load', () => {
-    printWindow.webContents.print({
-      silent: false,
-      printBackground: false,
-      // deviceName: 'Nombre_de_tu_impresora'
-    }, () => {
-      printWindow.close();
-    });
-  });
-
+ipcMain.handle("imprimir-html", async (_e, html) => {
+  const win = new BrowserWindow({ show: false });
+  await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  win.webContents.print({ silent: false, printBackground: true }, () => win.close());
   return true;
 });
+
 // ------------ IPCs no-PDF ------------
 ipcMain.handle('app:set-title', (_e, t) => {
   if (mainWindow && typeof t === 'string') mainWindow.setTitle(t);

@@ -1,7 +1,7 @@
 // src/services/Admin/api.js
 import axios from 'axios';
 
-const API_BASE = import.meta.env?.VITE_API_BASE || 'https://yajalones-app-81c1abc5059e.herokuapp.com';
+const API_BASE = import.meta.env?.VITE_API_BASE || 'http://localhost:8081';
 
 async function getAuthToken() {
   if (typeof window !== 'undefined' && window.auth?.getToken) {

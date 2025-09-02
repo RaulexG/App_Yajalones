@@ -222,6 +222,95 @@ const prepararEdicion = (paquete) => {
     return "Fecha no encontrada";
   };
 
+  function generarGuiaHTMLDoble(paquete, viaje) {
+  const guia = generarGuiaHTML(paquete, viaje);
+  return `${guia}<hr style="margin:24px 0;">${guia}`;
+}
+
+function generarGuiaHTML(paquete, viaje) {
+  return `
+  <div style="font-family: Arial, sans-serif; font-size: 13px; width: 650px; margin: 0 auto; color: #222;">
+    <div style="text-align:center; font-weight:bold; font-size:16px;">
+      UNIÓN DE TRANSPORTISTAS "LOS YAJALONES" S.C. DE R.L. DE C.V.
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+      <div>
+        TERMINAL EN YAJALÓN<br>
+        2ª. CALLE PONIENTE NORTE S/N<br>
+        YAJALÓN, CHIAPAS<br>
+        TELÉFONO: 919-674-2114
+      </div>
+      <div>
+        TERMINAL EN TUXTLA GUTIERREZ<br>
+        15ª ORIENTE SUR #817 ENTRE 7ª Y 8ª SUR<br>
+        TUXTLA GUTIERREZ, CHIAPAS<br>
+        TELÉFONO: 961-302-3642
+      </div>
+    </div>
+    <div style="text-align:center; font-weight:bold; margin:10px 0 4px 0;">GUÍA DE TRASLADO DE PAQUETERÍA Y MENSAJERÍA</div>
+    <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <tr>
+        <td style="border:1px solid #888; padding:4px;">FECHA:</td>
+        <td style="border:1px solid #888; padding:4px;">${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}</td>
+        <td style="border:1px solid #888; padding:4px;">UNIDAD:</td>
+        <td style="border:1px solid #888; padding:4px;">${viaje?.unidad?.nombre ?? ""}</td>
+        <td rowspan="2" style="border:1px solid #888; padding:4px;">GUÍA No.:</td>
+        <td rowspan="2" style="border:1px solid #888; padding:4px;">${paquete.folio ?? ""}</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #888; padding:4px;">RUTA:</td>
+        <td style="border:1px solid #888; padding:4px;">${viaje?.origen ?? ""} - ${viaje?.destino ?? ""}</td>
+        <td style="border:1px solid #888; padding:4px;">HORA:</td>
+        <td style="border:1px solid #888; padding:4px;">${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX") : ""}</td>
+        
+      </tr>
+      <tr>
+      <td rowspan="2" colspan="3" style="border:1px solid #888; padding:4px;">REMITENTE: ${paquete.remitente ?? ""}</td>
+        <td rowspan="2" colspan="3" style="border:1px solid #888; padding:4px;">DESTINATARIO: ${paquete.destinatario ?? ""}</td>
+
+      </tr>
+    </table>
+    <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
+      <tr style="background:#c14600; color:#fff;">
+        <th style="border:1px solid #888; padding:4px;">CANTIDAD</th>
+        <th style="border:1px solid #888; padding:4px;">DESCRIPCIÓN</th>
+        <th style="border:1px solid #888; padding:4px;">CONTENIDO</th>
+        <th style="border:1px solid #888; padding:4px;">IMPORTE $</th>
+      </tr>
+      <tr>
+        <td style="border:1px solid #888; padding:4px;">1</td>
+        <td style="border:1px solid #888; padding:4px;">${paquete.contenido ?? ""}</td>
+        <td style="border:1px solid #888; padding:4px;">${paquete.contenido ?? ""}</td>
+        <td style="border:1px solid #888; padding:4px;">${parseFloat(paquete.importe ?? 0).toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td colspan="3" style="border:1px solid #888; padding:4px; text-align:right;">TOTAL</td>
+        <td style="border:1px solid #888; padding:4px;">${parseFloat(paquete.importe ?? 0).toFixed(2)}</td>
+      </tr>
+    </table>
+    <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
+      <tr>
+        <td style="border:1px solid #888; padding:4px; background:${paquete.porCobrar ? '#fecf9d' : '#c8e6c9'}; color:#222; text-align:center;" colspan="2">
+          ${paquete.porCobrar ? 'POR COBRAR' : 'PAGADO'}
+        </td>
+      </tr>
+    </table>
+    <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
+      <tr>
+        <td style="border:1px solid #888; padding:4px;">RECIBÍ DE CONFORMIDAD</td>
+        <td style="border:1px solid #888; padding:4px;">FIRMA DEL DOCUMENTADOR</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #888; padding:20px;">HORA Y FECHA</td>
+        <td style="border:1px solid #888; padding:20px;"></td>
+      </tr>
+    </table>
+    <div style="font-size:11px; margin-top:10px; text-align:justify;">
+      La empresa se compromete a la entrega del(os) paquetes en un plazo no mayor a 72 horas. El conductor no está autorizado a la entrega directa de paquetería. La empresa no se responsabiliza por paquetería después de 72 horas de haberse transportado; alimentos y perecederos se transportan a cuenta y riesgo del cliente. Paquetería que sea recogida después de tres días de transportado pagará un recargo adicional de $5.00 diarios por almacenaje.
+    </div>
+  </div>
+  `;
+}
 
 
   return (
@@ -464,10 +553,11 @@ const prepararEdicion = (paquete) => {
                       onClick={async () => {
     try {
       const viaje = viajes.find(v => v.paquetes?.some(paq => paq.folio === p.folio));
-      await window.ticketPaquete.imprimir({paquete: p,viaje});
+      const html = generarGuiaHTMLDoble(p, viaje);
+      await window.electronAPI.imprimirHTML(html);
       Swal.fire({
         icon: "success",
-        title: "Ticket impreso",
+        title: "Guía impresa",
         timer: 1500,
         showConfirmButton: false
       });

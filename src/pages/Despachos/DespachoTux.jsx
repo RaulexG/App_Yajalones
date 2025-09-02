@@ -22,37 +22,43 @@ export default function Despachos() {
   }, []);
 
   const cargarDatos = async () => {
-    try {
+  try {
+    const listaViajes = await ListarViajes();
+    const hoyISO = new Date().toISOString().slice(0, 10);
 
 
-      const listaViajes = await ListarViajes();
-      const todosPasajeros = listaViajes.flatMap(viaje =>
+    const viajesHoy = listaViajes.filter((v) => {
+      const fechaViaje = new Date(v.fechaSalida).toISOString().slice(0, 10);
+      return fechaViaje === hoyISO;
+    });
+
+    const todosPasajeros = viajesHoy.flatMap(viaje =>
       (viaje.pasajeros || []).map(p => ({
         ...p,
         origen: viaje.origen,
         destino: viaje.destino,
-        idViaje: viaje.idViaje
+        idViaje: viaje.idViaje,
       }))
     );
-    const todosPaquetes = listaViajes.flatMap(viaje =>
+
+    const todosPaquetes = viajesHoy.flatMap(viaje =>
       (viaje.paquetes || []).map(p => ({
         ...p,
         origen: viaje.origen,
         destino: viaje.destino,
-        idViaje: viaje.idViaje
+        idViaje: viaje.idViaje,
       }))
     );
 
+    setViajes(viajesHoy);
+    setPasajeros(todosPasajeros);
+    setPaquetes(todosPaquetes);
+  } catch (error) {
+    console.error("Error al cargar datos:", error);
+  }
+};
 
-      setViajes(listaViajes);
-       setPasajeros(todosPasajeros);
-        setPaquetes(todosPaquetes);
 
-      
-    } catch (error) {
-      console.error("Error al cargar datos:", error);
-    }
-  };
   function obtenerFechaFormateada() {
   const fecha = new Date();
   const dia = fecha.getDate().toString().padStart(2, '0');

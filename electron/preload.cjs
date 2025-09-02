@@ -140,10 +140,9 @@ contextBridge.exposeInMainWorld('ticket', {
   }
 });
 
-contextBridge.exposeInMainWorld('ticketPaquete', {
-  imprimir: async (paquete, viaje) => {
-    return await safeInvoke('imprimir-ticket-paquete', paquete, viaje);
-  }
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  imprimirHTML: (html) => ipcRenderer.invoke("imprimir-html", html),
 });
 
 /* ---------------- net/store bridge ---------------- */
