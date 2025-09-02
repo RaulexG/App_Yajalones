@@ -103,6 +103,17 @@ export const ActualizarUnidad = async (id, unidad) => {
   }
 };
 
+// Eliminar unidad
+export const EliminarUnidad = async (id) => {
+  try {
+    const response = await axios.delete(`/unidades/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error eliminando unidad:', error);
+    throw error;
+  }
+};
+
 // VIAJES------------------------------------------
 
 // Listar viajes

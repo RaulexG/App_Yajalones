@@ -11,6 +11,7 @@ import {
   ActualizarViaje,
   EliminarViaje,
   EliminarTurno,
+  EliminarUnidad,
 } from '../../services/Admin/adminService';
 import Swal from 'sweetalert2';
 
@@ -18,7 +19,7 @@ export default function Ajustes() {
   const [nombreCuenta, setNombreCuenta] = useState('Administrador'); // temporal
 
   const [turnoForm, setTurnoForm] = useState({ horario: '', idTurno: null });
-  const [unidadForm, setUnidadForm] = useState({ nombre: '',asientos: '', descripcion: '', idTurno: '', idUnidad: null });
+  const [unidadForm, setUnidadForm] = useState({ nombre: '',numeroPasajeros: '', descripcion: '', idTurno: '', idUnidad: null });
   const [viajeForm, setViajeForm] = useState({ origen: '', destino: '', fechaSalida: '', idUnidad: '', idViaje: null });
 
   const [turnos, setTurnos] = useState([]);
@@ -61,7 +62,7 @@ export default function Ajustes() {
   const handleGuardarUnidad = async () => {
     const datos = {
       nombre: unidadForm.nombre,
-      asientos: parseInt(unidadForm.asientos),
+      numeroPasajeros: parseInt(unidadForm.numeroPasajeros),
       descripcion: unidadForm.descripcion,
       activo: true,
       turno: { idTurno: parseInt(unidadForm.idTurno) }
@@ -71,7 +72,7 @@ export default function Ajustes() {
     } else {
       await CrearUnidad(datos);
     }
-    setUnidadForm({ nombre: '',aientos:'', descripcion: '', idTurno: '', idUnidad: null });
+    setUnidadForm({ nombre: '',asientos:'', descripcion: '', idTurno: '', idUnidad: null });
     cargarDatos();
   };
 
@@ -97,7 +98,7 @@ export default function Ajustes() {
   const TablaDatos = () => {
     const columnas = {
       turnos: ['ID', 'Horario', ''],
-      unidades: ['ID', 'Nombre', 'Descripción', 'Turno', ''],
+      unidades: ['ID', 'Nombre','Asientos', 'Descripción', 'Turno', ''],
       viajes: ['ID', 'Origen', 'Destino', 'Unidad', 'Fecha de Salida', '']
     };
 
@@ -108,7 +109,7 @@ export default function Ajustes() {
         setTurnoForm({ horario: item.horario, idTurno: item.idTurno });
       }
       if (tipo === 'unidades') {
-        setUnidadForm({ nombre: item.nombre,asientos: item.asientos, descripcion: item.descripcion, idTurno: item.turno?.idTurno || '', idUnidad: item.idUnidad });
+        setUnidadForm({ nombre: item.nombre,asientos: item.numeroPasajeros, descripcion: item.descripcion, idTurno: item.turno?.idTurno || '', idUnidad: item.idUnidad });
       }
       if (tipo === 'viajes') {
         const origen = item.origen;
@@ -126,7 +127,7 @@ export default function Ajustes() {
 
     const filas = {
       turnos: turnos.map(t => [t.idTurno, t.horario, t]),
-      unidades: unidades.map(u => [u.idUnidad, u.nombre,u.asientos, u.descripcion, u.turno?.horario || '', u]),
+      unidades: unidades.map(u => [u.idUnidad, u.nombre,u.numeroPasajeros, u.descripcion, u.turno?.horario || '', u]),
       viajes: viajes.map(v => [v.idViaje, v.origen, v.destino, v.unidad?.nombre, v.fechaSalida.toLocaleString() || '', v])
     };
 
@@ -218,9 +219,22 @@ export default function Ajustes() {
                                                       cancelButtonText: 'No',
                                                       reverseButtons: true
                                                     });
-                                                    if (result.isConfirmed) {
+                                                    if (result.isConfirmed) {try{
+                                                      const turno = cell;
                                         await EliminarTurno(turno.idTurno);
                                         cargarDatos();
+                                        Swal.fire({
+                                                      icon: "success",
+                                                      title: "Turno eliminado",
+                                                      timer: 1500,
+                                                      showConfirmButton: false
+                                                    });}catch(err){Swal.fire({
+                                                      icon: "error",
+                                                      title: "Error al eliminar el turno",
+                                                      timer: 1500,
+                                                      showConfirmButton: false
+                                                    });}
+                                                      
                                                     }
                                       }
                                       if (mostrarTabla === 'unidades' ) {
@@ -232,9 +246,23 @@ export default function Ajustes() {
                                                       cancelButtonText: 'No',
                                                       reverseButtons: true
                                                     });
-                                                    if (result.isConfirmed) {
-                                        await EliminarUnidad(unidad.idUnidad);
-                                        cargarDatos();
+                                                    if (result.isConfirmed) {try{
+                                                      const unidad = cell;
+                                                      await EliminarUnidad(unidad.idUnidad);
+                                                      cargarDatos();
+                                                      Swal.fire({
+                                                      icon: "success",
+                                                      title: "Unidad eliminada",
+                                                      timer: 1500,
+                                                      showConfirmButton: false
+                                                    });
+                                                    }catch(err){Swal.fire({
+                                                      icon: "error",
+                                                      title: "Error al eliminar la unidad",
+                                                      timer: 1500,
+                                                      showConfirmButton: false
+                                                    });}
+                                        
                                                     }
                                       }
                                     }}
@@ -293,8 +321,17 @@ export default function Ajustes() {
                                                     cancelButtonText: 'No',
                                                     reverseButtons: true
                                                   });
-                                      if (result.isConfirmed) {try{await EliminarViaje(viaje.idViaje);
+                                      if (result.isConfirmed) {try{
+                                        const viaje = cell;
+                                        await EliminarViaje(viaje.idViaje);
                                         cargarDatos();
+                                        Swal.fire({
+                                                      icon: "success",
+                                                      title: "Viaje eliminado",
+                                                      timer: 1500,
+                                                      showConfirmButton: false
+                                                    });
+
                                       }catch (err) {Swal.fire({
                                                       icon: "error",
                                                       title: "Error al eliminar el viaje",
@@ -511,7 +548,7 @@ export default function Ajustes() {
               <label className="block text-orange-700 font-semibold mb-1">No. de Asientos</label>
               <input
                 value={unidadForm.asientos}
-                onChange={(e) => setUnidadForm({ ...unidadForm, asientos: e.target.value })}
+                onChange={(e) => setUnidadForm({ ...unidadForm, numeroPasajeros: e.target.value })}
                 className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
               />
             </div>

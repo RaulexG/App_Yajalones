@@ -228,6 +228,9 @@ const eliminarPasajero = async (idPasajero) => {
   }
 };
 
+const ObtenerAsientos = (unidad) => parseInt(unidad?.numeroPasajeros || 20);
+
+
 
 
 
@@ -506,7 +509,7 @@ const eliminarPasajero = async (idPasajero) => {
             <div className="bg-orange-50 p-3 rounded-md">
               <p className="text-orange-700 font-semibold mb-3">Seleccionar asiento</p>
               <div className="grid grid-cols-4 gap-4 justify-items-center">
-                {[...Array(20)].map((_, i) => {
+                {[...Array(ObtenerAsientos(viajeSeleccionado?.unidad))].map((_, i) => {
                   const numero = i + 1;
                   const ocupado = asientosOcupados.includes(numero);
                   const seleccionado = formulario.asiento === numero;
