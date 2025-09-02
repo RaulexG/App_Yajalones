@@ -1,7 +1,7 @@
 // src/devAuthShim.js
 import axios from 'axios';
 
-const API_BASE = import.meta.env?.VITE_API_BASE || 'http://localhost:8081';
+const API_BASE = import.meta.env?.VITE_API_BASE || 'https://yajalones-app-81c1abc5059e.herokuapp.com';
 
 // Detectar si estamos corriendo dentro de Electron
 const isElectron =
