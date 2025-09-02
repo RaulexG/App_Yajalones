@@ -6,6 +6,7 @@ import {
   ListarUnidades,
   EliminarChofer
 } from "../../services/Admin/adminService";
+import Swal from "sweetalert2";
 
 export default function Choferes() {
   const [formulario, setFormulario] = useState({
@@ -67,14 +68,34 @@ export default function Choferes() {
   };
 
   const eliminarChofer = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar este chofer?")) {
-      try {
+    const result = await Swal.fire({
+              icon: 'question',
+              title: '¿Seguro que quieres eliminar al chofer?',
+              showCancelButton: true,         // Botón "No"
+              confirmButtonText: 'Sí',        // Botón "Sí"
+              cancelButtonText: 'No',
+              reverseButtons: true
+            });
+            if (result.isConfirmed) {try {
         await EliminarChofer(id);
         cargarChoferes();
+        Swal.fire({
+                      icon: 'success',
+                      title: 'Chofer eliminado',
+                      timer: 1500,
+                      showConfirmButton: false
+                    });
       } catch (err) {
-        console.error("Error al eliminar chofer:", err);
-      }
-    }}
+        Swal.fire({
+                icon: "error",
+                title: "Error al eliminar chofer",
+                timer: 1500,
+                showConfirmButton: false
+              });
+              return;
+      }}
+      
+    }
 
 
   const guardarChofer = async (e) => {

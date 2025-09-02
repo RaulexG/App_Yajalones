@@ -10,6 +10,7 @@ import {
   asignarPaqueteAViaje,
   ponerPaqueteComoPendiente
 } from "../../services/Admin/adminService";
+import Swal from "sweetalert2";
 
 export default function Paqueteria() {
   const [viajes, setViajes] = useState([]);
@@ -85,7 +86,12 @@ export default function Paqueteria() {
 
     await cargarPendientes();
   } else {
-    if (!formulario.idViaje) return alert("Seleccione un viaje");
+    if (!formulario.idViaje) return Swal.fire({
+                  icon: "warning",
+                  title: "Llene los campos obligatorios",
+                  timer: 1500,
+                  showConfirmButton: false
+                });
 
     const data = {
       remitente: formulario.remitente,
@@ -146,14 +152,35 @@ const prepararEdicion = (paquete) => {
 
 
   const eliminar = async (id) => {
-    if (confirm("¿Estás seguro que deseas eliminar este paquete?")) {
+    const result = await Swal.fire({
+          icon: 'question',
+          title: '¿Seguro que quieres eliminar el paquete?',
+          showCancelButton: true,         // Botón "No"
+          confirmButtonText: 'Sí',        // Botón "Sí"
+          cancelButtonText: 'No',
+          reverseButtons: true
+        });
+    if (result.isConfirmed) {
       await eliminarPaquete(id);
       cargarPaquetes();
       cargarViajes();
+      Swal.fire({
+              icon: 'success',
+              title: 'Paquete eliminado',
+              timer: 1500,
+              showConfirmButton: false
+            });
     }
+    
   };
+
   const confirmarAsignacion = async () => {
-    if (!viajeSeleccionado) return alert("Seleccione un viaje");
+    if (!viajeSeleccionado) return Swal.fire({
+                  icon: "warning",
+                  title: "Llene los campos obligatorios",
+                  timer: 1500,
+                  showConfirmButton: false
+                });
     try {
       await asignarPaqueteAViaje(paqueteAsignando.idPaquete, parseInt(viajeSeleccionado));
       setPendientes(prev => prev.filter(p => p.idPaquete !== paqueteAsignando.idPaquete));
@@ -429,9 +456,19 @@ const prepararEdicion = (paquete) => {
     try {
       const viaje = viajes.find(v => v.paquetes?.some(paq => paq.folio === p.folio));
       await window.ticketPaquete.imprimir({paquete: p,viaje});
-      alert('Ticket de paquete impreso correctamente');
+      Swal.fire({
+        icon: "success",
+        title: "Ticket impreso",
+        timer: 1500,
+        showConfirmButton: false
+      });
     } catch (err) {
-      alert('Error al imprimir ticket de paquete');
+      Swal.fire({
+        icon: "error",
+        title: "Error al imprimir",
+        timer: 1500,
+        showConfirmButton: false
+      });
     }
   }}
   className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"

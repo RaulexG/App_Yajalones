@@ -3,6 +3,7 @@ import {CrearDescuentoYajalon, ListarViajes
 } from "../../services/Admin/adminService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import Swal from "sweetalert2";
 
 export default function Despachos() {
   const [pasajeros, setPasajeros] = useState([]);
@@ -73,7 +74,13 @@ export default function Despachos() {
   e.preventDefault();
   try {
     if (!formulario.concepto || !formulario.importe) {
-      alert("Por favor, complete los campos de concepto e importe.");
+      Swal.fire({
+              icon: "warning",
+              title: "Llene los campos obligatorios",
+              timer: 1500,
+              showConfirmButton: false
+            });
+            return;
       return;
     }
 
@@ -360,7 +367,13 @@ y = doc.lastAutoTable.finalY + 30;
     }
   } catch (err) {
     console.error("Error al generar PDF:", err);
-    alert("Ocurrió un error al generar el PDF."+ err);
+    Swal.fire({
+            icon: "Error",
+            title: "Error al generar PDF",
+            timer: 1500,
+            showConfirmButton: false
+          });
+          return;
   }
 };
 

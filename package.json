@@ -1,13 +1,17 @@
 {
   "name": "yajalon-app",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "Sistema de Transporte Los Yajalones",
+  "author": "Alejandro Serrano Guzmán, Raúl Chavira Narváez, Cristian Ivan Vázquez Gómez, Frida Monserrat Vázquez de la Cruz, Fernando Gael Estrada Velasco",
   "main": "electron/main.cjs",
+  "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron": "electron .",
-    "build": "vite build",
+    "build:react": "vite build",
+    "build:electron": "electron-builder",
+    "build": "vite build && electron-builder",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -22,6 +26,7 @@
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.3",
+    "sweetalert2": "^11.22.5",
     "tailwindcss": "^4.1.11",
     "uuid": "^11.1.0"
   },
@@ -32,11 +37,44 @@
     "@vitejs/plugin-react": "^4.5.2",
     "concurrently": "^9.2.1",
     "electron": "^37.3.1",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.29.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
     "vite": "^7.0.0",
     "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.yajalon.transporte",
+    "productName": "Sistema de Transporte",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "electron/assets/",
+        "to": "assets",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "electron/assets/icono.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

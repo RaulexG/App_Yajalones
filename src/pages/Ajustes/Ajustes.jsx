@@ -12,6 +12,7 @@ import {
   EliminarViaje,
   EliminarTurno,
 } from '../../services/Admin/adminService';
+import Swal from 'sweetalert2';
 
 export default function Ajustes() {
   const [nombreCuenta, setNombreCuenta] = useState('Administrador'); // temporal
@@ -40,13 +41,21 @@ export default function Ajustes() {
   }, []);
 
   const handleGuardarTurno = async () => {
-    if (turnoForm.idTurno) {
+    try{if (turnoForm.idTurno) {
       await ActualizarTurno(turnoForm.idTurno, { horario: turnoForm.horario });
     } else {
       await CrearTurno({ horario: turnoForm.horario });
     }
     setTurnoForm({ horario: '', idTurno: null });
     cargarDatos();
+  }catch (err) {Swal.fire({
+                    icon: "error",
+                    title: "Error al guardar turno",
+                    text: "Formato esperado HH:MM:SS",
+                    timer: 1500,
+                    showConfirmButton: false
+                  });}
+    
   };
 
   const handleGuardarUnidad = async () => {
@@ -200,13 +209,33 @@ export default function Ajustes() {
                                   <button
                                   onClick={async () => {
                                     
-                                      if (mostrarTabla === 'turnos' && window.confirm('¿Estás seguro de eliminar este turno?')) {
+                                      if (mostrarTabla === 'turnos') {
+                                        const result = await Swal.fire({
+                                                      icon: 'question',
+                                                      title: '¿Seguro que quieres eliminar este turno?',
+                                                      showCancelButton: true,         // Botón "No"
+                                                      confirmButtonText: 'Sí',        // Botón "Sí"
+                                                      cancelButtonText: 'No',
+                                                      reverseButtons: true
+                                                    });
+                                                    if (result.isConfirmed) {
                                         await EliminarTurno(turno.idTurno);
                                         cargarDatos();
+                                                    }
                                       }
-                                      if (mostrarTabla === 'unidades' && window.confirm('¿Estás seguro de eliminar esta unidad?')) {
+                                      if (mostrarTabla === 'unidades' ) {
+                                        const result = await Swal.fire({
+                                                      icon: 'question',
+                                                      title: '¿Seguro que quieres eliminar esta unidad?',
+                                                      showCancelButton: true,         // Botón "No"
+                                                      confirmButtonText: 'Sí',        // Botón "Sí"
+                                                      cancelButtonText: 'No',
+                                                      reverseButtons: true
+                                                    });
+                                                    if (result.isConfirmed) {
                                         await EliminarUnidad(unidad.idUnidad);
                                         cargarDatos();
+                                                    }
                                       }
                                     }}
                                     aria-label="Eliminar"
@@ -256,9 +285,24 @@ export default function Ajustes() {
 
                                   <button
                                     onClick={async () => {
-                                      if (window.confirm('¿Estás seguro de eliminar este viaje?')) {
-                                        await EliminarViaje(viaje.idViaje);
+                                      const result = await Swal.fire({
+                                                    icon: 'question',
+                                                    title: '¿Seguro que quieres eliminar el viaje?',
+                                                    showCancelButton: true,         // Botón "No"
+                                                    confirmButtonText: 'Sí',        // Botón "Sí"
+                                                    cancelButtonText: 'No',
+                                                    reverseButtons: true
+                                                  });
+                                      if (result.isConfirmed) {try{await EliminarViaje(viaje.idViaje);
                                         cargarDatos();
+                                      }catch (err) {Swal.fire({
+                                                      icon: "error",
+                                                      title: "Error al eliminar el viaje",
+                                                      timer: 1500,
+                                                      showConfirmButton: false
+                                                    });
+                                                    return;}
+                                        
                                       }
                                     }}
                                     aria-label="Eliminar viaje"

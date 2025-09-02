@@ -9,6 +9,7 @@ import {
   EliminarPasajero,
   ListarChoferes
 } from '../../services/Admin/adminService';
+import Swal from "sweetalert2";
 
 export default function Pasajeros() {
   const [turnos, setTurnos] = useState([]);
@@ -112,7 +113,12 @@ export default function Pasajeros() {
       return;
     }
     if (!formulario.origen || !formulario.destino) {
-      alert('Selecciona origen y destino');
+      Swal.fire({
+                  icon: "warning",
+                  title: "No hay un viaje seleccionado",
+                  timer: 1500,
+                  showConfirmButton: false
+                });
       return;
     }
     if (!formulario.fechaSalida || !formulario.hora) {
@@ -120,7 +126,12 @@ export default function Pasajeros() {
       return;
     }
     if (!formulario.asiento) {
-      alert('Selecciona un asiento');
+      Swal.fire({
+                  icon: "warning",
+                  title: "Seleccione un asiento",
+                  timer: 1000,
+                  showConfirmButton: false
+                });
       return;
     }
 
@@ -141,10 +152,20 @@ export default function Pasajeros() {
 
       if (idPasajeroEditando) {
         await ActualizarPasajero(idPasajeroEditando, pasajeroFinal);
-        alert('Pasajero actualizado correctamente');
+        Swal.fire({
+  icon: "success",
+  title: "Pasajero actualizado",
+  timer: 1500,
+  showConfirmButton: false
+});
       } else {
         await CrearPasajeros(pasajeroFinal);
-        alert('Pasajero agregado correctamente');
+        Swal.fire({
+  icon: "success",
+  title: "Pasajero agregado",
+  timer: 1500,
+  showConfirmButton: false
+});
       }
 
 
@@ -159,24 +180,54 @@ export default function Pasajeros() {
       limpiarFormulario();
     } catch (error) {
       console.error(error);
-      alert('Error al guardar pasajero');
+      Swal.fire({
+  icon: "error",
+  title: "Error al borrar pasajero",
+  timer: 1500,
+  showConfirmButton: false
+});
     }
   };
 
-  const eliminarPasajero = async (idPasajero) => {
-    try {
+const eliminarPasajero = async (idPasajero) => {
+  try {
+    const result = await Swal.fire({
+      icon: 'question',
+      title: '¿Seguro que quieres eliminar al pasajero?',
+      showCancelButton: true,         // Botón "No"
+      confirmButtonText: 'Sí',        // Botón "Sí"
+      cancelButtonText: 'No',
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      // Solo eliminamos si el usuario confirma
       await EliminarPasajero(idPasajero);
-      alert('Pasajero eliminado');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Pasajero eliminado',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
       if (formulario.viaje?.idViaje) {
         const viajeActualizado = await ObtenerViajePorId(formulario.viaje.idViaje);
         setViajeSeleccionado(viajeActualizado);
         setAsientosOcupados(viajeActualizado.pasajeros.map((p) => p.asiento));
       }
-    } catch (error) {
-      console.error(error);
-      alert('Error al eliminar pasajero');
     }
-  };
+  } catch (error) {
+    console.error(error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error al eliminar pasajero',
+      timer: 1500,
+      showConfirmButton: false
+    });
+  }
+};
+
 
 
 
@@ -455,7 +506,7 @@ export default function Pasajeros() {
             <div className="bg-orange-50 p-3 rounded-md">
               <p className="text-orange-700 font-semibold mb-3">Seleccionar asiento</p>
               <div className="grid grid-cols-4 gap-4 justify-items-center">
-                {[...Array(18)].map((_, i) => {
+                {[...Array(20)].map((_, i) => {
                   const numero = i + 1;
                   const ocupado = asientosOcupados.includes(numero);
                   const seleccionado = formulario.asiento === numero;
