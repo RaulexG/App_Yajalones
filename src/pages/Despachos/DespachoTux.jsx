@@ -282,6 +282,29 @@ autoTable(doc, {
   },
 });
 
+y = doc.lastAutoTable.finalY + 20;
+
+doc.setFontSize(12);
+doc.text("Otros descuentos", M.l, y);
+y += 8;
+
+autoTable(doc, {
+  startY: y,
+  head: [["Concepto", "Descripción", "Monto"]],
+  body: descuentos.map((d) => [
+    d.concepto,
+    d.descripcion,
+    fmt(d.importe)
+  ]),
+  theme: "grid",
+  styles: { fontSize: 9, cellPadding: 5 },
+  headStyles: { fillColor: [248, 201, 142], textColor: [69, 43, 28] },
+  margin: { left: M.l, right: M.r },
+  didDrawPage: (data) => {
+    if (data.pageNumber > 1) drawHeader();
+  },
+});
+
 y = doc.lastAutoTable.finalY + 30;
 
     // ====== Resumen del Día (igual que tu panel, pero en PDF) ======

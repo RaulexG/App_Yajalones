@@ -204,6 +204,15 @@ const prepararEdicion = (paquete) => {
     return "Unidad no encontrada";
   };
 
+  const obtenerDestino = (paquete) => {
+    for (const viaje of viajes) {
+      if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
+        return viaje.destino || "Sin Destino";
+      }
+    }
+    return "Destino no encontrado";
+  };
+
   const obtenerFechaSalida = (paquete) => {
     for (const viaje of viajes) {
       if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
@@ -430,7 +439,7 @@ const prepararEdicion = (paquete) => {
                 <th className="p-2 text-center text-[#452B1C]">Unidad</th>
                 <th className="p-2 text-center text-[#452B1C]">Remitente</th>
                 <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
-                <th className="p-2 text-center text-[#452B1C]">Contenido</th>
+                <th className="p-2 text-center text-[#452B1C]">Destino</th>
                 <th className="p-2 text-center text-[#452B1C]">Por Cobrar</th>
                 <th className="p-2 text-center text-[#452B1C]">Fecha de salida</th>
                 <th className="p-2 text-center text-[#452B1C]">Importe</th>
@@ -444,7 +453,7 @@ const prepararEdicion = (paquete) => {
                   <td className="p-2 text-center">{obtenerNombreUnidad(p)}</td>
                   <td className="p-2 text-center">{p.remitente}</td>
                   <td className="p-2 text-center">{p.destinatario}</td>
-                  <td className="p-2 text-center">{p.contenido}</td>
+                  <td className="p-2 text-center">{obtenerDestino(p)}</td>
                   <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
                   <td className="p-2 text-center">{obtenerFechaSalida(p)}</td>
                   <td className="p-2 text-center">${p.importe.toFixed(2)}</td>

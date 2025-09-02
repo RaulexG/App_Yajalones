@@ -1,10 +1,10 @@
 // src/layouts/Layout.jsx
-// ...imports arriba
 import React, { useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Layout() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();               // ← para detectar la ruta actual
   const [terminal, setTerminal] = useState(null);
 
   useEffect(() => {
@@ -20,7 +20,6 @@ export default function Layout() {
     return () => { ok = false; };
   }, []);
 
-  // ✅ Cerrar sesión fuerte: limpia storage y redirige
   const handleLogout = async () => {
     try {
       await window.auth?.logout?.();
@@ -33,19 +32,22 @@ export default function Layout() {
     }
   };
 
-  // ✅ Suscríbete a los eventos que emite main.cjs al cerrar la app/ventana
   useEffect(() => {
     const off1 = window.auth?.onSessionExpired?.(() => handleLogout());
     const off2 = window.auth?.onSessionClosed?.(() => handleLogout());
     return () => {
       try { off1 && off1(); off2 && off2(); } catch {}
     };
-  }, []); // ← importante: se registra una sola vez
+  }, []); // se registra una sola vez
 
+  // ----- clases para los tabs
   const linkClass = ({ isActive }) =>
     `flex flex-col items-center justify-center px-2 py-2 w-24 h-16 text-xs ${
       isActive ? 'bg-[#FF9D23] text-white' : 'text-white'
     }`;
+
+  // ----- FIX: activo manual para cualquier subruta de /despachos
+  const despachosIsActive = pathname.startsWith('/despachos');
 
   return (
     <div className="h-screen flex flex-col font-sans">
@@ -72,11 +74,13 @@ export default function Layout() {
             <span className="mt-1 font-inter">Paquetería</span>
           </NavLink>
 
-          <NavLink to="/despachos" className={linkClass}>
+          {/* FIX: usa despachosIsActive */}
+          <NavLink
+            to="/despachos"
+            className={(nav) => linkClass({ isActive: nav.isActive || despachosIsActive })}
+          >
             {<svg xmlns="http://www.w3.org/2000/svg" width={48} height={48} viewBox="0 0 24 24"><path fill="currentColor" fillRule="evenodd" d="M14.25 2.5a.25.25 0 0 0-.25-.25H7A2.75 2.75 0 0 0 4.25 5v14A2.75 2.75 0 0 0 7 21.75h10A2.75 2.75 0 0 0 19.75 19V9.147a.25.25 0 0 0-.25-.25H15a.75.75 0 0 1-.75-.75zm.75 9.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1 0-1.5zm0 4a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1 0-1.5z" clipRule="evenodd"></path><path fill="currentColor" d="M15.75 2.824c0-.184.193-.301.336-.186q.182.147.323.342l3.013 4.197c.068.096-.006.22-.124.22H16a.25.25 0 0 1-.25-.25z"></path></svg>}
-            <span className="mt-1 font-inter">
-              {terminal === 'YAJALON' ? 'Despachos Yaja' : terminal === 'TUXTLA' ? 'Despachos Tux' : 'Despachos'}
-            </span>
+            <span className="mt-1 font-inter">Despachos</span>
           </NavLink>
 
           <NavLink to="/choferes" className={linkClass}>

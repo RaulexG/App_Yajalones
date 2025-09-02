@@ -166,7 +166,7 @@ const generarPDF = async () => {
         M.t + 16
       );
       doc.text("Teléfono fijo: 919 674 21 14", M.l, M.t + 30);
-      doc.text("Teléfono Celular: 919 145 97 11", M.l, M.t + 30);
+      doc.text("Teléfono Celular: 919 145 97 11", M.l, M.t + 40);
 
       // Fecha alineada a la derecha
       doc.text(
@@ -176,7 +176,7 @@ const generarPDF = async () => {
         { align: "right" }
       );
       doc.setLineWidth(0.5);
-      doc.line(M.l, M.t + 40, doc.internal.pageSize.getWidth() - M.r, M.t + 40);
+      doc.line(M.l, M.t + 45, doc.internal.pageSize.getWidth() - M.r, M.t + 45);
     };
 
     // ====== Pie de página (paginación) ======
@@ -286,6 +286,29 @@ autoTable(doc, {
   didDrawPage: (data) => {
     if (data.pageNumber > 1) drawHeader();
   },
+});
+
+y = doc.lastAutoTable.finalY + 20;
+
+doc.setFontSize(12);
+doc.text("Otros descuentos", M.l, y);
+y += 8;
+
+autoTable(doc, {
+  startY: y,
+  head: [["Concepto", "Descripción", "Monto"]],
+  body: descuentos.map((d) => [
+    d.concepto,
+    d.descripcion,
+    fmt(d.importe)
+  ]),
+  theme: "grid",
+  styles: { fontSize: 9, cellPadding: 5 },
+  headStyles: { fillColor: [248, 201, 142], textColor: [69, 43, 28] },
+  margin: { left: M.l, right: M.r },
+  didDrawPage: (data) => {
+    if (data.pageNumber > 1) drawHeader();
+  },
 });
 
 y = doc.lastAutoTable.finalY + 30;
