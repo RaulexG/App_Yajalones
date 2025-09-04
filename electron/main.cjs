@@ -130,7 +130,7 @@ ipcMain.handle('imprimir-ticket-pasajero', async (_e, { pasajero, viaje }) => {
 //------------- IPCs de ticket Paquete-------------
 
 ipcMain.handle("imprimir-html", async (_e, html) => {
-  const win = new BrowserWindow({ show: false });
+  const win = new BrowserWindow({ show: true });
   await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   win.webContents.print({ silent: false, printBackground: true }, () => win.close());
   return true;

@@ -229,6 +229,14 @@ const prepararEdicion = (paquete) => {
 
 function generarGuiaHTML(paquete, viaje) {
   return `
+  <style>
+    @media print {
+      body, table, th, td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
   <div style="font-family: Arial, sans-serif; font-size: 13px; width: 650px; margin: 0 auto; color: #222;">
     <div style="text-align:center; font-weight:bold; font-size:16px;">
       UNIÓN DE TRANSPORTISTAS "LOS YAJALONES" S.C. DE R.L. DE C.V.
@@ -271,7 +279,7 @@ function generarGuiaHTML(paquete, viaje) {
       </tr>
     </table>
     <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
-      <tr style="background:#c14600; color:#fff;">
+      <tr style="background: #c14600; color: #fff;">
         <th style="border:1px solid #888; padding:4px;">CANTIDAD</th>
         <th style="border:1px solid #888; padding:4px;">DESCRIPCIÓN</th>
         <th style="border:1px solid #888; padding:4px;">CONTENIDO</th>
@@ -279,7 +287,7 @@ function generarGuiaHTML(paquete, viaje) {
       </tr>
       <tr>
         <td style="border:1px solid #888; padding:4px;">1</td>
-        <td style="border:1px solid #888; padding:4px;">${paquete.contenido ?? ""}</td>
+        <td style="border:1px solid #888; padding:4px;"></td>
         <td style="border:1px solid #888; padding:4px;">${paquete.contenido ?? ""}</td>
         <td style="border:1px solid #888; padding:4px;">${parseFloat(paquete.importe ?? 0).toFixed(2)}</td>
       </tr>

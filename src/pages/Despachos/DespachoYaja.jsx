@@ -115,7 +115,7 @@ viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0) +
 viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0) +
 viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0);
 const totalPaqueteria = viajesYajalon.reduce((acc, v) => acc + (v.totalPaqueteria || 0), 0) + 
-viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
+viajesTuxtla.reduce((acc, v) => acc - (v.totalPorCobrar || 0), 0);
 const comision = viajesYajalon.reduce((acc, v) => acc + (v.comision || 0), 0);
 const paquetesPorCobrar = viajesYajalon.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
 

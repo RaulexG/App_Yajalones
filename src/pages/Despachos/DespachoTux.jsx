@@ -113,7 +113,7 @@ const viajesYajalon = viajes.filter(v => v.origen === "Yajalon");
 const totalPasajeros = viajesTuxtla.reduce((acc, v) => acc + (v.totalPasajeros || 0), 0) +
 viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0);
 const totalPaqueteria = viajesTuxtla.reduce((acc, v) => acc + (v.totalPaqueteria || 0), 0) + 
-viajesYajalon.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
+viajesYajalon.reduce((acc, v) => acc, 0);
 const comision = viajesTuxtla.reduce((acc, v) => acc + (v.comision || 0), 0);
 const paquetesPorCobrar = viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
 
