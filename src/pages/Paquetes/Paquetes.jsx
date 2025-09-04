@@ -183,11 +183,11 @@ const prepararEdicion = (paquete) => {
                 });
     try {
       await asignarPaqueteAViaje(paqueteAsignando.idPaquete, parseInt(viajeSeleccionado));
-      setPendientes(prev => prev.filter(p => p.idPaquete !== paqueteAsignando.idPaquete));
-      await cargarPaquetes();
+      setPendientes(prev => prev.filter(p => p.idPaquete !== paqueteAsignando.idPaquete));      
       setModalAsignar(false);
       setViajeSeleccionado("");
       setPaqueteAsignando(null);
+      await cargarPaquetes();
 
     } catch (error) {
       console.error("Error asignando paquete:", error);
@@ -433,6 +433,7 @@ function generarGuiaHTML(paquete, viaje) {
                             onClick={() => {
                               setPaqueteAsignando(paquete);
                               setModalAsignar(true);
+                              cargarPaquetes();
                             }}
                           >
                             Asignar viaje
@@ -456,7 +457,10 @@ function generarGuiaHTML(paquete, viaje) {
             <div className="flex items-center justify-between px-6 py-4">
               <h2 className="text-xl font-bold text-orange-800">Asignar viaje a paquete</h2>
               <button
-                onClick={() => setModalAsignar(false)}
+                onClick={() =>{ setModalAsignar(false);
+                  cargarPaquetes();}
+                }
+                
                 aria-label="Cerrar"
                 className="p-2 rounded-md text-orange-700 hover:bg-transparent focus:outline-none focus:ring-0"
               >
@@ -507,7 +511,9 @@ function generarGuiaHTML(paquete, viaje) {
               {/* Actions */}
               <div className="mt-6 flex justify-end gap-3">
                 <button
-                  onClick={() => setModalAsignar(false)}
+                  onClick={() => {setModalAsignar(false);
+                    cargarPaquetes();
+                  }}
                   className="px-4 py-2 rounded-md text-orange-800 bg-orange-100 hover:bg-orange-200"
                 >
                   Cancelar

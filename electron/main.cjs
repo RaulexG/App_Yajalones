@@ -1,5 +1,6 @@
 // electron/main.cjs
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, autoUpdater, dialog } = require('electron');
+const log = require('electron-log');
 const path = require('path');
 const axios = require('axios');
 const { registerPDFIpc } = require('./pdf.cjs'); // IPCs de PDF
@@ -10,6 +11,10 @@ const APP_ICON = path.join(__dirname, 'assets', 'icono.ico');
 
 const authState = { token: null, exp: null, timer: null };
 const currentUser = { username: null, terminal: null };
+
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
+
 
 // ------------ utilidades ------------
 function decodeJwtPayload(token) {
@@ -192,6 +197,49 @@ ipcMain.handle('session:getUser', async () => {
 
 // ------------ PDF ------------
 registerPDFIpc();
+
+// Auto actualizaciones
+autoUpdater.on('checking-for-update', () => {
+  log.info('Buscando actualizaciones...');
+});
+autoUpdater.on('update-available', (info) => {
+  log.info('Actualización disponible:', info);
+});
+autoUpdater.on('update-not-available', () => {
+  log.info('No hay actualizaciones.');
+});
+autoUpdater.on('error', (err) => {
+  log.error('Error en autoUpdater:', err);
+});
+autoUpdater.on('download-progress', (progressObj) => {
+  log.info(`Descargando actualización: ${progressObj.percent}%`);
+});
+autoUpdater.on('update-downloaded', () => {
+  log.info('Actualización descargada, preguntando al usuario...');
+  if (mainWindow) {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      buttons: ['Reiniciar ahora', 'Más tarde'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'Actualización disponible',
+      message: 'Se ha descargado una nueva versión. ¿Quieres reiniciar ahora para actualizar?',
+      detail: 'Puedes reiniciar ahora para aplicar la actualización o hacerlo más tarde.'
+    }).then(result => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+      // Si elige "Más tarde", no se reinicia y la actualización se aplicará al cerrar la app.
+    });
+  } else {
+    autoUpdater.quitAndInstall();
+  }
+});
+
+// Inicia la búsqueda de actualizaciones cuando la app esté lista
+app.on('ready', () => {
+  autoUpdater.checkForUpdatesAndNotify();
+});
 
 // ------------ ciclo de vida app ------------
 app.whenReady().then(() => {

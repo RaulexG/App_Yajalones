@@ -1,7 +1,7 @@
 {
   "name": "yajalon-app",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sistema de Transporte Los Yajalones",
   "author": "Alejandro Serrano Guzmán, Raúl Chavira Narváez, Cristian Ivan Vázquez Gómez, Frida Monserrat Vázquez de la Cruz, Fernando Gael Estrada Velasco",
   "main": "electron/main.cjs",
@@ -18,7 +18,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
+    "electron-log": "^5.4.3",
     "electron-pos-printer": "^1.3.8",
+    "electron-updater": "^6.6.2",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "pdfkit": "^0.17.1",
@@ -75,6 +77,12 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "publish": [
+    {
+      "provider": "generic",
+      "url": "https://TU_DOMINIO/actualizaciones/"
     }
+  ]
   }
 }
