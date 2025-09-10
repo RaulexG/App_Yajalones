@@ -80,8 +80,9 @@
     },
     "publish": [
     {
-      "provider": "generic",
-      "url": "https://yajalones.netlify.app"
+      "provider": "github",
+      "owner": "RaulexG",
+      "repo": "App_Yajalones"
     }
   ]
   }
