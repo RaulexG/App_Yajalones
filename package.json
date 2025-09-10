@@ -81,7 +81,7 @@
     "publish": [
     {
       "provider": "generic",
-      "url": "https://TU_DOMINIO/actualizaciones/"
+      "url": "https://yajalones.netlify.app"
     }
   ]
   }

@@ -6,8 +6,7 @@ import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
 
 export default function Despachos() {
-  const [pasajeros, setPasajeros] = useState([]);
-  const [paquetes, setPaquetes] = useState([]);
+  const [viajeSeleccionado, setViajeSeleccionado] = useState(null);
   const [descuentos, setDescuentos] = useState([]);
   const [formulario, setFormulario] = useState({
     concepto: "",
@@ -21,18 +20,22 @@ export default function Despachos() {
     cargarDatos();
   }, []);
 
-  const cargarDatos = async () => {
+    const cargarDatos = async () => {
   try {
     const listaViajes = await ListarViajes();
-    const hoyISO = new Date().toISOString().slice(0, 10);
+    
+     // Fecha de ayer
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1); // resta 1 día
+    ayer.setHours(0, 0, 0, 0); // inicio del día
 
 
-    const viajesHoy = listaViajes.filter((v) => {
-      const fechaViaje = new Date(v.fechaSalida).toISOString().slice(0, 10);
-      return fechaViaje === hoyISO;
+    const viajesDesdeAyer = listaViajes.filter((v) => {
+      const fechaViaje = new Date(v.fechaSalida);
+      return fechaViaje >= ayer; // todos desde ayer en adelante
     });
 
-    const todosPasajeros = viajesHoy.flatMap(viaje =>
+    const todosPasajeros = viajesDesdeAyer.flatMap(viaje =>
       (viaje.pasajeros || []).map(p => ({
         ...p,
         origen: viaje.origen,
@@ -41,7 +44,7 @@ export default function Despachos() {
       }))
     );
 
-    const todosPaquetes = viajesHoy.flatMap(viaje =>
+    const todosPaquetes = viajesDesdeAyer.flatMap(viaje =>
       (viaje.paquetes || []).map(p => ({
         ...p,
         origen: viaje.origen,
@@ -50,14 +53,29 @@ export default function Despachos() {
       }))
     );
 
-    setViajes(viajesHoy);
+    setViajes(viajesDesdeAyer);
     setPasajeros(todosPasajeros);
     setPaquetes(todosPaquetes);
   } catch (error) {
     console.error("Error al cargar datos:", error);
   }
+}
+
+const seleccionarViaje = (idViaje) => {
+  const viaje = viajes.find(v => v.idViaje === idViaje);
+  setViajeSeleccionado(viaje || null);
+
+  if (viaje) {
+    setPasajeros(viaje.pasajeros || []);
+    setPaquetes(viaje.paquetes || []);
+  } else {
+    setPasajeros([]);
+    setPaquetes([]);
+  }
 };
 
+  const pasajeros = viajeSeleccionado?.pasajeros || [];
+  const paquetes = viajeSeleccionado?.paquetes || [];
 
   function obtenerFechaFormateada() {
   const fecha = new Date();
@@ -81,11 +99,12 @@ export default function Despachos() {
   try {
     if (!formulario.concepto || !formulario.importe) {
       Swal.fire({
-        icon: "warning",
-        title: "Llene los campos obligatorios",
-        timer: 1500,
-        showConfirmButton: false
-      });
+              icon: "warning",
+              title: "Llene los campos obligatorios",
+              timer: 1500,
+              showConfirmButton: false
+            });
+            return;
       return;
     }
 
@@ -105,41 +124,35 @@ export default function Despachos() {
 };
 
 
-// Filtrar viajes 
-const viajesTuxtla = viajes.filter(v => v.origen === "Tuxtla");
-const viajesYajalon = viajes.filter(v => v.origen === "Yajalon");
+// Si no hay viaje seleccionado, usar objeto vacío
+const v = viajeSeleccionado || {};
 
-// Totales para viajes Tuxtla
-const totalPasajeros = viajesTuxtla.reduce((acc, v) => acc + (v.totalPasajeros || 0), 0) +
-viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0);
-const totalPaqueteria = viajesTuxtla.reduce((acc, v) => acc + (v.totalPaqueteria || 0), 0) + 
-viajesYajalon.reduce((acc, v) => acc, 0);
-const comision = viajesTuxtla.reduce((acc, v) => acc + (v.comision || 0), 0);
-const paquetesPorCobrar = viajesTuxtla.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0);
+// Totales del viaje seleccionado
+const totalPasajeros = v.totalPasajeros || 0;
+const totalPaqueteria = v.totalPaqueteria || 0;
+const comision = v.comision || 0;
+const paquetesPorCobrar = v.totalPorCobrar || 0;
 
+const pagadoEnYajalon =
+  (v.totalPagadoYajalon || 0) +
+  (v.totalPagadoSclc || 0);
 
-const pagadoEnYajalon = 
-  // de viajes de Tuxtla
-  viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0) +
+const pagadoEnTuxtla = v.totalPagadoTuxtla || 0;
 
-  // y además, lo pagado en SCLC pero de viajes Yajalón
-  viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0) +
-  viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoYajalon || 0), 0);
+const pagaAbordarSCLC = v.totalPagadoSclc || 0;
 
-const pagadoEnTuxtla =
-  // de viajes de Tuxtla
-  viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0) +
-  // y además, lo pagado en destino pero de viajes Yajalón
-  viajesYajalon.reduce((acc, v) => acc + (v.totalPagadoTuxtla || 0), 0);
+const totalDescuentos = descuentos.reduce(
+  (acc, d) => acc + parseFloat(d.importe || 0),
+  0
+);
 
-const pagaAbordarSCLC = viajesTuxtla.reduce((acc, v) => acc + (v.totalPagadoSclc || 0), 0);
+// El total del viaje seleccionado
+const total =
+  pagadoEnTuxtla -
+  comision -
+  totalDescuentos;
 
-// Descuentos manuales
-const totalDescuentos = descuentos.reduce((acc, d) => acc + parseFloat(d.importe || 0), 0);
-
-// Total general (considerando lo mismo que antes)
-const total =  - totalDescuentos+ pagadoEnTuxtla + viajesYajalon.reduce((acc, v) => acc + (v.totalPorCobrar || 0), 0)- comision;
-
+// ✅ Formato moneda MXN
 const fmt = (n) =>
   new Intl.NumberFormat("es-MX", {
     style: "currency",
@@ -162,11 +175,12 @@ const generarPDF = async () => {
       doc.text("TRANSPORTES LOS YAJALONES S.A. DE C.V.", M.l, M.t);
       doc.setFontSize(9);
       doc.text(
-        "Dirección: 15 Oriente esquina 7 sur #817, Tuxtla Gutiérrez, Chiapas",
+        "Dirección: Segunda calle Poniente Norte s/n, Centro. Yajalón, Chiapas",
         M.l,
         M.t + 16
       );
-      doc.text("Teléfono: 961 302 36 42", M.l, M.t + 30);
+      doc.text("Teléfono fijo: 919 674 21 14", M.l, M.t + 30);
+      doc.text("Teléfono Celular: 919 145 97 11", M.l, M.t + 40);
 
       // Fecha alineada a la derecha
       doc.text(
@@ -176,7 +190,7 @@ const generarPDF = async () => {
         { align: "right" }
       );
       doc.setLineWidth(0.5);
-      doc.line(M.l, M.t + 40, doc.internal.pageSize.getWidth() - M.r, M.t + 40);
+      doc.line(M.l, M.t + 45, doc.internal.pageSize.getWidth() - M.r, M.t + 45);
     };
 
     // ====== Pie de página (paginación) ======
@@ -194,45 +208,7 @@ const generarPDF = async () => {
     // Dibuja encabezado inicial
     drawHeader();
 
-    // ====== Tabla: Viajes Yajalón ======
-    doc.setFontSize(12);
-    doc.text("Resumen de Viajes (Tuxtla)", M.l, M.t + 60);
-
-    autoTable(doc, {
-      startY: M.t + 70,
-      head: [["ID Viaje", "Origen", "Destino", "Pasajeros", "Paquetería", "Comisión"]],
-      body: viajesTuxtla.map((v) => [
-        v.idViaje,
-        v.origen,
-        v.destino,
-        fmt(v.totalPasajeros),
-        fmt(v.totalPaqueteria),
-        fmt(v.comision),
-      ]),
-      foot: [
-        [
-          { content: "Totales", colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
-          fmt(viajesTuxtla.reduce((a, v) => a + (v.totalPasajeros || 0), 0)),
-          fmt(viajesTuxtla.reduce((a, v) => a + (v.totalPaqueteria || 0), 0)),
-          fmt(viajesTuxtla.reduce((a, v) => a + (v.comision || 0), 0)),
-        ],
-      ],
-      theme: "grid",
-      styles: { fontSize: 9, cellPadding: 6, overflow: "linebreak" },
-      headStyles: { fillColor: [248, 201, 142], textColor: [69, 43, 28] },
-      footStyles: { fillColor: [240, 240, 240], fontStyle: "bold" },
-      margin: { left: M.l, right: M.r },
-      columnStyles: {
-        0: { cellWidth: "auto" },
-        1: { cellWidth: "auto" },
-        2: { cellWidth: "auto" },
-      },
-      didDrawPage: (data) => {
-        if (data.pageNumber > 1) drawHeader();
-      },
-    });
-
-    let y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 16 : M.t + 90;
+    let y = M.t + 60; 
 
 // === Tabla de Pasajeros ===
 doc.setFontSize(12);
@@ -241,12 +217,10 @@ y += 8;
 
 autoTable(doc, {
   startY: y,
-  head: [["Folio", "Nombre","Origen","Destino", "Tipo", "Pago", "Monto"]],
+  head: [["Folio", "Nombre", "Tipo", "Pago", "Monto"]],
   body: pasajeros.map((p) => [
     p.folio,
     p.nombre,
-    p.origen,
-    p.destino,
     p.tipo,
     p.tipoPago,
     fmt(p.importe)
@@ -269,13 +243,11 @@ y += 8;
 
 autoTable(doc, {
   startY: y,
-  head: [["Folio", "Remitente", "Destinatario","Origen","Destino", "Por Cobrar", "Monto"]],
+  head: [["Folio", "Remitente", "Destinatario", "Por Cobrar", "Monto"]],
   body: paquetes.map((p) => [
     p.folio,
     p.remitente,
     p.destinatario,
-    p.origen,
-    p.destino,
     p.porCobrar ? "Sí" : "No",
     fmt(p.importe)
   ]),
@@ -391,18 +363,21 @@ y = doc.lastAutoTable.finalY + 30;
   } catch (err) {
     console.error("Error al generar PDF:", err);
     Swal.fire({
-        icon: "error",
-        title: "Error al generar PDF",
-        timer: 1500,
-        showConfirmButton: false
-      });
-      return;
+            icon: "warning",
+            title: "Error al generar PDF",
+            timer: 1500,
+            showConfirmButton: false
+          });
+          return;
   }
 };
 
 
 
+
+
   return (
+    
     <div className="flex gap-6 p-6">
     {/* Columna izquierda: Formulario y Resumen */}
     <div className="w-1/3 flex flex-col gap-6">
@@ -453,7 +428,7 @@ y = doc.lastAutoTable.finalY + 30;
 
       {/* Resumen del Día */}
       <div className="bg-white p-5 rounded-lg shadow-md">
-        <h3 className="text-orange-700 font-bold mb-3">Resumen del Día Tuxtla</h3>
+        <h3 className="text-orange-700 font-bold mb-3">Resumen del viaje</h3>
         <ul className="space-y-2 text-sm text-orange-800">
           <li className="flex justify-between">
             <span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span>
@@ -474,7 +449,7 @@ y = doc.lastAutoTable.finalY + 30;
             <span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span>
           </li>
           <li className="flex justify-between">
-            <span>Paga al abordar en SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span>
+            <span>Viajes de SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span>
           </li>
           <li className="flex justify-between font-bold text-lg">
             <span>TOTAL</span> <span>${total.toFixed(2)}</span>
@@ -489,6 +464,23 @@ y = doc.lastAutoTable.finalY + 30;
         </button>
       </div>
     </div>
+          {/* Selección de viaje */}
+      <div className="bg-white p-4 rounded-lg shadow-md">
+        <h3 className="text-orange-700 font-bold mb-2">Seleccionar Viaje</h3>
+        <select
+  value={viajeSeleccionado?.idViaje || ""}
+  onChange={(e) => seleccionarViaje(Number(e.target.value))}
+  className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-4"
+>
+  <option value="">-- Selecciona un viaje --</option>
+  {viajes.map((v) => (
+    <option key={v.idViaje} value={v.idViaje}>
+      {v.origen} → {v.destino} | {new Date(v.fechaSalida).toLocaleString()}
+    </option>
+  ))}
+</select>
+
+      </div>
 
     {/* Columna derecha: Tablas */}
     <div className="w-2/3 flex flex-col gap-6">
@@ -501,8 +493,6 @@ y = doc.lastAutoTable.finalY + 30;
               <tr className="bg-[#f8c98e]">
                 <th className="p-2 text-center text-[#452B1C]">Folio</th>
                 <th className="p-2 text-center text-[#452B1C]">Nombre</th>
-                <th className="p-2 text-center text-[#452B1C]">Origen</th>
-                <th className="p-2 text-center text-[#452B1C]">Destino</th>
                 <th className="p-2 text-center text-[#452B1C]">Tipo</th>
                 <th className="p-2 text-center text-[#452B1C]">Pago</th>
                 <th className="p-2 text-center text-[#452B1C]">Monto</th>
@@ -513,8 +503,6 @@ y = doc.lastAutoTable.finalY + 30;
                 <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
                   <td className="p-2 text-center">{p.folio}</td>
                   <td className="p-2 text-center">{p.nombre}</td>
-                  <td className="p-2 text-center">{p.origen}</td>
-                    <td className="p-2 text-center">{p.destino}</td>
                   <td className="p-2 text-center">{p.tipo}</td>
                   <td className="p-2 text-center">{p.tipoPago}</td>
                   <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
@@ -535,8 +523,6 @@ y = doc.lastAutoTable.finalY + 30;
                 <th className="p-2 text-center text-[#452B1C]">Folio</th>
                 <th className="p-2 text-center text-[#452B1C]">Remitente</th>
                 <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
-                <th className="p-2 text-center text-[#452B1C]">Origen</th>
-                <th className="p-2 text-center text-[#452B1C]">Destino</th>
                 <th className="p-2 text-center text-[#452B1C]">Por cobrar</th>
                 <th className="p-2 text-center text-[#452B1C]">Monto</th>
               </tr>
@@ -547,8 +533,6 @@ y = doc.lastAutoTable.finalY + 30;
                   <td className="p-2 text-center">{p.folio}</td>
                   <td className="p-2 text-center">{p.remitente}</td>
                   <td className="p-2 text-center">{p.destinatario}</td>
-                    <td className="p-2 text-center">{p.origen}</td>
-                    <td className="p-2 text-center">{p.destino}</td>
                   <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
                   <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
                 </tr>

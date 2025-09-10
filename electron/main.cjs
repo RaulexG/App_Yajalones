@@ -1,9 +1,11 @@
 // electron/main.cjs
-const { app, BrowserWindow, ipcMain, autoUpdater, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const log = require('electron-log');
 const path = require('path');
 const axios = require('axios');
 const { registerPDFIpc } = require('./pdf.cjs'); // IPCs de PDF
+const { autoUpdater } = require("electron-updater");
+
 
 const isDev = !app.isPackaged;
 const API_BASE = process.env.VITE_API_BASE || 'http://localhost:8081';

@@ -43,9 +43,59 @@ export default function Ajustes() {
 
   const handleGuardarTurno = async () => {
     try{if (turnoForm.idTurno) {
+      Swal.fire({
+      title: "Guardando...",
+      text: "Conectando al servidor",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // ⏱ Si después de 20s no responde, mostramos error
+    const timeout = setTimeout(() => {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
+      });
+    }, 10000);
+
       await ActualizarTurno(turnoForm.idTurno, { horario: turnoForm.horario });
+
+      clearTimeout(timeout); 
+    Swal.fire({
+      icon: "success",
+      title: "Guardado",
+      text: "El turno se editó correctamente"
+    });
     } else {
+      Swal.fire({
+      title: "Guardando...",
+      text: "Conectando al servidor",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // ⏱ Si después de 20s no responde, mostramos error
+    const timeout = setTimeout(() => {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
+      });
+    }, 10000);
+
       await CrearTurno({ horario: turnoForm.horario });
+
+      clearTimeout(timeout); 
+    Swal.fire({
+      icon: "success",
+      title: "Guardado",
+      text: "El turno se creó correctamente"
+    });
     }
     setTurnoForm({ horario: '', idTurno: null });
     cargarDatos();
@@ -68,9 +118,59 @@ export default function Ajustes() {
       turno: { idTurno: parseInt(unidadForm.idTurno) }
     };
     if (unidadForm.idUnidad) {
+      Swal.fire({
+      title: "Guardando...",
+      text: "Conectando al servidor",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // ⏱ Si después de 20s no responde, mostramos error
+    const timeout = setTimeout(() => {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
+      });
+    }, 10000);
       await ActualizarUnidad(unidadForm.idUnidad, datos);
+      clearTimeout(timeout); 
+    Swal.fire({
+      icon: "success",
+      title: "Guardado",
+      text: "La unidad se editó correctamente"
+    });
     } else {
+Swal.fire({
+      title: "Guardando...",
+      text: "Conectando al servidor",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // ⏱ Si después de 20s no responde, mostramos error
+    const timeout = setTimeout(() => {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
+      });
+    }, 10000);
+
       await CrearUnidad(datos);
+
+      clearTimeout(timeout); 
+    Swal.fire({
+      icon: "success",
+      title: "Guardado",
+      text: "La unidad se creó correctamente"
+    });
+
+
     }
     setUnidadForm({ nombre: '',asientos:'', descripcion: '', idTurno: '', idUnidad: null });
     cargarDatos();
@@ -85,9 +185,61 @@ export default function Ajustes() {
     };
     console.log('Datos del viaje:', datos);
     if (viajeForm.idViaje) {
+
+      Swal.fire({
+      title: "Guardando...",
+      text: "Conectando al servidor",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // ⏱ Si después de 20s no responde, mostramos error
+    const timeout = setTimeout(() => {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
+      });
+    }, 10000);
+
       await ActualizarViaje(viajeForm.idViaje, datos);
+
+      clearTimeout(timeout); 
+    Swal.fire({
+      icon: "success",
+      title: "Guardado",
+      text: "El viaje se editó correctamente"
+    });
     } else {
+
+      Swal.fire({
+      title: "Guardando...",
+      text: "Conectando al servidor",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    // ⏱ Si después de 20s no responde, mostramos error
+    const timeout = setTimeout(() => {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
+      });
+    }, 10000);
+
       await CrearViaje(datos);
+
+      clearTimeout(timeout); 
+    Swal.fire({
+      icon: "success",
+      title: "Guardado",
+      text: "El Viaje se creó correctamente"
+    });
     }
     setViajeForm({ origen: '', destino: '', fechaSalida: '', idUnidad: '', idViaje: null });
     cargarDatos();
@@ -547,7 +699,7 @@ export default function Ajustes() {
             <div>
               <label className="block text-orange-700 font-semibold mb-1">No. de Asientos</label>
               <input
-                value={unidadForm.asientos}
+                value={unidadForm.numeroPasajeros}
                 onChange={(e) => setUnidadForm({ ...unidadForm, numeroPasajeros: e.target.value })}
                 className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
               />
