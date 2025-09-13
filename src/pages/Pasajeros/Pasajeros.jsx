@@ -266,9 +266,9 @@ const ObtenerAsientos = (unidad) => parseInt(unidad?.numeroPasajeros || 20);
     : null;
 
   return (
-    <div className="p-4">
+    <div className="p-4 ">
       {/* Contenedor en 3 columnas */}
-      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 max-w-[1600px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6 max-w-[1600px] mx-auto ">
         <div className="flex flex-col gap-6">
         {/* Tabla de cambio de turno */}
         <div className="bg-[#FDF7F0] p-4 rounded-md shadow-md mt-6">

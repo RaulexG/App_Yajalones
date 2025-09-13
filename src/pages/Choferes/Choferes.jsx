@@ -225,7 +225,7 @@ export default function Choferes() {
                 <th className="p-2 text-center text-[#452B1C]">Nombre</th>
                 <th className="p-2 text-center text-[#452B1C]">Unidad</th>
                 <th className="p-2 text-center text-[#452B1C]">Teléfono</th>
-                <th className="p-2 text-center"></th>
+                <th className="p-2 text-center text-[#452B1C]">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -239,7 +239,7 @@ export default function Choferes() {
                       onClick={() => seleccionarChofer(c)}
                       aria-label="Editar chofer"
                       title="Editar"
-                      className="inline-flex items-center justify-center p-2 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+                      className="inline-flex items-center justify-center p-2 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 hover:scale-110 transition cursor-pointer"
                     >
                       {/* Ícono Editar */}
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
@@ -252,7 +252,7 @@ export default function Choferes() {
 
                     <button
                       onClick={() => eliminarChofer(c.idChofer)}
-                      className="text-red-600 hover:scale-110 transition"
+                      className="text-red-600 hover:scale-110 transition cursor-pointer "
                       title="Eliminar"
                     >
                       <svg

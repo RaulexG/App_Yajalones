@@ -54,7 +54,7 @@ export default function Login() {
             htmlFor="usuario"
             className="block text-gray-700 text-sm font-medium mb-1"
           >
-            Usuario
+            
           </label>
           <input
             id="usuario"
@@ -62,7 +62,7 @@ export default function Login() {
             value={nombreUsuario}
             onChange={(e) => setNombreUsuario(e.target.value)}
             className="w-full px-3 py-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
-            placeholder="Yajalon"
+            placeholder="Usuario"
             autoFocus
             autoComplete="username"
           />
@@ -71,7 +71,7 @@ export default function Login() {
             htmlFor="password"
             className="block text-gray-700 text-sm font-medium mb-1"
           >
-            Contraseña
+            
           </label>
           <input
             id="password"
@@ -79,7 +79,7 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 mb-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
-            placeholder="••••••••"
+            placeholder="Contraseña"
             autoComplete="current-password"
           />
 

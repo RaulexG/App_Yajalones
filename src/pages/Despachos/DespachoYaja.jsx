@@ -123,35 +123,30 @@ const seleccionarViaje = (idViaje) => {
   }
 };
 
-
-// Si no hay viaje seleccionado, usar objeto vacío
 const v = viajeSeleccionado || {};
+const N = (x) => Number(x || 0);
 
-// Totales del viaje seleccionado
-const totalPasajeros = v.totalPasajeros || 0;
-const totalPaqueteria = v.totalPaqueteria || 0;
-const comision = v.comision || 0;
-const paquetesPorCobrar = v.totalPorCobrar || 0;
+// Totales crudos
+const totalPasajeros    = N(v.totalPasajeros);
+const totalPaqueteria   = N(v.totalPaqueteria);
+const comision          = N(v.comision);
+const paquetesPorCobrar = N(v.totalPorCobrar);
 
-const pagadoEnYajalon =
-  (v.totalPagadoYajalon || 0) +
-  (v.totalPagadoSclc || 0);
+// Desglose por sede/tipo de cobro
+const pagadoEnTuxtla  = N(v.totalPagadoTuxtla);
+const pagadoEnYajalon = N(v.totalPagadoYajalon);
+const pagaAbordarSCLC = N(v.totalPagadoSclc);
 
-const pagadoEnTuxtla = v.totalPagadoTuxtla || 0;
+// Descuentos locales
+const totalDescuentos = descuentos.reduce((acc, d) => acc + N(d.importe), 0);
 
-const pagaAbordarSCLC = v.totalPagadoSclc || 0;
+// 🔹 Definición recomendada de TOTAL (monto que entrega Yajalón):
+//   (todo lo cobrado del viaje) – (lo que cobró Tuxtla) – comisión – por cobrar – descuentos
+const total = (totalPasajeros + totalPaqueteria - pagadoEnTuxtla)
+            - comision - paquetesPorCobrar - totalDescuentos;
 
-const totalDescuentos = descuentos.reduce(
-  (acc, d) => acc + parseFloat(d.importe || 0),
-  0
-);
 
-// El total del viaje seleccionado
-const total =
-  pagadoEnYajalon +
-  pagaAbordarSCLC -
-  comision -
-  totalDescuentos;
+
 
 // ✅ Formato moneda MXN
 const fmt = (n) =>
@@ -412,7 +407,7 @@ y = doc.lastAutoTable.finalY + 30;
         <input
           type="number"
           placeholder=""
-          className="w-1/3 p-2 rounded-md bg-[#ffe0b2] outline-none mb-4"
+          className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-4"
           value={formulario.importe}
           onChange={(e) =>
             setFormulario({ ...formulario, importe: parseFloat(e.target.value) })
@@ -428,7 +423,7 @@ y = doc.lastAutoTable.finalY + 30;
       </div>
 
       {/* Resumen del Día */}
-      <div className="bg-white p-5 rounded-lg shadow-md">
+      <div className="bg-white p-5 rounded-lg shadow-md h-2/3">
         <h3 className="text-orange-700 font-bold mb-3">Resumen del viaje</h3>
         <ul className="space-y-2 text-sm text-orange-800">
           <li className="flex justify-between">
@@ -458,69 +453,74 @@ y = doc.lastAutoTable.finalY + 30;
         </ul>
 
         <button
-          className="bg-[#cc4500] text-white font-semibold py-2 px-4 rounded-md w-full mt-4 hover:bg-orange-800"
+          className="bg-[#cc4500] text-white font-semibold py-3 px-4 rounded-md w-full mt-8 hover:bg-orange-800"
           onClick={generarPDF}
         >
           PDF
         </button>
       </div>
     </div>
-          {/* Selección de viaje */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h3 className="text-orange-700 font-bold mb-2">Seleccionar Viaje</h3>
-        <select
-  value={viajeSeleccionado?.idViaje || ""}
-  onChange={(e) => seleccionarViaje(Number(e.target.value))}
-  className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-4"
->
-  <option value="">-- Selecciona un viaje --</option>
-  {viajes.map((v) => (
-    <option key={v.idViaje} value={v.idViaje}>
-      {v.origen} → {v.destino} | {new Date(v.fechaSalida).toLocaleString()}
-    </option>
-  ))}
-</select>
 
-      </div>
 
     {/* Columna derecha: Tablas */}
     <div className="w-2/3 flex flex-col gap-6">
-      {/* Tabla Pasajeros */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h3 className="text-lg font-bold text-orange-700 mb-3">Pasajeros</h3>
-        <div className="overflow-y-auto max-h-[250px]">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-[#f8c98e]">
-                <th className="p-2 text-center text-[#452B1C]">Folio</th>
-                <th className="p-2 text-center text-[#452B1C]">Nombre</th>
-                <th className="p-2 text-center text-[#452B1C]">Tipo</th>
-                <th className="p-2 text-center text-[#452B1C]">Pago</th>
-                <th className="p-2 text-center text-[#452B1C]">Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pasajeros.map((p, i) => (
-                <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
-                  <td className="p-2 text-center">{p.folio}</td>
-                  <td className="p-2 text-center">{p.nombre}</td>
-                  <td className="p-2 text-center">{p.tipo}</td>
-                  <td className="p-2 text-center">{p.tipoPago}</td>
-                  <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+              {/* Selección de viaje */}
+              <div className="bg-white p-4 rounded-lg shadow-md">
+                  <h3 className="text-orange-700 font-bold mb-2">Seleccionar Viaje</h3>
+                  <select
+            value={viajeSeleccionado?.idViaje || ""}
+            onChange={(e) => seleccionarViaje(Number(e.target.value))}
+            className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-4"
+          >
+            <option value="">-- Selecciona un viaje --</option>
+            {viajes.map((v) => (
+              <option key={v.idViaje} value={v.idViaje}>
+                {v.origen} → {v.destino} | {new Date(v.fechaSalida).toLocaleString()}
+              </option>
+            ))}
+          </select>
       </div>
 
-      {/* Tabla Paquetería */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h3 className="text-2xl font-bold text-orange-700 mb-3">Paquetería</h3>
-        <div className="overflow-y-auto max-h-[250px]">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-[#f8c98e]">
+          
+        {/* Tabla Pasajeros (scroll a 4 filas visibles) */}
+        <div className="bg-white p-5 rounded-lg shadow-md">
+          <h3 className="text-lg font-bold text-orange-700 mb-3">Pasajeros</h3>
+          <div className="overflow-y-auto max-h-[240px] rounded-md ring-1 ring-orange-100">
+            <table className="w-full table-fixed border-collapse text-sm">
+              <thead className="bg-[#f8c98e] sticky top-0 z-10">
+                <tr className="h-10">
+                  <th className="p-2 text-center text-[#452B1C]">Folio</th>
+                  <th className="p-2 text-center text-[#452B1C]">Nombre</th>
+                  <th className="p-2 text-center text-[#452B1C]">Tipo</th>
+                  <th className="p-2 text-center text-[#452B1C]">Pago</th>
+                  <th className="p-2 text-center text-[#452B1C]">Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pasajeros.map((p, i) => (
+                  <tr key={i} className={`h-10 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+                    <td className="p-2 text-center whitespace-nowrap">{p.folio}</td>
+                    <td className="p-2 text-center whitespace-nowrap">{p.nombre}</td>
+                    <td className="p-2 text-center whitespace-nowrap">{p.tipo}</td>
+                    <td className="p-2 text-center whitespace-nowrap">{p.tipoPago}</td>
+                    <td className="p-2 text-center whitespace-nowrap">
+                      ${parseFloat(p.importe || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      {/*Tabla Paquetería (scroll a 4 filas) */}
+      <div className="bg-white p-5 rounded-lg shadow-md">
+        <h3 className="text-lg font-bold text-orange-700 mb-3">Paquetería</h3>
+        <div className="overflow-y-auto max-h-[240px] rounded-md ring-1 ring-orange-100">
+          <table className="w-full table-fixed border-collapse text-sm">
+            <thead className="bg-[#f8c98e] sticky top-0 z-10">
+              <tr className="h-10">
                 <th className="p-2 text-center text-[#452B1C]">Folio</th>
                 <th className="p-2 text-center text-[#452B1C]">Remitente</th>
                 <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
@@ -530,12 +530,14 @@ y = doc.lastAutoTable.finalY + 30;
             </thead>
             <tbody>
               {paquetes.map((p, i) => (
-                <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
-                  <td className="p-2 text-center">{p.folio}</td>
-                  <td className="p-2 text-center">{p.remitente}</td>
-                  <td className="p-2 text-center">{p.destinatario}</td>
-                  <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
-                  <td className="p-2 text-center">${parseFloat(p.importe || 0).toFixed(2)}</td>
+                <tr key={i} className={`h-11 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+                  <td className="p-2 text-center whitespace-nowrap">{p.folio}</td>
+                  <td className="p-2 text-center whitespace-nowrap">{p.remitente}</td>
+                  <td className="p-2 text-center whitespace-nowrap">{p.destinatario}</td>
+                  <td className="p-2 text-center whitespace-nowrap">{p.porCobrar ? "Sí" : "No"}</td>
+                  <td className="p-2 text-center whitespace-nowrap">
+                    ${parseFloat(p.importe || 0).toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>

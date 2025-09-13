@@ -172,7 +172,7 @@ Swal.fire({
 
 
     }
-    setUnidadForm({ nombre: '',asientos:'', descripcion: '', idTurno: '', idUnidad: null });
+    setUnidadForm({ nombre: '', numeroPasajeros: '', descripcion: '', idTurno: '', idUnidad: null });
     cargarDatos();
   };
 
@@ -636,13 +636,13 @@ Swal.fire({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Sección Registrar Turno */}
-        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-113">
+        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-full">
           <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar turno</h2>
           <div className="flex flex-col gap-4">
 
             <div>
               <label className="block text-orange-700 font-semibold mb-1">Horario</label>
-              <div className="flex items-center bg-[#ffe0b2] rounded-md px-2 w-100">
+              <div className="flex items-center bg-[#ffe0b2] rounded-md px-2 w-full">
                 <input
                   value={turnoForm.horario}
                   onChange={(e) => setTurnoForm({ ...turnoForm, horario: e.target.value })}
@@ -685,7 +685,7 @@ Swal.fire({
         </section>
 
         {/* Sección Registrar Unidad */}
-        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-113">
+        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-full">
           <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar unidad</h2>
           <div className="space-y-3">
             <div>
@@ -749,7 +749,7 @@ Swal.fire({
         </section>
 
         {/* Sección Registrar Viaje */}
-        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-113">
+        <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-full">
           <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar viaje</h2>
           <div className="space-y-3">
             <div>
@@ -766,7 +766,7 @@ Swal.fire({
                     destino: destinoAutomatico,
                   });
                 }}
-                className="w-100 p-2 rounded-md bg-[#ffe0b2] outline-none"
+                className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
               >
                 <option value="" disabled>
                   Selecciona origen
@@ -781,7 +781,7 @@ Swal.fire({
               <input
                 value={viajeForm.destino}
                 readOnly
-                className="w-100 p-2 rounded-md bg-[#ffe0b2] outline-none"
+                className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
 
               />
             </div>
@@ -799,13 +799,13 @@ Swal.fire({
                   setViajeForm({ ...viajeForm, fechaSalida: valor });
                 }}
                 className="
-  w-100 p-2 rounded-md bg-[#ffe0b2] outline-none
-  pr-16
-  [&::-webkit-calendar-picker-indicator]:opacity-100
-  [&::-webkit-calendar-picker-indicator]:cursor-pointer
-  [&::-webkit-calendar-picker-indicator]:filter-[invert(21%)_sepia(85%)_saturate(2989%)_hue-rotate(9deg)_brightness(96%)_contrast(104%)]
-  [&::-webkit-calendar-picker-indicator]:[transform:translateX(55px)]
-"
+                    w-full p-2 rounded-md bg-[#ffe0b2] outline-none
+                    pr-16
+                    [&::-webkit-calendar-picker-indicator]:opacity-100
+                    [&::-webkit-calendar-picker-indicator]:cursor-pointer
+                    [&::-webkit-calendar-picker-indicator]:filter-[invert(21%)_sepia(85%)_saturate(2989%)_hue-rotate(9deg)_brightness(96%)_contrast(104%)]
+                    [&::-webkit-calendar-picker-indicator]:[transform:translateX(55px)]
+                  "
               />
             </div>
             <div>
@@ -813,7 +813,7 @@ Swal.fire({
               <select
                 value={viajeForm.idUnidad}
                 onChange={(e) => setViajeForm({ ...viajeForm, idUnidad: e.target.value })}
-                className="w-100 p-2 rounded-md bg-[#ffe0b2] outline-none"
+                className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
                 required
               >
                 <option value="" disabled>

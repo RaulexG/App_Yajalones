@@ -38,6 +38,8 @@ export default function Paqueteria() {
     cargarPaquetes();
   }, []);
 
+  const [filtroIdViaje, setFiltroIdViaje] = useState("");
+
   const cargarViajes = async () => {
     const response = await ListarViajes();
     setViajes(response);
@@ -60,7 +62,11 @@ export default function Paqueteria() {
       ...prev,
       [name]: type === "checkbox" ? checked : value
     }));
+  
+    // ← sincroniza el filtro de la tabla con el select de viaje
+    if (name === "idViaje") setFiltroIdViaje(String(value || ""));
   };
+  
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -213,6 +219,27 @@ const prepararEdicion = (paquete) => {
     return "Destino no encontrado";
   };
 
+// --- helpers para filtrar ---
+
+const esMismoDia = (d1, d2) => {
+  const a = new Date(d1), b = new Date(d2);
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+};
+
+const obtenerViajeDePaquete = (paquete) => {
+  for (const viaje of viajes) {
+    if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
+      return viaje;
+    }
+  }
+  return null;
+};
+
+
   const obtenerFechaSalida = (paquete) => {
     for (const viaje of viajes) {
       if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
@@ -343,17 +370,19 @@ function generarGuiaHTML(paquete, viaje) {
 
           <option value="" disabled>Seleccionar viaje</option>
 
-
-          {viajes.map((viaje) => (
-            <option key={viaje.idViaje} value={viaje.idViaje}>
-              {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-              })}`}
-            </option>
+          {viajes
+            .filter(v => esMismoDia(v.fechaSalida, new Date()))                // ← SOLO hoy
+            .sort((a, b) => new Date(a.fechaSalida) - new Date(b.fechaSalida)) // (opcional) orden por hora
+            .map((viaje) => (
+              <option key={viaje.idViaje} value={viaje.idViaje}>
+                {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                })}`}
+              </option>
           ))}
         </select>
 
@@ -415,7 +444,7 @@ function generarGuiaHTML(paquete, viaje) {
                       <th className="px-4 py-3 text-left font-semibold ">Folio</th>
                       <th className="px-4 py-3 text-left font-semibold">Remitente</th>
                       <th className="px-4 py-3 text-left font-semibold">Contenido</th>
-                      <th className="px-4 py-3 text-center font-semibold"></th>
+                      <th className="px-4 py-3 text-center font-semibold">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
@@ -492,11 +521,19 @@ function generarGuiaHTML(paquete, viaje) {
                 >
 
                   <option value="" disabled>Seleccione viaje</option>
-
-                  {viajes.map((v) => (
-                    <option key={v.idViaje} value={v.idViaje}>
-                      {`${v.origen} → ${v.destino} | ${new Date(v.fechaSalida).toLocaleString("es-MX")}`}
-                    </option>
+                  {viajes
+                .filter(v => esMismoDia(v.fechaSalida, new Date()))        // ← SOLO hoy
+                .sort((a,b) => new Date(a.fechaSalida) - new Date(b.fechaSalida)) // opcional: orden por hora
+                .map((viaje) => (
+                  <option key={viaje.idViaje} value={viaje.idViaje}>
+                    {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}`}
+                  </option>
                   ))}
                 </select>
 
@@ -534,9 +571,9 @@ function generarGuiaHTML(paquete, viaje) {
       {/* Tabla paquetes */}
       <div className="w-2/3 bg-white p-4 rounded-lg shadow-md">
         <h3 className="text-lg font-bold text-orange-700 mb-3">Paquetes</h3>
-        <div className="overflow-y-auto max-h-[500px]">
+        <div className="relative overflow-y-auto max-h-[500px]">
           <table className="w-full border-collapse text-sm">
-            <thead>
+           <thead className="sticky top-0 z-10 bg-[#f8c98e]">
               <tr className="bg-[#f8c98e]">
                 <th className="p-2 text-center text-[#452B1C]">Folio</th>
                 <th className="p-2 text-center text-[#452B1C]">Unidad</th>
@@ -550,7 +587,21 @@ function generarGuiaHTML(paquete, viaje) {
               </tr>
             </thead>
             <tbody>
-              {paquetes.map((p, i) => (
+            {paquetes
+              .filter((p) => {
+                const v = obtenerViajeDePaquete(p);
+                if (!v) return false;
+
+                // Solo del día de HOY
+                const esHoy = esMismoDia(v.fechaSalida, new Date());
+                if (!esHoy) return false;
+
+                // Si hay viaje seleccionado en el filtro, exige coincidencia
+                if (filtroIdViaje && String(v.idViaje) !== String(filtroIdViaje)) return false;
+
+                return true;
+              })
+              .map((p, i) => (
                 <tr key={p.folio} className={i % 2 === 0 ? "bg-[#fffaf3]" : ""}>
                   <td className="p-2 text-center">{p.folio}</td>
                   <td className="p-2 text-center">{obtenerNombreUnidad(p)}</td>
