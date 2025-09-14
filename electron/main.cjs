@@ -70,7 +70,7 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'), // <-- usa el nombre real que tengas
     },
   });

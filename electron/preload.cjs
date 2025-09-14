@@ -1,11 +1,23 @@
 // electron/preload.js
 const { contextBridge, ipcRenderer } = require('electron');
+const path = require("path");
+const fs = require("fs");
+
+const pkg = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../package.json"), "utf-8")
+);
+
+contextBridge.exposeInMainWorld("appInfo", {
+  version: pkg.version,
+});
 
 /* ---------------- helpers ---------------- */
 const safeInvoke = async (channel, payload) => {
   try { return await ipcRenderer.invoke(channel, payload); }
   catch (err) { return { ok: false, error: true, message: err?.message || 'Error' }; }
 };
+
+
 
 const safeSend = (channel, payload) => {
   try { ipcRenderer.send(channel, payload); return true; }
