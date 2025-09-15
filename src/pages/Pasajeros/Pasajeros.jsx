@@ -42,9 +42,24 @@ export default function Pasajeros() {
   const [sobreEquipaje, setSobreEquipaje] = useState('');
 
 
-  const viajesFiltrados = turnoSeleccionado
-    ? viajes.filter((viaje) => viaje.unidad.turno?.idTurno === Number(turnoSeleccionado))
-    : [];
+const viajesFiltrados = turnoSeleccionado
+  ? viajes.filter((viaje) => {
+      // Fecha del viaje
+      const fechaViaje = new Date(viaje.fechaSalida);
+
+      // Calcular "ayer" a las 00:00
+      const ayer = new Date();
+      ayer.setHours(0, 0, 0, 0);
+      ayer.setDate(ayer.getDate() - 1);
+
+      // Condiciones: turno coincide y fecha >= ayer
+      return (
+        viaje.unidad.turno?.idTurno === Number(turnoSeleccionado) &&
+        fechaViaje >= ayer
+      );
+    })
+  : [];
+
 
 
   useEffect(() => {
