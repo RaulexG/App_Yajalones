@@ -225,7 +225,7 @@ export default function Choferes() {
                 <th className="p-2 text-center text-[#452B1C]">Nombre</th>
                 <th className="p-2 text-center text-[#452B1C]">Unidad</th>
                 <th className="p-2 text-center text-[#452B1C]">Teléfono</th>
-                <th className="p-2 text-center text-[#452B1C]">Acciones</th>
+                <th className="p-2 text-center text-[#452B1C]"></th>
               </tr>
             </thead>
             <tbody>

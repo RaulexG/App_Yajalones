@@ -444,7 +444,7 @@ function generarGuiaHTML(paquete, viaje) {
                       <th className="px-4 py-3 text-left font-semibold ">Folio</th>
                       <th className="px-4 py-3 text-left font-semibold">Remitente</th>
                       <th className="px-4 py-3 text-left font-semibold">Contenido</th>
-                      <th className="px-4 py-3 text-center font-semibold">Acciones</th>
+                      <th className="px-4 py-3 text-center font-semibold"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
