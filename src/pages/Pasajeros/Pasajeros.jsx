@@ -580,17 +580,41 @@ export default function Pasajeros() {
 
                       <td className="p-3 text-center">
                         {/* Botón Ticket*/}
+                        {/* Botón Ticket*/}
                         <button
                           onClick={async () => {
                             try {
-                              await window.ticket.imprimirPasajero(
+                              const res = await window.ticket.imprimirPasajero(
                                 p,
-                                viajeSeleccionado // <-- usa el viaje seleccionado, que tiene todos los datos
+                                viajeSeleccionado // <-- usa el viaje seleccionado
                               );
-                              alert('Ticket impreso correctamente');
+
+                              if (!res || !res.ok) {
+                                Swal.fire({
+                                  icon: "error",
+                                  title: "Error al imprimir ticket",
+                                  text: res?.error || "No se pudo imprimir el ticket",
+                                  timer: 2000,
+                                  showConfirmButton: false,
+                                });
+                                return;
+                              }
+
+                              Swal.fire({
+                                icon: "success",
+                                title: "Ticket impreso",
+                                timer: 1500,
+                                showConfirmButton: false,
+                              });
                             } catch (err) {
                               console.error(err);
-                              alert('Error al imprimir ticket: ' + err);
+                              Swal.fire({
+                                icon: "error",
+                                title: "Error inesperado al imprimir",
+                                text: err.message,
+                                timer: 2000,
+                                showConfirmButton: false,
+                              });
                             }
                           }}
                           className="p-2 text-[#C14600] hover:text-orange-800 transition"
@@ -605,6 +629,7 @@ export default function Pasajeros() {
                             </g>
                           </svg>
                         </button>
+
 
 
                         <button

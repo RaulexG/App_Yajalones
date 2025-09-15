@@ -5,6 +5,8 @@ const path = require('path');
 const axios = require('axios');
 const { registerPDFIpc } = require('./pdf.cjs'); // IPCs de PDF
 const { autoUpdater } = require("electron-updater");
+const ThermalPrinter = require("node-thermal-printer").printer;
+const PrinterTypes = require("node-thermal-printer").types;
 
 
 const isDev = !app.isPackaged;
@@ -81,8 +83,8 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  mainWindow.once('ready-to-show', () => {
-    try { mainWindow.maximize(); mainWindow.show(); } catch {}
+  mainWindow.once('ready-to-show', async() => {
+    try {await initPrinter(); mainWindow.maximize(); mainWindow.show(); } catch {}
   });
 
   // 🔒 al cerrar la ventana, limpia sesión
@@ -91,49 +93,113 @@ function createWindow() {
   mainWindow.removeMenu();
 }
 
+async function detectarImpresora() {
+  const ventana = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  if (!ventana) return null;
+
+  // 👇 espera la promesa
+  const printers = await ventana.webContents.getPrintersAsync();
+
+  console.log("🔍 Impresoras detectadas:", printers.map(p => p.name));
+
+  const encontrada = printers.find(p =>
+    /gprinter|pos|58/i.test(p.name) // busca por nombre parcial
+  );
+
+  return encontrada ? `printer:${encontrada.name}` : null;
+}
+
+
+// ------------ Configuración impresora térmica ------------
+let printer = null;
+
+async function initPrinter() {
+  const interfaceName = await detectarImpresora()|| "dummy"; // "dummy" para modo simulación
+  if (!interfaceName) {
+    console.error("⚠️ No se detectó impresora térmica.");
+    dialog.showErrorBox(
+      "Impresora no encontrada",
+      "No se detectó la impresora térmica (58mm). Verifica que esté conectada y encendida."
+    );
+    return;
+  }
+
+  printer = new ThermalPrinter({
+    type: PrinterTypes.EPSON, // ESC/POS es compatible Epson
+    interface: interfaceName,
+    options: { timeout: 5000 },
+    width: 32, // caracteres por línea aprox. en 58mm
+    characterSet: "SLOVENIA",
+    removeSpecialCharacters: false,
+    lineCharacter: "-",
+  });
+
+  
+  console.log(interfaceName === "dummy"
+    ? "⚠️ Impresora no detectada, modo simulación"
+    : "✅ Impresora inicializada: " + interfaceName);
+}
+
 //------------- IPCs de ticket -------------
-ipcMain.handle('imprimir-ticket-pasajero', async (_e, { pasajero, viaje }) => {
-  // Genera el HTML del ticket
-  const ticketHtml = `
-    <div style="font-family: monospace; font-size: 14px;">
-    <h2 style="text-align:center;">Los Yajalones</h2>
-      <h2 style="text-align:center;">Pasajero</h2>
-      <hr>
-      <div>Folio: ${pasajero.folio ?? ''}</div>
-      <div>Nombre: ${pasajero.nombre ?? ''} ${pasajero.apellido ?? ''}</div>
-      <div>Asiento: ${pasajero.asiento ?? ''}</div>
-      <div>Unidad: ${viaje?.unidad?.nombre ?? ''}</div>
-      <div>Origen: ${viaje?.origen ?? ''}</div>
-      <div>Destino: ${viaje?.destino ?? ''}</div>
-      <div>Fecha: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString('es-MX') : ''}</div>
-      <div>Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString('es-MX') : ''}</div>
-      <div>Tipo: ${pasajero.tipo ?? ''}</div>
-      <div>Pago: ${pasajero.tipoPago ?? ''}</div>
-      <div>Importe: $${parseFloat(pasajero.importe ?? 0).toFixed(2)}</div>
-      <hr>
-      <div style="text-align:center;">¡Buen viaje!</div>
-    </div>
-  `;
+ipcMain.handle("imprimir-ticket-pasajero", async (_e, { pasajero, viaje }) => {
+  try {
+    if (!printer) throw new Error("La impresora térmica no está inicializada");
 
-  // Crea una ventana oculta para imprimir
-  const printWindow = new BrowserWindow({
-    show: false,
-    webPreferences: { nodeIntegration: true }
-  });
+    // --- Construir ticket ---
+    printer.alignCenter();
+    printer.setTextDoubleHeight();
+    printer.println(" Los Yajalones");
+    printer.setTextNormal();
+    printer.println(" TICKET DE PASAJERO");
+    printer.drawLine();
 
-  printWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(ticketHtml));
-  printWindow.webContents.on('did-finish-load', () => {
-    printWindow.webContents.print({
-      silent: false, // true para no mostrar diálogo
-      printBackground: true,
-      // deviceName: 'Nombre_de_tu_impresora' // Opcional: pon el nombre exacto de tu impresora
-    }, () => {
-      printWindow.close();
-    });
-  });
+    printer.alignLeft();
+    printer.println(`Folio: ${pasajero.folio ?? ""}`);
+    printer.println(`Nombre: ${pasajero.nombre ?? ""} ${pasajero.apellido ?? ""}`);
+    printer.println(`Asiento: ${pasajero.asiento ?? ""}`);
+    printer.println(`Unidad: ${viaje?.unidad?.nombre ?? ""}`);
+    printer.println(`Origen: ${viaje?.origen ?? ""}`);
+    printer.println(`Destino: ${viaje?.destino ?? ""}`);
+    printer.println(
+      `Fecha: ${
+        viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""
+      }`
+    );
+    printer.println(
+      `Hora: ${
+        viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX") : ""
+      }`
+    );
+    printer.println(`Tipo: ${pasajero.tipo ?? ""}`);
+    printer.println(`Pago: ${pasajero.tipoPago ?? ""}`);
+    printer.println(`Importe: $${parseFloat(pasajero.importe ?? 0).toFixed(2)}`);
 
-  return true;
+    printer.drawLine();
+    printer.alignCenter();
+    printer.println("¡Buen viaje!");
+    printer.cut();
+
+    // --- Simulación / ejecución ---
+    const buffer = printer.getBuffer();
+    console.log("🖨️ ESC/POS generado:", buffer);
+    console.log("🖨️ Texto plano:\n" + buffer.toString("ascii"));
+
+    // Solo ejecuta si no estás en dummy
+    if (printer.interface && printer.interface !== "dummy") {
+      await printer.execute();
+      return { ok: true };
+    } else {
+      return { ok: true, simulated: true };
+    }
+  } catch (err) {
+    console.error("Error al imprimir ticket pasajero:", err);
+    return { ok: false, error: err.message };
+  }
 });
+
+
+
+
 //------------- IPCs de ticket Paquete-------------
 
 ipcMain.handle("imprimir-html", async (_e, html) => {
@@ -246,6 +312,7 @@ app.on('ready', () => {
 // ------------ ciclo de vida app ------------
 app.whenReady().then(() => {
   createWindow();
+    setTimeout(() => initPrinter(), 2000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
