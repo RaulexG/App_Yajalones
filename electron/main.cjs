@@ -10,7 +10,7 @@ const PrinterTypes = require("node-thermal-printer").types;
 
 
 const isDev = !app.isPackaged;
-const API_BASE = process.env.VITE_API_BASE || 'http://localhost:8081';
+const API_BASE = process.env.VITE_API_BASE || 'https://yajalones-app-81c1abc5059e.herokuapp.com';
 const APP_ICON = path.join(__dirname, 'assets', 'icono.ico');
 
 const authState = { token: null, exp: null, timer: null };
@@ -103,10 +103,10 @@ async function detectarImpresora() {
   console.log("🔍 Impresoras detectadas:", printers.map(p => p.name));
 
   const encontrada = printers.find(p =>
-    /gprinter|pos|58/i.test(p.name) // busca por nombre parcial
+    /GTP|pos|58/i.test(p.name) // busca por nombre parcial
   );
 
-  return encontrada ? `printer:${encontrada.name}` : null;
+  return encontrada ? `printer:"${encontrada.name}"` : null;
 }
 
 
@@ -114,7 +114,7 @@ async function detectarImpresora() {
 let printer = null;
 
 async function initPrinter() {
-  const interfaceName = await detectarImpresora()|| "dummy"; // "dummy" para modo simulación
+  const interfaceName = await detectarImpresora(); // "dummy" para modo simulación
   if (!interfaceName) {
     console.error("⚠️ No se detectó impresora térmica.");
     dialog.showErrorBox(
@@ -124,20 +124,25 @@ async function initPrinter() {
     return;
   }
 
+try {
   printer = new ThermalPrinter({
-    type: PrinterTypes.EPSON, // ESC/POS es compatible Epson
+    type: PrinterTypes.EPSON,
     interface: interfaceName,
     options: { timeout: 5000 },
-    width: 32, // caracteres por línea aprox. en 58mm
+    width: 32,
     characterSet: "SLOVENIA",
     removeSpecialCharacters: false,
     lineCharacter: "-",
   });
+  console.log("✅ Impresora inicializada:", interfaceName);
+} catch (err) {
+  console.error("❌ Error al inicializar impresora:", err);
+  dialog.showErrorBox("Error de impresora", "No se pudo inicializar la impresora térmica.\n" + err.message);
+  printer = null;
+}
 
   
-  console.log(interfaceName === "dummy"
-    ? "⚠️ Impresora no detectada, modo simulación"
-    : "✅ Impresora inicializada: " + interfaceName);
+  console.log("✅ Impresora inicializada: " + interfaceName);
 }
 
 //------------- IPCs de ticket -------------
