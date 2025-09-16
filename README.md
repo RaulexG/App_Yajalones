@@ -71,6 +71,13 @@ npm install --save-dev electron-builder
 npm run build
 # Empaqueta todo y genera .exe
 npm run dist
+# Para publicar una release nueva 
+npx electron-builder -w --publish always
+```
+Se requiere un token personal clasico para poder subir una release
+
+```powershell
+setx GH_TOKEN "tu_token_de_github"
 ```
 
 ### Evitar errores de firma en Windows

@@ -1,9 +1,9 @@
 {
   "name": "yajalon-app",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Sistema de Transporte Los Yajalones",
-  "author": "Alejandro Serrano Guzmán, Raúl Chavira Narváez, Cristian Ivan Vázquez Gómez, Frida Monserrat Vázquez de la Cruz, Fernando Gael Estrada Velasco",
+  "author": "Wolfpack Software",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
