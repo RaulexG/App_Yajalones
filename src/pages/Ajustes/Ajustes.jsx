@@ -15,272 +15,343 @@ import {
 } from '../../services/Admin/adminService';
 import Swal from 'sweetalert2';
 
+/* -------------------- Helpers -------------------- */
+/** Ayer 00:00:00 (hora local) */
+const getAyerInicio = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+/** Viajes desde ayer 00:00, ordenados por fechaSalida asc */
+const filtrarViajesDesdeAyer = (lista) => {
+  const min = getAyerInicio().getTime();
+  return (lista || [])
+    .filter((v) => {
+      const t = new Date(v.fechaSalida).getTime();
+      return Number.isFinite(t) && t >= min;
+    })
+    .sort((a, b) => new Date(a.fechaSalida) - new Date(b.fechaSalida));
+};
+
+
+/** Normaliza a 'YYYY-MM-DDTHH:mm:ss' para <input type="datetime-local"> */
+const toDatetimeLocal = (dLike) => {
+  if (!dLike) return '';
+  const d = dLike instanceof Date ? dLike : new Date(dLike);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+
+/** Asegura que un valor 'YYYY-MM-DDTHH:mm' tenga segundos */
+const ensureSeconds = (val) => {
+  if (!val) return '';
+  // 'YYYY-MM-DDTHH:mm' => length 16
+  if (val.length === 16) return `${val}:00`;
+  return val;
+};
+
+/** SweetAlert loader con timeout seguro (evita doble modal) */
+const createSwalLoader = (ms = 10000) => {
+  let timeoutId;
+  let closedByTimeout = false;
+  return {
+    start: (title = 'Guardando...', text = 'Conectando al servidor') => {
+      Swal.fire({
+        title,
+        text,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+      timeoutId = setTimeout(() => {
+        closedByTimeout = true;
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo conectar al servidor. Inténtalo de nuevo.',
+        });
+      }, ms); // ⏱ 10s por defecto
+    },
+    success: (title = 'Guardado', text = 'Operación realizada correctamente') => {
+      clearTimeout(timeoutId);
+      if (closedByTimeout) return; // evita doble modal
+      Swal.fire({ icon: 'success', title, text });
+    },
+    failure: (title = 'Error', text = 'Ocurrió un error al procesar la solicitud') => {
+      clearTimeout(timeoutId);
+      if (closedByTimeout) return;
+      Swal.fire({ icon: 'error', title, text });
+    },
+  };
+};
+
+/** Valida HH:mm:ss */
+const isHHMMSS = (val) => /^\d{2}:\d{2}:\d{2}$/.test(val);
+
+/* -------------------- Componente -------------------- */
+
 export default function Ajustes() {
-  const [nombreCuenta, setNombreCuenta] = useState('Administrador'); // temporal
+  const [nombreCuenta] = useState('Administrador'); // temporal
 
   const [turnoForm, setTurnoForm] = useState({ horario: '', idTurno: null });
-  const [unidadForm, setUnidadForm] = useState({ nombre: '',numeroPasajeros: '', descripcion: '', idTurno: '', idUnidad: null });
-  const [viajeForm, setViajeForm] = useState({ origen: '', destino: '', fechaSalida: '', idUnidad: '', idViaje: null });
+  const [unidadForm, setUnidadForm] = useState({
+    nombre: '',
+    numeroPasajeros: '',
+    descripcion: '',
+    idTurno: '',
+    idUnidad: null,
+  });
+  const [viajeForm, setViajeForm] = useState({
+    origen: '',
+    destino: '',
+    fechaSalida: '',
+    idUnidad: '',
+    idViaje: null,
+  });
 
   const [turnos, setTurnos] = useState([]);
   const [unidades, setUnidades] = useState([]);
   const [viajes, setViajes] = useState([]);
-
   const [mostrarTabla, setMostrarTabla] = useState(null);
 
   const cargarDatos = async () => {
-    const t = await ListarTurnos();
-    const u = await ListarUnidades();
-    const v = await ListarViajes();
-    setTurnos(t);
-    setUnidades(u);
-    setViajes(v);
+    try {
+      const [t, u, v] = await Promise.all([ListarTurnos(), ListarUnidades(), ListarViajes()]);
+      setTurnos(t || []);
+      setUnidades(u || []);
+      // 👇 solo ayer en adelante
+      setViajes(filtrarViajesDesdeAyer(v));
+    } catch (e) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al cargar datos',
+        text: 'Revisa tu conexión o intenta de nuevo.',
+      });
+    }
   };
+  
 
   useEffect(() => {
     cargarDatos();
   }, []);
 
+  /* --------------- Guardar / Actualizar Turno --------------- */
   const handleGuardarTurno = async () => {
-    try{if (turnoForm.idTurno) {
-      Swal.fire({
-      title: "Guardando...",
-      text: "Conectando al servidor",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    // ⏱ Si después de 20s no responde, mostramos error
-    const timeout = setTimeout(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
-      });
-    }, 10000);
-
-      await ActualizarTurno(turnoForm.idTurno, { horario: turnoForm.horario });
-
-      clearTimeout(timeout); 
-    Swal.fire({
-      icon: "success",
-      title: "Guardado",
-      text: "El turno se editó correctamente"
-    });
-    } else {
-      Swal.fire({
-      title: "Guardando...",
-      text: "Conectando al servidor",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    // ⏱ Si después de 20s no responde, mostramos error
-    const timeout = setTimeout(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
-      });
-    }, 10000);
-
-      await CrearTurno({ horario: turnoForm.horario });
-
-      clearTimeout(timeout); 
-    Swal.fire({
-      icon: "success",
-      title: "Guardado",
-      text: "El turno se creó correctamente"
-    });
+    // Validación simple
+    if (!turnoForm.horario) {
+      Swal.fire({ icon: 'warning', title: 'Falta horario', text: 'Completa el horario.' });
+      return;
     }
-    setTurnoForm({ horario: '', idTurno: null });
-    cargarDatos();
-  }catch (err) {Swal.fire({
-                    icon: "error",
-                    title: "Error al guardar turno",
-                    text: "Formato esperado HH:MM:SS",
-                    timer: 1500,
-                    showConfirmButton: false
-                  });}
-    
+    if (!isHHMMSS(turnoForm.horario)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Formato inválido',
+        text: 'Formato esperado HH:MM:SS',
+      });
+      return;
+    }
+
+    const loader = createSwalLoader(10000);
+    loader.start();
+
+    try {
+      if (turnoForm.idTurno) {
+        await ActualizarTurno(turnoForm.idTurno, { horario: turnoForm.horario });
+        loader.success('Guardado', 'El turno se editó correctamente');
+      } else {
+        await CrearTurno({ horario: turnoForm.horario });
+        loader.success('Guardado', 'El turno se creó correctamente');
+      }
+      setTurnoForm({ horario: '', idTurno: null });
+      await cargarDatos();
+    } catch (err) {
+      loader.failure('Error al guardar turno', 'Inténtalo nuevamente.');
+    }
   };
-  
+
+  /* --------------- Guardar / Actualizar Unidad --------------- */
   const handleGuardarUnidad = async () => {
+    // Validaciones
+    if (!unidadForm.nombre?.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Falta nombre', text: 'Ingresa el nombre de la unidad.' });
+      return;
+    }
+    if (!unidadForm.numeroPasajeros) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan asientos',
+        text: 'Ingresa el número de asientos.',
+      });
+      return;
+    }
+
+    const numeroPasajerosNum = parseInt(unidadForm.numeroPasajeros, 10);
+    if (Number.isNaN(numeroPasajerosNum) || numeroPasajerosNum <= 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Asientos inválidos',
+        text: 'El número de asientos debe ser un entero mayor a 0.',
+      });
+      return;
+    }
+
+    const idTurnoNum = parseInt(unidadForm.idTurno, 10);
+    if (Number.isNaN(idTurnoNum)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Falta turno',
+        text: 'Selecciona un turno.',
+      });
+      return;
+    }
+
     const datos = {
       nombre: unidadForm.nombre,
-      numeroPasajeros: parseInt(unidadForm.numeroPasajeros),
+      numeroPasajeros: numeroPasajerosNum,
       descripcion: unidadForm.descripcion,
       activo: true,
-      turno: { idTurno: parseInt(unidadForm.idTurno) }
+      turno: { idTurno: idTurnoNum },
     };
-    if (unidadForm.idUnidad) {
-      Swal.fire({
-      title: "Guardando...",
-      text: "Conectando al servidor",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
+
+    const loader = createSwalLoader(10000);
+    loader.start();
+
+    try {
+      if (unidadForm.idUnidad) {
+        await ActualizarUnidad(unidadForm.idUnidad, datos);
+        loader.success('Guardado', 'La unidad se editó correctamente');
+      } else {
+        await CrearUnidad(datos);
+        loader.success('Guardado', 'La unidad se creó correctamente');
       }
-    });
-
-    // ⏱ Si después de 20s no responde, mostramos error
-    const timeout = setTimeout(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
+      setUnidadForm({
+        nombre: '',
+        numeroPasajeros: '',
+        descripcion: '',
+        idTurno: '',
+        idUnidad: null,
       });
-    }, 10000);
-      await ActualizarUnidad(unidadForm.idUnidad, datos);
-      clearTimeout(timeout); 
-    Swal.fire({
-      icon: "success",
-      title: "Guardado",
-      text: "La unidad se editó correctamente"
-    });
-    } else {
-Swal.fire({
-      title: "Guardando...",
-      text: "Conectando al servidor",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    // ⏱ Si después de 20s no responde, mostramos error
-    const timeout = setTimeout(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
-      });
-    }, 10000);
-
-      await CrearUnidad(datos);
-
-      clearTimeout(timeout); 
-    Swal.fire({
-      icon: "success",
-      title: "Guardado",
-      text: "La unidad se creó correctamente"
-    });
-
-
+      await cargarDatos();
+    } catch (err) {
+      loader.failure('Error al guardar unidad', 'Inténtalo nuevamente.');
     }
-    setUnidadForm({ nombre: '', numeroPasajeros: '', descripcion: '', idTurno: '', idUnidad: null });
-    cargarDatos();
   };
 
+  /* --------------- Guardar / Actualizar Viaje --------------- */
   const handleGuardarViaje = async () => {
+    // Validaciones
+    if (!viajeForm.origen) {
+      Swal.fire({ icon: 'warning', title: 'Falta origen', text: 'Selecciona el origen.' });
+      return;
+    }
+    if (!viajeForm.destino) {
+      Swal.fire({ icon: 'warning', title: 'Falta destino', text: 'El destino es requerido.' });
+      return;
+    }
+    if (!viajeForm.fechaSalida) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Falta fecha de salida',
+        text: 'Selecciona la fecha y hora.',
+      });
+      return;
+    }
+    const idUniNum = parseInt(viajeForm.idUnidad, 10);
+    if (Number.isNaN(idUniNum)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Falta unidad',
+        text: 'Selecciona una unidad.',
+      });
+      return;
+    }
+
+    const fechaSalida = ensureSeconds(viajeForm.fechaSalida);
+
     const datos = {
       origen: viajeForm.origen,
       destino: viajeForm.destino,
-      fechaSalida: viajeForm.fechaSalida,
-      idUnidad: parseInt(viajeForm.idUnidad)
+      fechaSalida,
+      idUnidad: idUniNum,
     };
-    console.log('Datos del viaje:', datos);
-    if (viajeForm.idViaje) {
 
-      Swal.fire({
-      title: "Guardando...",
-      text: "Conectando al servidor",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
+    const loader = createSwalLoader(10000);
+    loader.start();
+
+    try {
+      if (viajeForm.idViaje) {
+        await ActualizarViaje(viajeForm.idViaje, datos);
+        loader.success('Guardado', 'El viaje se editó correctamente');
+      } else {
+        await CrearViaje(datos);
+        loader.success('Guardado', 'El viaje se creó correctamente');
       }
-    });
-
-    // ⏱ Si después de 20s no responde, mostramos error
-    const timeout = setTimeout(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
-      });
-    }, 10000);
-
-      await ActualizarViaje(viajeForm.idViaje, datos);
-
-      clearTimeout(timeout); 
-    Swal.fire({
-      icon: "success",
-      title: "Guardado",
-      text: "El viaje se editó correctamente"
-    });
-    } else {
-
-      Swal.fire({
-      title: "Guardando...",
-      text: "Conectando al servidor",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    // ⏱ Si después de 20s no responde, mostramos error
-    const timeout = setTimeout(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo conectar al servidor. Inténtalo de nuevo."
-      });
-    }, 10000);
-
-      await CrearViaje(datos);
-
-      clearTimeout(timeout); 
-    Swal.fire({
-      icon: "success",
-      title: "Guardado",
-      text: "El Viaje se creó correctamente"
-    });
+      setViajeForm({ origen: '', destino: '', fechaSalida: '', idUnidad: '', idViaje: null });
+      await cargarDatos();
+    } catch (err) {
+      loader.failure('Error al guardar viaje', 'Inténtalo nuevamente.');
     }
-    setViajeForm({ origen: '', destino: '', fechaSalida: '', idUnidad: '', idViaje: null });
-    cargarDatos();
   };
 
   const cerrarTabla = () => setMostrarTabla(null);
 
+  /* -------------------- Tabla Modal -------------------- */
   const TablaDatos = () => {
     const columnas = {
       turnos: ['ID', 'Horario', ''],
-      unidades: ['ID', 'Nombre','Asientos', 'Descripción', 'Turno', ''],
-      viajes: ['ID', 'Origen', 'Destino', 'Unidad', 'Fecha de Salida', '']
+      unidades: ['ID', 'Nombre', 'Asientos', 'Descripción', 'Turno', ''],
+      viajes: ['ID', 'Origen', 'Destino', 'Unidad', 'Fecha de Salida', ''],
     };
-
-    const datos = { turnos, unidades, viajes };
 
     const editar = (tipo, item) => {
       if (tipo === 'turnos') {
-        setTurnoForm({ horario: item.horario, idTurno: item.idTurno });
+        setTurnoForm({ horario: item.horario ?? '', idTurno: item.idTurno });
       }
       if (tipo === 'unidades') {
-        setUnidadForm({ nombre: item.nombre,asientos: item.numeroPasajeros, descripcion: item.descripcion, idTurno: item.turno?.idTurno || '', idUnidad: item.idUnidad });
+        setUnidadForm({
+          nombre: item.nombre ?? '',
+          numeroPasajeros: String(item.numeroPasajeros ?? ''),
+          descripcion: item.descripcion ?? '',
+          idTurno: String(item.turno?.idTurno ?? ''),
+          idUnidad: item.idUnidad,
+        });
       }
       if (tipo === 'viajes') {
-        const origen = item.origen;
-        const destino = item.destino;
         setViajeForm({
-          origen,
-          destino,
-          fechaSalida: item.fechaSalida,
-          idUnidad: item.unidad?.idUnidad || '',
-          idViaje: item.idViaje
+          origen: item.origen ?? '',
+          destino: item.destino ?? '',
+          fechaSalida: toDatetimeLocal(item.fechaSalida),
+          idUnidad: String(item.unidad?.idUnidad ?? ''),
+          idViaje: item.idViaje,
         });
       }
       cerrarTabla();
     };
 
     const filas = {
-      turnos: turnos.map(t => [t.idTurno, t.horario, t]),
-      unidades: unidades.map(u => [u.idUnidad, u.nombre,u.numeroPasajeros, u.descripcion, u.turno?.horario || '', u]),
-      viajes: viajes.map(v => [v.idViaje, v.origen, v.destino, v.unidad?.nombre, v.fechaSalida.toLocaleString() || '', v])
+      turnos: (turnos || []).map((t) => [t.idTurno, t.horario ?? '', t]),
+      unidades: (unidades || []).map((u) => [
+        u.idUnidad,
+        u.nombre ?? '',
+        u.numeroPasajeros ?? '',
+        u.descripcion ?? '',
+        u.turno?.horario ?? '',
+        u,
+      ]),
+      viajes: (viajes || []).map((v) => [
+        v.idViaje,
+        v.origen ?? '',
+        v.destino ?? '',
+        v.unidad?.nombre ?? '',
+        v.fechaSalida ? new Date(v.fechaSalida).toLocaleString() : '',
+        v,
+      ]),
     };
 
     if (!mostrarTabla) return null;
@@ -288,362 +359,248 @@ Swal.fire({
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="">
-          {/*Tabla*/}
-          <div className="">
-            {/* Card */}
-            <div className="bg-white rounded-2xl w-[92vw] max-w-3xl shadow-2xl overflow-hidden">
+          {/* Card */}
+          <div className="bg-white rounded-2xl w-[92vw] max-w-3xl shadow-2xl overflow-hidden">
+            {/* Encabezado */}
+            <div className="flex items-center justify-between px-6 py-4">
+              <h2 className="text-xl font-bold text-orange-800 capitalize">Lista de {mostrarTabla}</h2>
+              <button
+                onClick={cerrarTabla}
+                aria-label="Cerrar"
+                className="p-2 rounded-md text-orange-700 hover:bg-orange-100 focus:outline-none focus:ring-0"
+              >
+                {/* ícono X */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                  <path
+                    fill="currentColor"
+                    d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
+                  />
+                </svg>
+              </button>
+            </div>
 
-              {/* Encabezado */}
-              <div className="flex items-center justify-between px-6 py-4">
-                <h2 className="text-xl font-bold text-orange-800 capitalize">
-                  Lista de {mostrarTabla}
-                </h2>
+            {/* Contenido: tabla */}
+            <div className="px-6 pb-6">
+              <div className="overflow-hidden rounded-xl ring-1 ring-orange-200">
+                <table className="w-full table-auto border-collapse">
+                  {/* encabezado */}
+                  <thead className="sticky top-0 bg-orange-100 text-orange-900">
+                    <tr>
+                      {columnas[mostrarTabla].map((col) => (
+                        <th key={col} className="px-4 py-3 text-left font-semibold">
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
 
-                <button
-                  onClick={cerrarTabla}
-                  aria-label="Cerrar"
-                  className="p-2 rounded-md text-orange-700 hover:bg-orange-100 focus:outline-none focus:ring-0"
-                >
-                  {/* ícono X */}
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
-                    <path
-                      fill="currentColor"
-                      d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
-                    />
-                  </svg>
-                </button>
-              </div>
+                  {/* filas */}
+                  <tbody className="divide-y divide-orange-100">
+                    {filas[mostrarTabla].map((fila, idx) => (
+                      <tr
+                        key={idx}
+                        className="odd:bg-white even:bg-orange-50/40 hover:bg-orange-100 transition-colors"
+                      >
+                        {fila.map((cell, i) => {
+                          const esUltima = i === fila.length - 1;
 
-              {/* Contenido: tabla */}
-              <div className="px-6 pb-6">
-                <div className="overflow-hidden rounded-xl ring-1 ring-orange-200">
-                  <table className="w-full table-auto border-collapse">
-                    {/* encabezado*/}
-                    <thead className="sticky top-0 bg-orange-100 text-orange-900">
-                      <tr>
-                        {columnas[mostrarTabla].map((col) => (
-                          <th key={col} className="px-4 py-3 text-left font-semibold">
-                            {col}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-
-                    {/* filas zebra + hover */}
-                    <tbody className="divide-y divide-orange-100">
-                      {filas[mostrarTabla].map((fila, idx) => (
-                        <tr
-                          key={idx}
-                          className="odd:bg-white even:bg-orange-50/40 hover:bg-orange-100 transition-colors"
-                        >
-                          {fila.map((cell, i) => {
-                            const esUltima = i === fila.length - 1;
-
-                            // Turnos/Unidades: última celda = Editar
-                            if (esUltima && mostrarTabla !== 'viajes') {
-                              return (
-                                <td key={i} className="px-4 py-2 text-left">
-                                  <button
-                                    onClick={() => editar(mostrarTabla, cell)}
-                                    aria-label="Editar"
-                                    title="Editar"
-                                    className="inline-flex items-center justify-center w-9 h-9 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
-                                  >
-                                    {/* Ícono editar */}
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                      className="w-5 h-5">
-                                      <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                                        <path d="m16.475 5.408 2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
-                                        <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
-                                      </g>
-                                    </svg>
-                                  </button>
-                                  
-                                  <button
-                                  onClick={async () => {
-                                    
-                                      if (mostrarTabla === 'turnos') {
-                                        const result = await Swal.fire({
-                                                      icon: 'question',
-                                                      title: '¿Seguro que quieres eliminar este turno?',
-                                                      showCancelButton: true,         // Botón "No"
-                                                      confirmButtonText: 'Sí',        // Botón "Sí"
-                                                      cancelButtonText: 'No',
-                                                      reverseButtons: true
-                                                    });
-                                                    if (result.isConfirmed) {try{
-                                                      const turno = cell;
-                                        await EliminarTurno(turno.idTurno);
-                                        cargarDatos();
-                                        Swal.fire({
-                                                      icon: "success",
-                                                      title: "Turno eliminado",
-                                                      timer: 1500,
-                                                      showConfirmButton: false
-                                                    });}catch(err){Swal.fire({
-                                                      icon: "error",
-                                                      title: "Error al eliminar el turno",
-                                                      timer: 1500,
-                                                      showConfirmButton: false
-                                                    });}
-                                                      
-                                                    }
-                                      }
-                                      if (mostrarTabla === 'unidades' ) {
-                                        const result = await Swal.fire({
-                                                      icon: 'question',
-                                                      title: '¿Seguro que quieres eliminar esta unidad?',
-                                                      showCancelButton: true,         // Botón "No"
-                                                      confirmButtonText: 'Sí',        // Botón "Sí"
-                                                      cancelButtonText: 'No',
-                                                      reverseButtons: true
-                                                    });
-                                                    if (result.isConfirmed) {try{
-                                                      const unidad = cell;
-                                                      await EliminarUnidad(unidad.idUnidad);
-                                                      cargarDatos();
-                                                      Swal.fire({
-                                                      icon: "success",
-                                                      title: "Unidad eliminada",
-                                                      timer: 1500,
-                                                      showConfirmButton: false
-                                                    });
-                                                    }catch(err){Swal.fire({
-                                                      icon: "error",
-                                                      title: "Error al eliminar la unidad",
-                                                      timer: 1500,
-                                                      showConfirmButton: false
-                                                    });}
-                                        
-                                                    }
-                                      }
-                                    }}
-                                    aria-label="Eliminar"
-                                    title="Eliminar" className="text-red-600 hover:text-red-800">
-                                    {/* Ícono eliminar */}
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      className="w-6 h-6 cursor-pointer"
-                                      style={{ color: "#C14600" }}
-                                    >
-                                      <path
-                                        fill="currentColor"
-                                        d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
-                                      />
-                                    </svg>
-                                  </button>
-                                </td>
-                              );
-                            }
-
-                            if (esUltima && mostrarTabla === 'viajes') {
-                              const viaje = cell;
-                              return (
-                                <td key={i} className="px-4 py-2 text-right">
-                                  {/* Botón Editar */}
-                                  <button
-                                    aria-label="Editar viaje"
-                                    title="Editar"
-                                    className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
-                                  >
-                                    {/* Ícono editar */}
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
-                                      <g
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                      >
-                                        <path d="m16.475 5.408 2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
-                                        <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
-                                      </g>
-                                    </svg>
-                                  </button>
-
-
-                                  <button
-                                    onClick={async () => {
-                                      const result = await Swal.fire({
-                                                    icon: 'question',
-                                                    title: '¿Seguro que quieres eliminar el viaje?',
-                                                    showCancelButton: true,         // Botón "No"
-                                                    confirmButtonText: 'Sí',        // Botón "Sí"
-                                                    cancelButtonText: 'No',
-                                                    reverseButtons: true
-                                                  });
-                                      if (result.isConfirmed) {try{
-                                        const viaje = cell;
-                                        await EliminarViaje(viaje.idViaje);
-                                        cargarDatos();
-                                        Swal.fire({
-                                                      icon: "success",
-                                                      title: "Viaje eliminado",
-                                                      timer: 1500,
-                                                      showConfirmButton: false
-                                                    });
-
-                                      }catch (err) {Swal.fire({
-                                                      icon: "error",
-                                                      title: "Error al eliminar el viaje",
-                                                      timer: 1500,
-                                                      showConfirmButton: false
-                                                    });
-                                                    return;}
-                                        
-                                      }
-                                    }}
-                                    aria-label="Eliminar viaje"
-                                    title="Eliminar"
-                                    className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
-                                  >
-                                    {/* basura icono */}
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
-                                      <path
-                                        fill="currentColor"
-                                        d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
-                                      />
-                                    </svg>
-                                  </button>
-                                </td>
-                              );
-                            }
-
-                            // celdas normales
+                          // Turnos/Unidades: última celda = Editar/Eliminar
+                          if (esUltima && mostrarTabla !== 'viajes') {
                             return (
-                              <td key={i} className="px-4 py-2 text-left text-gray-800">
-                                {cell}
+                              <td key={i} className="px-4 py-2 text-left">
+                                <button
+                                  onClick={() => editar(mostrarTabla, cell)}
+                                  aria-label="Editar"
+                                  title="Editar"
+                                  className="inline-flex items-center justify-center w-9 h-9 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 cursor-pointer hover:scale-120 transition-transform" 
+                                >
+                                  {/* Ícono editar */}
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                    <g
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                    >
+                                      <path d="m16.475 5.408 2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
+                                      <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
+                                    </g>
+                                  </svg>
+                                </button>
+
+                                <button
+                                  onClick={async () => {
+                                    if (mostrarTabla === 'turnos') {
+                                      const result = await Swal.fire({
+                                        icon: 'question',
+                                        title: '¿Seguro que quieres eliminar este turno?',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Sí',
+                                        cancelButtonText: 'No',
+                                        reverseButtons: true,
+                                      });
+                                      if (result.isConfirmed) {
+                                        try {
+                                          const turno = cell;
+                                          await EliminarTurno(turno.idTurno);
+                                          await cargarDatos();
+                                          Swal.fire({
+                                            icon: 'success',
+                                            title: 'Turno eliminado',
+                                            timer: 1500,
+                                            showConfirmButton: false,
+                                          });
+                                        } catch (err) {
+                                          Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error al eliminar el turno',
+                                            timer: 1500,
+                                            showConfirmButton: false,
+                                          });
+                                        }
+                                      }
+                                    }
+                                    if (mostrarTabla === 'unidades') {
+                                      const result = await Swal.fire({
+                                        icon: 'question',
+                                        title: '¿Seguro que quieres eliminar esta unidad?',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Sí',
+                                        cancelButtonText: 'No',
+                                        reverseButtons: true,
+                                      });
+                                      if (result.isConfirmed) {
+                                        try {
+                                          const unidad = cell;
+                                          await EliminarUnidad(unidad.idUnidad);
+                                          await cargarDatos();
+                                          Swal.fire({
+                                            icon: 'success',
+                                            title: 'Unidad eliminada',
+                                            timer: 1500,
+                                            showConfirmButton: false,
+                                          });
+                                        } catch (err) {
+                                          Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error al eliminar la unidad',
+                                            timer: 1500,
+                                            showConfirmButton: false,
+                                          });
+                                        }
+                                      }
+                                    }
+                                  }}
+                                  aria-label="Eliminar"
+                                  title="Eliminar"
+                                  className="text-red-600 hover:text-red-800 ml-2"
+                                >
+                                  {/* Ícono eliminar */}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    className="w-6 h-6 cursor-pointer hover:scale-120 transition-transform"
+                                    style={{ color: '#C14600' }}
+                                  >
+                                    <path
+                                      fill="currentColor"
+                                      d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                    />
+                                  </svg>
+                                </button>
                               </td>
                             );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                          }
+
+                          // Viajes: última celda con acciones Editar / Eliminar
+                          if (esUltima && mostrarTabla === 'viajes') {
+                            const viaje = cell;
+                            return (
+                              <td key={i} className="px-4 py-2 text-right">
+                                {/* Botón Eliminar */}
+                                <button
+                                  onClick={async () => {
+                                    const result = await Swal.fire({
+                                      icon: 'question',
+                                      title: '¿Seguro que quieres eliminar el viaje?',
+                                      showCancelButton: true,
+                                      confirmButtonText: 'Sí',
+                                      cancelButtonText: 'No',
+                                      reverseButtons: true,
+                                    });
+                                    if (result.isConfirmed) {
+                                      try {
+                                        await EliminarViaje(viaje.idViaje);
+                                        await cargarDatos();
+                                        Swal.fire({
+                                          icon: 'success',
+                                          title: 'Viaje eliminado',
+                                          timer: 1500,
+                                          showConfirmButton: false,
+                                        });
+                                      } catch (err) {
+                                        Swal.fire({
+                                          icon: 'error',
+                                          title: 'Error al eliminar el viaje',
+                                          timer: 1500,
+                                          showConfirmButton: false,
+                                        });
+                                      }
+                                    }
+                                  }}
+                                  aria-label="Eliminar viaje"
+                                  title="Eliminar"
+                                  className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 ml-2 cursor-pointer hover:scale-120 transition-transform"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                    <path
+                                      fill="currentColor"
+                                      d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                    />
+                                  </svg>
+                                </button>
+                              </td>
+                            );
+                          }
+
+                          // Celdas normales
+                          return (
+                            <td key={i} className="px-4 py-2 text-left text-gray-800">
+                              {cell ?? ''}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
-
-
-
-
         </div>
       </div>
     );
   };
 
+  /* -------------------- Render -------------------- */
   return (
     <div className="p-6 space-y-6 w-full">
-
-      {/*Encabezado*/}
+      {/* Encabezado */}
       <div>
         <h1 className="text-2xl font-bold text-orange-800">Ajustes del sistema</h1>
         <p className="text-gray-600">Bienvenido, {nombreCuenta}</p>
       </div>
 
-      {/* Sección Cuenta */}
-      {/*<section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
-        <h2 className="text-orange-700 font-bold text-lg mb-4">Cuenta</h2>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div>
-              <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
-              <input
-                type="text"
-                value={cuentaForm.nombre}
-                onChange={(e) => setCuentaForm({ ...cuentaForm, nombre: e.target.value })}
-                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-orange-700 font-semibold mb-1">Contraseña</label>
-              <input
-                type="password"
-                value={cuentaForm.contrasena}
-                onChange={(e) => setCuentaForm({ ...cuentaForm, contrasena: e.target.value })}
-                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-4 justify-center">
-            <button
-              onClick={handleGuardarCuenta}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Guardar
-            </button>
-            <button
-              onClick={handleEliminarCuenta}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Eliminar cuenta
-            </button>
-          </div>
-        </div>
-      </section>*/}
-
-      {/* Sección Tarifas */}
-      {/*<section className="bg-[#fff7ec] p-6 rounded-lg shadow-md">
-        <h2 className="text-orange-700 font-bold text-lg mb-4">Tarifas</h2>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div>
-              <label className="block text-orange-700 font-semibold mb-1">Adulto</label>
-              <input
-                type="number"
-                value={tarifas.adulto}
-                onChange={(e) => setTarifas({ ...tarifas, adulto: e.target.value })}
-                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-orange-700 font-semibold mb-1">Niño</label>
-              <input
-                type="number"
-                value={tarifas.nino}
-                onChange={(e) => setTarifas({ ...tarifas, nino: e.target.value })}
-                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-orange-700 font-semibold mb-1">Incent/Inapam</label>
-              <input
-                type="number"
-                value={tarifas.inapam}
-                onChange={(e) => setTarifas({ ...tarifas, inapam: e.target.value })}
-                className="w-full p-3 rounded-md bg-[#ffe0b2] outline-none"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-4 justify-center">
-            <button
-              onClick={handleGuardarTarifas}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Guardar
-            </button>
-            <button
-              onClick={handleActualizarTarifas}
-              className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
-            >
-              Actualizar
-            </button>
-          </div>
-        </div>
-      </section>*/}
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Sección Registrar Turno */}
+        {/* Registrar Turno */}
         <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-full">
           <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar turno</h2>
           <div className="flex flex-col gap-4">
-
             <div>
               <label className="block text-orange-700 font-semibold mb-1">Horario</label>
               <div className="flex items-center bg-[#ffe0b2] rounded-md px-2 w-full">
-                <input
+              <input
                   value={turnoForm.horario}
                   onChange={(e) => setTurnoForm({ ...turnoForm, horario: e.target.value })}
                   className="w-full p-2 bg-transparent outline-none"
@@ -684,7 +641,7 @@ Swal.fire({
           </div>
         </section>
 
-        {/* Sección Registrar Unidad */}
+        {/* Registrar Unidad */}
         <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-full">
           <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar unidad</h2>
           <div className="space-y-3">
@@ -699,6 +656,9 @@ Swal.fire({
             <div>
               <label className="block text-orange-700 font-semibold mb-1">No. de Asientos</label>
               <input
+                type="number"
+                min="1"
+                step="1"
                 value={unidadForm.numeroPasajeros}
                 onChange={(e) => setUnidadForm({ ...unidadForm, numeroPasajeros: e.target.value })}
                 className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
@@ -715,7 +675,7 @@ Swal.fire({
             <div>
               <label className="block text-orange-700 font-semibold mb-1">Turno</label>
               <select
-                value={unidadForm.idTurno}
+                value={String(unidadForm.idTurno)}
                 onChange={(e) => setUnidadForm({ ...unidadForm, idTurno: e.target.value })}
                 className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
                 required
@@ -724,14 +684,14 @@ Swal.fire({
                   Seleccionar turno
                 </option>
                 {turnos.map((t) => (
-                  <option key={t.idTurno} value={t.idTurno}>
+                  <option key={t.idTurno} value={String(t.idTurno)}>
                     {t.horario}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="flex gap-4 justify-center mt-">
+            <div className="flex gap-4 justify-center mt-4">
               <button
                 onClick={handleGuardarUnidad}
                 className="bg-[#cc4500] text-white font-semibold px-6 py-2 rounded-md hover:bg-orange-800"
@@ -748,7 +708,7 @@ Swal.fire({
           </div>
         </section>
 
-        {/* Sección Registrar Viaje */}
+        {/* Registrar Viaje */}
         <section className="bg-[#fff7ec] p-6 rounded-lg shadow-md w-full">
           <h2 className="text-orange-700 font-bold text-lg mb-4">Registrar viaje</h2>
           <div className="space-y-3">
@@ -758,8 +718,7 @@ Swal.fire({
                 value={viajeForm.origen}
                 onChange={(e) => {
                   const origenSeleccionado = e.target.value;
-                  const destinoAutomatico =
-                    origenSeleccionado === 'Tuxtla' ? 'Yajalon' : 'Tuxtla';
+                  const destinoAutomatico = origenSeleccionado === 'Tuxtla' ? 'Yajalon' : 'Tuxtla';
                   setViajeForm({
                     ...viajeForm,
                     origen: origenSeleccionado,
@@ -773,7 +732,6 @@ Swal.fire({
                 </option>
                 <option value="Tuxtla">Tuxtla Gtz</option>
                 <option value="Yajalon">Yajalón</option>
-
               </select>
             </div>
             <div>
@@ -782,36 +740,32 @@ Swal.fire({
                 value={viajeForm.destino}
                 readOnly
                 className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
-
               />
             </div>
             <div>
               <label className="block text-orange-700 font-semibold mb-1">Fecha de salida</label>
               <input
                 type="datetime-local"
+                step="1"
                 value={viajeForm.fechaSalida}
                 onChange={(e) => {
-                  let valor = e.target.value;
-                  // Si no tiene segundos, se los agregamos
-                  if (valor && valor.length === 16) { // formato YYYY-MM-DDTHH:mm → 16 caracteres
-                    valor = valor + ":00";
-                  }
+                  const valor = ensureSeconds(e.target.value);
                   setViajeForm({ ...viajeForm, fechaSalida: valor });
                 }}
                 className="
-                    w-full p-2 rounded-md bg-[#ffe0b2] outline-none
-                    pr-16
-                    [&::-webkit-calendar-picker-indicator]:opacity-100
-                    [&::-webkit-calendar-picker-indicator]:cursor-pointer
-                    [&::-webkit-calendar-picker-indicator]:filter-[invert(21%)_sepia(85%)_saturate(2989%)_hue-rotate(9deg)_brightness(96%)_contrast(104%)]
-                    [&::-webkit-calendar-picker-indicator]:[transform:translateX(55px)]
-                  "
+                  w-full p-2 rounded-md bg-[#ffe0b2] outline-none
+                  pr-16
+                  [&::-webkit-calendar-picker-indicator]:opacity-100
+                  [&::-webkit-calendar-picker-indicator]:cursor-pointer
+                  [&::-webkit-calendar-picker-indicator]:filter-[invert(21%)_sepia(85%)_saturate(2989%)_hue-rotate(9deg)_brightness(96%)_contrast(104%)]
+                  [&::-webkit-calendar-picker-indicator]:[transform:translateX(55px)]
+                "
               />
             </div>
             <div>
               <label className="block text-orange-700 font-semibold mb-1">Unidad</label>
               <select
-                value={viajeForm.idUnidad}
+                value={String(viajeForm.idUnidad)}
                 onChange={(e) => setViajeForm({ ...viajeForm, idUnidad: e.target.value })}
                 className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none"
                 required
@@ -820,7 +774,7 @@ Swal.fire({
                   Seleccione unidad
                 </option>
                 {unidades.map((u) => (
-                  <option key={u.idUnidad} value={u.idUnidad}>
+                  <option key={u.idUnidad} value={String(u.idUnidad)}>
                     {u.nombre}
                   </option>
                 ))}
@@ -844,11 +798,9 @@ Swal.fire({
           </div>
         </section>
 
-
-        {/* Tabla */}
+        {/* Modal Tabla */}
         <TablaDatos />
       </div>
     </div>
-
   );
 }

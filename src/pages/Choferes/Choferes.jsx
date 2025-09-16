@@ -12,7 +12,7 @@ export default function Choferes() {
   const [formulario, setFormulario] = useState({
     nombre: "",
     apellido: "",
-    unidad: "",
+    unidad: "",        // mantener SIEMPRE string para <select>
     telefono: "",
     activo: true,
   });
@@ -24,35 +24,48 @@ export default function Choferes() {
   useEffect(() => {
     ListarUnidades()
       .then((res) => {
-        setUnidades(res); // Asegúrate que `res` sea un array de unidades
+        setUnidades(Array.isArray(res) ? res : []);
       })
       .catch((err) => {
-        console.error('Error al cargar unidades:', err);
+        console.error("Error al cargar unidades:", err);
+        Swal.fire({
+          icon: "error",
+          title: "Error al cargar unidades",
+          text: "Revisa tu conexión o intenta nuevamente."
+        });
       });
   }, []);
-
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Si es el checkbox de activo
     if (name === "activo") {
       setFormulario((prev) => ({
         ...prev,
         activo: checked,
+        // si se desactiva, limpiamos la unidad y deshabilitamos el select
         unidad: checked ? prev.unidad : "",
       }));
-    } else {
-      setFormulario({ ...formulario, [name]: value });
+      return;
     }
+
+    setFormulario((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const cargarChoferes = async () => {
     try {
       const data = await ListarChoferes();
-      setChoferes(data);
+      setChoferes(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error al obtener choferes:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error al cargar choferes",
+        text: "No se pudieron obtener los choferes."
+      });
     }
   };
 
@@ -60,8 +73,8 @@ export default function Choferes() {
     setFormulario({
       nombre: chofer.nombre || "",
       apellido: chofer.apellido || "",
-      unidad: chofer.unidad?.idUnidad || "",
-      telefono: chofer.telefono,
+      unidad: String(chofer.unidad?.idUnidad ?? ""), // usar string
+      telefono: chofer.telefono ?? "",
       activo: chofer.activo ?? true,
     });
     setIdChoferEditando(chofer.idChofer);
@@ -69,69 +82,91 @@ export default function Choferes() {
 
   const eliminarChofer = async (id) => {
     const result = await Swal.fire({
-              icon: 'question',
-              title: '¿Seguro que quieres eliminar al chofer?',
-              showCancelButton: true,         // Botón "No"
-              confirmButtonText: 'Sí',        // Botón "Sí"
-              cancelButtonText: 'No',
-              reverseButtons: true
-            });
-            if (result.isConfirmed) {try {
-        await EliminarChofer(id);
-        cargarChoferes();
-        Swal.fire({
-                      icon: 'success',
-                      title: 'Chofer eliminado',
-                      timer: 1500,
-                      showConfirmButton: false
-                    });
-      } catch (err) {
-        Swal.fire({
-                icon: "error",
-                title: "Error al eliminar chofer",
-                timer: 1500,
-                showConfirmButton: false
-              });
-              return;
-      }}
-      
-    }
+      icon: "question",
+      title: "¿Seguro que quieres eliminar al chofer?",
+      showCancelButton: true,
+      confirmButtonText: "Sí",
+      cancelButtonText: "No",
+      reverseButtons: true
+    });
 
+    if (!result.isConfirmed) return;
+
+    try {
+      await EliminarChofer(id);
+      await cargarChoferes();
+      Swal.fire({
+        icon: "success",
+        title: "Chofer eliminado",
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error al eliminar chofer",
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+  };
 
   const guardarChofer = async (e) => {
     e.preventDefault();
     try {
-      const unidadSeleccionada = unidades.find(
-        (u) => u.idUnidad === parseInt(formulario.unidad)
-      );
+      // Validaciones mínimas
+      if (!formulario.nombre.trim() || !formulario.apellido.trim()) {
+        Swal.fire({ icon: "warning", title: "Nombre y apellido son obligatorios" });
+        return;
+      }
 
+      if (formulario.activo && !formulario.unidad) {
+        Swal.fire({
+          icon: "warning",
+          title: "Unidad requerida",
+          text: "Selecciona una unidad para un chofer activo."
+        });
+        return;
+      }
+
+      const unidadId = formulario.activo ? parseInt(formulario.unidad, 10) : null;
+      if (formulario.activo && (Number.isNaN(unidadId) || unidadId <= 0)) {
+        Swal.fire({ icon: "error", title: "Unidad inválida" });
+        return;
+      }
 
       const datos = {
-        nombre: formulario.nombre,
-        apellido: formulario.apellido,
-        unidad: formulario.activo ? { idUnidad: unidadSeleccionada?.idUnidad } : null,
-        telefono: formulario.telefono,
+        nombre: formulario.nombre.trim(),
+        apellido: formulario.apellido.trim(),
+        unidad: formulario.activo ? { idUnidad: unidadId } : null,
+        telefono: formulario.telefono.trim(),
         activo: formulario.activo,
       };
 
-
       if (idChoferEditando) {
         await ActualizarChofer(idChoferEditando, datos);
+        Swal.fire({ icon: "success", title: "Chofer actualizado" });
       } else {
         await CrearChofer(datos);
+        Swal.fire({ icon: "success", title: "Chofer creado" });
       }
 
       setFormulario({
         nombre: "",
         apellido: "",
-        unidad: null,
+        unidad: "",     // volver a string vacío
         telefono: "",
         activo: true,
       });
       setIdChoferEditando(null);
-      cargarChoferes();
+      await cargarChoferes();
     } catch (err) {
       console.error("Error al guardar chofer:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error al guardar",
+        text: "Intenta nuevamente."
+      });
     }
   };
 
@@ -144,7 +179,7 @@ export default function Choferes() {
       {/* Formulario */}
       <form
         onSubmit={guardarChofer}
-        className="w-1/3 bg-[#fff7ec] p-5 rounded-lg shadow-md flex flex-col gap-4"
+        className="w-full md:w-1/3 bg-[#fff7ec] p-5 rounded-lg shadow-md flex flex-col gap-4"
       >
         <label className="text-orange-700 font-semibold">Nombre</label>
         <input
@@ -177,20 +212,22 @@ export default function Choferes() {
         >
           <option value="" disabled>Selecciona una unidad</option>
           {unidades.map((unidad) => (
-            <option key={unidad.idUnidad} value={unidad.idUnidad}>
+            <option key={unidad.idUnidad} value={String(unidad.idUnidad)}>
               {unidad.nombre}
             </option>
           ))}
         </select>
 
-
         <label className="text-orange-700 font-semibold">Teléfono</label>
         <input
-          type="text"
+          type="tel"
           name="telefono"
           value={formulario.telefono}
           onChange={handleChange}
           className="p-2 rounded-md bg-[#ffe0b2] outline-none"
+          // pattern de ejemplo: números, espacios y símbolos comunes
+          pattern="^[0-9+\s()-]{7,20}$"
+          title="Sólo dígitos, espacios y símbolos + ( ) -"
           required
         />
 
@@ -216,7 +253,7 @@ export default function Choferes() {
       </form>
 
       {/* Tabla */}
-      <div className="w-2/3 bg-white p-4 rounded-lg shadow-md">
+      <div className="w-full md:w-2/3 bg-white p-4 rounded-lg shadow-md">
         <h3 className="text-lg font-bold text-orange-700 mb-3">Choferes</h3>
         <div className="overflow-y-auto max-h-[500px]">
           <table className="w-full border-collapse text-sm">
@@ -225,15 +262,15 @@ export default function Choferes() {
                 <th className="p-2 text-center text-[#452B1C]">Nombre</th>
                 <th className="p-2 text-center text-[#452B1C]">Unidad</th>
                 <th className="p-2 text-center text-[#452B1C]">Teléfono</th>
-                <th className="p-2 text-center text-[#452B1C]"></th>
+                <th className="p-2 text-center text-[#452B1C]">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {choferes.map((c, i) => (
-                <tr key={i} className={`${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
-                  <td className="p-2 text-center">{`${c.nombre} ${c.apellido}`}</td>
+              {choferes.map((c) => (
+                <tr key={c.idChofer} className="odd:bg-[#fffaf3]">
+                  <td className="p-2 text-center">{`${c.nombre ?? ""} ${c.apellido ?? ""}`.trim()}</td>
                   <td className="p-2 text-center">{c.unidad?.nombre || "-"}</td>
-                  <td className="p-2 text-center">{c.telefono}</td>
+                  <td className="p-2 text-center">{c.telefono ?? "-"}</td>
                   <td className="p-2 flex gap-4 justify-center">
                     <button
                       onClick={() => seleccionarChofer(c)}
@@ -252,7 +289,7 @@ export default function Choferes() {
 
                     <button
                       onClick={() => eliminarChofer(c.idChofer)}
-                      className="text-red-600 hover:scale-110 transition cursor-pointer "
+                      className="text-red-600 hover:scale-110 transition cursor-pointer"
                       title="Eliminar"
                     >
                       <svg
@@ -272,7 +309,7 @@ export default function Choferes() {
               ))}
               {choferes.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="text-center py-4 text-gray-500">
+                  <td colSpan={4} className="text-center py-4 text-gray-500">
                     No hay choferes registrados.
                   </td>
                 </tr>

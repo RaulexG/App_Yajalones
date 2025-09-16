@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ListarViajes,
   ListarPaquetes,
@@ -8,7 +8,7 @@ import {
   paquetePendiente,
   obtenerPaquetesPendientes,
   asignarPaqueteAViaje,
-  ponerPaqueteComoPendiente
+  ponerPaqueteComoPendiente,
 } from "../../services/Admin/adminService";
 import Swal from "sweetalert2";
 
@@ -16,6 +16,7 @@ export default function Paqueteria() {
   const [viajes, setViajes] = useState([]);
   const [paquetes, setPaquetes] = useState([]);
   const [pendientes, setPendientes] = useState([]);
+
   const [formulario, setFormulario] = useState({
     remitente: "",
     destinatario: "",
@@ -23,239 +24,264 @@ export default function Paqueteria() {
     contenido: "",
     pendiente: false,
     porCobrar: false,
-    idViaje: ""
+    idViaje: "",
   });
+
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEditando, setIdEditando] = useState(null);
+
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modalAsignar, setModalAsignar] = useState(false);
   const [paqueteAsignando, setPaqueteAsignando] = useState(null);
   const [viajeSeleccionado, setViajeSeleccionado] = useState("");
 
+  // Filtros generales
+  const [filtroFecha, setFiltroFecha] = useState("HOY"); // HOY | TODOS
+  const [filtroIdViaje, setFiltroIdViaje] = useState("");
+
+  // Filtro del SELECT del modal "Asignar viaje"
+  const [modalFiltroFecha, setModalFiltroFecha] = useState("HOY"); // HOY | TODOS
 
   useEffect(() => {
     cargarViajes();
     cargarPaquetes();
   }, []);
 
-  const [filtroIdViaje, setFiltroIdViaje] = useState("");
-
   const cargarViajes = async () => {
     const response = await ListarViajes();
-    setViajes(response);
+    setViajes(Array.isArray(response) ? response : []);
   };
 
   const cargarPaquetes = async () => {
     const response = await ListarPaquetes();
-    setPaquetes(response);
+    setPaquetes(Array.isArray(response) ? response : []);
   };
 
   const cargarPendientes = async () => {
     const response = await obtenerPaquetesPendientes();
-    setPendientes(response);
+    setPendientes(Array.isArray(response) ? response : []);
     setMostrarModal(true);
   };
 
+  // ---- helpers de fecha / viaje ----
+  const esMismoDia = (d1, d2) => {
+    const a = new Date(d1),
+      b = new Date(d2);
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  };
+
+  const obtenerViajeDePaquete = (paquete) => {
+    for (const viaje of viajes) {
+      if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
+        return viaje;
+      }
+    }
+    return null;
+  };
+
+  const obtenerNombreUnidad = (paquete) => {
+    const v = obtenerViajeDePaquete(paquete);
+    return v?.unidad?.nombre || "Unidad no encontrada";
+  };
+
+  const obtenerDestino = (paquete) => {
+    const v = obtenerViajeDePaquete(paquete);
+    return v?.destino || "Destino no encontrado";
+  };
+
+  const obtenerFechaSalida = (paquete) => {
+    const v = obtenerViajeDePaquete(paquete);
+    return v?.fechaSalida
+      ? new Date(v.fechaSalida).toLocaleDateString("es-MX")
+      : "-";
+  };
+
+  // ---- viajes filtrados (para el SELECT del formulario) ----
+  const viajesFiltrados = useMemo(() => {
+    const hoy = new Date();
+    const arr = (viajes || []).filter((v) =>
+      filtroFecha === "HOY" ? esMismoDia(v.fechaSalida, hoy) : true
+    );
+    arr.sort(
+      (a, b) =>
+        new Date(a.fechaSalida).getTime() - new Date(b.fechaSalida).getTime()
+    );
+    return arr;
+  }, [viajes, filtroFecha]);
+
+  // ---- viajes filtrados (para el SELECT del modal asignar) ----
+  const viajesFiltradosModal = useMemo(() => {
+    const hoy = new Date();
+    const arr = (viajes || []).filter((v) =>
+      modalFiltroFecha === "HOY" ? esMismoDia(v.fechaSalida, hoy) : true
+    );
+    arr.sort(
+      (a, b) =>
+        new Date(a.fechaSalida).getTime() - new Date(b.fechaSalida).getTime()
+    );
+    return arr;
+  }, [viajes, modalFiltroFecha]);
+
+  // ---- handlers ----
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormulario((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
-  
-    // ← sincroniza el filtro de la tabla con el select de viaje
+
+    // sincroniza el filtro de tabla con el select de viaje del formulario
     if (name === "idViaje") setFiltroIdViaje(String(value || ""));
   };
-  
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (formulario.pendiente) {
-    const dataPendiente = {
-      remitente: formulario.remitente,
-      destinatario: formulario.destinatario,
-      importe: parseFloat(formulario.importe),
-      contenido: formulario.contenido,
-      porCobrar: formulario.porCobrar,
-      idViaje: formulario.idViaje ? parseInt(formulario.idViaje) : null
-    };
-    
+    if (formulario.pendiente) {
+      const dataPendiente = {
+        remitente: formulario.remitente,
+        destinatario: formulario.destinatario,
+        importe: parseFloat(formulario.importe),
+        contenido: formulario.contenido,
+        porCobrar: formulario.porCobrar,
+        idViaje: formulario.idViaje ? parseInt(formulario.idViaje) : null,
+      };
 
-    if (modoEdicion && idEditando) {
-      
-      await ponerPaqueteComoPendiente(idEditando, dataPendiente.idViaje);
+      if (modoEdicion && idEditando) {
+        await ponerPaqueteComoPendiente(idEditando, dataPendiente.idViaje);
+      } else {
+        await paquetePendiente(dataPendiente);
+      }
 
+      await cargarPendientes();
     } else {
-      await paquetePendiente(dataPendiente);
+      if (!formulario.idViaje)
+        return Swal.fire({
+          icon: "warning",
+          title: "Llene los campos obligatorios",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+      const data = {
+        remitente: formulario.remitente,
+        destinatario: formulario.destinatario,
+        importe: parseFloat(formulario.importe),
+        contenido: formulario.contenido,
+        porCobrar: formulario.porCobrar,
+        idViaje: parseInt(formulario.idViaje),
+      };
+
+      if (modoEdicion && idEditando) {
+        await actualizarPaquete(idEditando, data);
+      } else {
+        await crearPaquete(data);
+      }
     }
 
-    await cargarPendientes();
-  } else {
-    if (!formulario.idViaje) return Swal.fire({
-                  icon: "warning",
-                  title: "Llene los campos obligatorios",
-                  timer: 1500,
-                  showConfirmButton: false
-                });
+    // Resetear formulario
+    setFormulario({
+      remitente: "",
+      destinatario: "",
+      importe: 70,
+      contenido: "",
+      pendiente: false,
+      porCobrar: false,
+      idViaje: "",
+    });
+    setModoEdicion(false);
+    setIdEditando(null);
+    await Promise.all([cargarPaquetes(), cargarViajes()]);
+  };
 
-    const data = {
-      remitente: formulario.remitente,
-      destinatario: formulario.destinatario,
-      importe: parseFloat(formulario.importe),
-      contenido: formulario.contenido,
-      porCobrar: formulario.porCobrar,
-      idViaje: parseInt(formulario.idViaje)
-    };
-
-    if (modoEdicion && idEditando) {
-      await actualizarPaquete(idEditando, data);
-    } else {
-      await crearPaquete(data);
+  const prepararEdicion = (paquete) => {
+    // buscar idViaje del paquete en la lista de viajes
+    let idViajeEncontrado = "";
+    for (const viaje of viajes) {
+      if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
+        idViajeEncontrado = viaje.idViaje;
+        break;
+      }
     }
-  }
 
-  // Resetear formulario
-  setFormulario({
-    remitente: "",
-    destinatario: "",
-    importe: 70,
-    contenido: "",
-    pendiente: false,
-    porCobrar: false,
-    idViaje: ""
-  });
-  setModoEdicion(false);
-  setIdEditando(null);
-  cargarPaquetes();
-  cargarViajes();
-};
-
-
-const prepararEdicion = (paquete) => {
-  // buscar idViaje del paquete en la lista de viajes
-  let idViajeEncontrado = "";
-  for (const viaje of viajes) {
-    if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
-      idViajeEncontrado = viaje.idViaje;
-      break;
-    }
-  }
-
-  setFormulario({
-    remitente: paquete.remitente,
-    destinatario: paquete.destinatario,
-    importe: paquete.importe,
-    contenido: paquete.contenido,
-    pendiente: paquete.pendiente || false,
-    porCobrar: paquete.porCobrar || false,
-    idViaje: idViajeEncontrado
-  });
-  setModoEdicion(true);
-  setIdEditando(paquete.idPaquete);
-  setMostrarModal(false);
-};
-
+    setFormulario({
+      remitente: paquete.remitente,
+      destinatario: paquete.destinatario,
+      importe: paquete.importe,
+      contenido: paquete.contenido,
+      pendiente: paquete.pendiente || false,
+      porCobrar: paquete.porCobrar || false,
+      idViaje: idViajeEncontrado,
+    });
+    setModoEdicion(true);
+    setIdEditando(paquete.idPaquete);
+    setMostrarModal(false);
+    setFiltroIdViaje(String(idViajeEncontrado || ""));
+  };
 
   const eliminar = async (id) => {
     const result = await Swal.fire({
-          icon: 'question',
-          title: '¿Seguro que quieres eliminar el paquete?',
-          showCancelButton: true,         // Botón "No"
-          confirmButtonText: 'Sí',        // Botón "Sí"
-          cancelButtonText: 'No',
-          reverseButtons: true
-        });
+      icon: "question",
+      title: "¿Seguro que quieres eliminar el paquete?",
+      showCancelButton: true,
+      confirmButtonText: "Sí",
+      cancelButtonText: "No",
+      reverseButtons: true,
+    });
     if (result.isConfirmed) {
       await eliminarPaquete(id);
-      cargarPaquetes();
-      cargarViajes();
+      await Promise.all([cargarPaquetes(), cargarViajes()]);
       Swal.fire({
-              icon: 'success',
-              title: 'Paquete eliminado',
-              timer: 1500,
-              showConfirmButton: false
-            });
+        icon: "success",
+        title: "Paquete eliminado",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     }
-    
   };
 
   const confirmarAsignacion = async () => {
-    if (!viajeSeleccionado) return Swal.fire({
-                  icon: "warning",
-                  title: "Llene los campos obligatorios",
-                  timer: 1500,
-                  showConfirmButton: false
-                });
+    if (!viajeSeleccionado)
+      return Swal.fire({
+        icon: "warning",
+        title: "Llene los campos obligatorios",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     try {
-      await asignarPaqueteAViaje(paqueteAsignando.idPaquete, parseInt(viajeSeleccionado));
-      setPendientes(prev => prev.filter(p => p.idPaquete !== paqueteAsignando.idPaquete));      
+      await asignarPaqueteAViaje(
+        paqueteAsignando.idPaquete,
+        parseInt(viajeSeleccionado)
+      );
+
+      // Quitar de pendientes inmediatamente
+      setPendientes((prev) =>
+        prev.filter((p) => p.idPaquete !== paqueteAsignando.idPaquete)
+      );
+
+      // Actualizar listas para que el paquete aparezca en la tabla SIN cambiar de sección
+      await Promise.all([cargarPaquetes(), cargarViajes()]);
+
       setModalAsignar(false);
       setViajeSeleccionado("");
       setPaqueteAsignando(null);
-      await cargarPaquetes();
-
     } catch (error) {
       console.error("Error asignando paquete:", error);
     }
   };
 
-
-  const obtenerNombreUnidad = (paquete) => {
-    for (const viaje of viajes) {
-      if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
-        return viaje.unidad?.nombre || "Unidad sin nombre";
-      }
-    }
-    return "Unidad no encontrada";
-  };
-
-  const obtenerDestino = (paquete) => {
-    for (const viaje of viajes) {
-      if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
-        return viaje.destino || "Sin Destino";
-      }
-    }
-    return "Destino no encontrado";
-  };
-
-// --- helpers para filtrar ---
-
-const esMismoDia = (d1, d2) => {
-  const a = new Date(d1), b = new Date(d2);
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-};
-
-const obtenerViajeDePaquete = (paquete) => {
-  for (const viaje of viajes) {
-    if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
-      return viaje;
-    }
-  }
-  return null;
-};
-
-
-  const obtenerFechaSalida = (paquete) => {
-    for (const viaje of viajes) {
-      if (viaje.paquetes?.some((p) => p.folio === paquete.folio)) {
-        return new Date(viaje.fechaSalida).toLocaleDateString("es-MX") || "-";
-      }
-    }
-    return "Fecha no encontrada";
-  };
-
+  // -------- impresión (HTML) ----------
   function generarGuiaHTMLDoble(paquete, viaje) {
-  const guia = generarGuiaHTML(paquete, viaje);
-  return `${guia}<hr style="margin:24px 0;">${guia}`;
-}
+    const guia = generarGuiaHTML(paquete, viaje);
+    return `${guia}<hr style="margin:24px 0;">${guia}`;
+  }
 
-function generarGuiaHTML(paquete, viaje) {
-  return `
+  function generarGuiaHTML(paquete, viaje) {
+    return `
   <style>
     @media print {
       body, table, th, td {
@@ -278,7 +304,7 @@ function generarGuiaHTML(paquete, viaje) {
       <div>
         TERMINAL EN TUXTLA GUTIERREZ<br>
         15ª ORIENTE SUR #817 ENTRE 7ª Y 8ª SUR<br>
-        TUXTLA GUTIERREZ, CHIAPAS<br>
+        TUXTLA GUTIÉRREZ, CHIAPAS<br>
         TELÉFONO: 961-302-3642
       </div>
     </div>
@@ -297,12 +323,10 @@ function generarGuiaHTML(paquete, viaje) {
         <td style="border:1px solid #888; padding:4px;">${viaje?.origen ?? ""} - ${viaje?.destino ?? ""}</td>
         <td style="border:1px solid #888; padding:4px;">HORA:</td>
         <td style="border:1px solid #888; padding:4px;">${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX") : ""}</td>
-        
       </tr>
       <tr>
-      <td rowspan="2" colspan="3" style="border:1px solid #888; padding:4px;">REMITENTE: ${paquete.remitente ?? ""}</td>
+        <td rowspan="2" colspan="3" style="border:1px solid #888; padding:4px;">REMITENTE: ${paquete.remitente ?? ""}</td>
         <td rowspan="2" colspan="3" style="border:1px solid #888; padding:4px;">DESTINATARIO: ${paquete.destinatario ?? ""}</td>
-
       </tr>
     </table>
     <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
@@ -316,11 +340,11 @@ function generarGuiaHTML(paquete, viaje) {
         <td style="border:1px solid #888; padding:4px;">1</td>
         <td style="border:1px solid #888; padding:4px;"></td>
         <td style="border:1px solid #888; padding:4px;">${paquete.contenido ?? ""}</td>
-        <td style="border:1px solid #888; padding:4px;">${parseFloat(paquete.importe ?? 0).toFixed(2)}</td>
+        <td style="border:1px solid #888; padding:4px;">${Number(paquete.importe ?? 0).toFixed(2)}</td>
       </tr>
       <tr>
         <td colspan="3" style="border:1px solid #888; padding:4px; text-align:right;">TOTAL</td>
-        <td style="border:1px solid #888; padding:4px;">${parseFloat(paquete.importe ?? 0).toFixed(2)}</td>
+        <td style="border:1px solid #888; padding:4px;">${Number(paquete.importe ?? 0).toFixed(2)}</td>
       </tr>
     </table>
     <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
@@ -345,67 +369,158 @@ function generarGuiaHTML(paquete, viaje) {
     </div>
   </div>
   `;
-}
+  }
 
-
+  // ---------- UI ----------
   return (
     <div className="flex gap-6 p-6">
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="w-1/3 bg-white p-5 rounded-lg shadow-md flex flex-col gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-1/3 bg-white p-5 rounded-lg shadow-md flex flex-col gap-3"
+      >
         <label className="font-semibold text-orange-700">Remitente</label>
-        <input type="text" name="remitente" value={formulario.remitente} onChange={handleChange} className="p-2 rounded-md bg-[#ffe0b2]" required />
-
-        <label className="font-semibold text-orange-700">Destinatario</label>
-        <input type="text" name="destinatario" value={formulario.destinatario} onChange={handleChange} className="p-2 rounded-md bg-[#ffe0b2]" required />
-
-        <label className="font-semibold text-orange-700">Viaje</label>
-        <select
-          name="idViaje"
-          value={formulario.idViaje}
+        <input
+          type="text"
+          name="remitente"
+          value={formulario.remitente}
           onChange={handleChange}
           className="p-2 rounded-md bg-[#ffe0b2]"
-          disabled={formulario.pendiente}
-          required={!formulario.pendiente}
-        >
+          required
+        />
 
-          <option value="" disabled>Seleccionar viaje</option>
+        <label className="font-semibold text-orange-700">Destinatario</label>
+        <input
+          type="text"
+          name="destinatario"
+          value={formulario.destinatario}
+          onChange={handleChange}
+          className="p-2 rounded-md bg-[#ffe0b2]"
+          required
+        />
 
-          {viajes
-            .filter(v => esMismoDia(v.fechaSalida, new Date()))                // ← SOLO hoy
-            .sort((a, b) => new Date(a.fechaSalida) - new Date(b.fechaSalida)) // (opcional) orden por hora
-            .map((viaje) => (
-              <option key={viaje.idViaje} value={viaje.idViaje}>
-                {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })}`}
+        {/* Viaje + filtro Hoy/Todos */}
+        <div className="w-full">
+          <label className="block text-orange-700 font-semibold mb-1">Viaje</label>
+
+          <div className="flex items-center gap-3">
+            <select
+              name="idViaje"
+              value={formulario.idViaje}
+              onChange={handleChange}
+              disabled={formulario.pendiente}
+              required={!formulario.pendiente}
+              className="flex-1 p-2.5 rounded-md bg-orange-100 text-gray-800 ring-1 ring-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
+              <option value="" disabled>
+                Seleccionar viaje
               </option>
-          ))}
-        </select>
+              {viajesFiltrados.map((viaje) => (
+                <option key={viaje.idViaje} value={viaje.idViaje}>
+                  {`${viaje.origen} → ${viaje.destino} | ${new Date(
+                    viaje.fechaSalida
+                  ).toLocaleString("es-MX", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`}
+                </option>
+              ))}
+            </select>
+
+            {/* Segmentado: Hoy / Todos (suave) */}
+            <div className="shrink-0 inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
+              {[
+                { key: "HOY", label: "Hoy" },
+                { key: "TODOS", label: "Todos" },
+              ].map((opt, i) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  aria-pressed={filtroFecha === opt.key}
+                  onClick={() => {
+                    setFiltroFecha(opt.key);
+                    const existe = viajesFiltrados.some(
+                      (v) => String(v.idViaje) === String(formulario.idViaje || "")
+                    );
+                    if (!existe) {
+                      setFormulario((p) => ({ ...p, idViaje: "" }));
+                      setFiltroIdViaje("");
+                    }
+                  }}
+                  className={`px-3 py-2 text-sm font-medium text-[#452B1C] transition
+                    ${i > 0 ? "border-l border-orange-200" : ""}
+                    ${
+                      filtroFecha === opt.key
+                      ? "bg-orange-600 text-white"
+                      : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                  } ${i === 0 ? "border-r border-orange-200" : ""}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <label className="font-semibold text-orange-700">Contenido</label>
-        <textarea name="contenido" value={formulario.contenido} onChange={handleChange} className="p-2 rounded-md bg-[#ffe0b2]" required />
+        <textarea
+          name="contenido"
+          value={formulario.contenido}
+          onChange={handleChange}
+          className="p-2 rounded-md bg-[#ffe0b2]"
+          required
+        />
 
         <label className="font-semibold text-orange-700">Importe</label>
-        <input type="number" name="importe" value={formulario.importe} onChange={handleChange} className="p-2 rounded-md bg-[#ffe0b2]" required />
+        <input
+          type="number"
+          name="importe"
+          value={formulario.importe}
+          onChange={handleChange}
+          className="p-2 rounded-md bg-[#ffe0b2]"
+          required
+        />
 
         <div className="flex gap-4 text-orange-700">
           <label>
-            <input type="checkbox" name="pendiente" checked={formulario.pendiente} onChange={handleChange} className="mr-2" />
+            <input
+              type="checkbox"
+              name="pendiente"
+              checked={formulario.pendiente}
+              onChange={handleChange}
+              className="mr-2"
+            />
             Pendiente
           </label>
           <label>
-            <input type="checkbox" name="porCobrar" checked={formulario.porCobrar} onChange={handleChange} className="mr-2" />
+            <input
+              type="checkbox"
+              name="porCobrar"
+              checked={formulario.porCobrar}
+              onChange={handleChange}
+              className="mr-2"
+            />
             Por Cobrar
           </label>
         </div>
 
         <div className="flex gap-3">
-          <button type="submit" className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2">Guardar</button>
-          <button type="button" onClick={cargarPendientes} className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2">Paquetes pendientes</button>
+          <button
+            type="submit"
+            className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2"
+          >
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={cargarPendientes}
+            className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2"
+          >
+            Paquetes pendientes
+          </button>
         </div>
       </form>
 
@@ -413,10 +528,10 @@ function generarGuiaHTML(paquete, viaje) {
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-[92vw] max-w-3xl max-h-[90vh] shadow-xl overflow-hidden">
-
-            {/* Encabezado */}
             <div className="flex items-center justify-between px-6 py-4">
-              <h2 className="text-xl font-bold text-orange-800">Paquetes pendientes</h2>
+              <h2 className="text-xl font-bold text-orange-800">
+                Paquetes pendientes
+              </h2>
               <button
                 onClick={() => setMostrarModal(false)}
                 aria-label="Cerrar"
@@ -435,7 +550,6 @@ function generarGuiaHTML(paquete, viaje) {
               </button>
             </div>
 
-            {/* Contenido */}
             <div className="p-6">
               <div className="overflow-hidden rounded-xl ring-1 ring-orange-200">
                 <table className="w-full table-auto border-collapse">
@@ -470,6 +584,13 @@ function generarGuiaHTML(paquete, viaje) {
                         </td>
                       </tr>
                     ))}
+                    {pendientes.length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="text-center py-4 text-gray-500">
+                          No hay paquetes pendientes.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -478,23 +599,27 @@ function generarGuiaHTML(paquete, viaje) {
         </div>
       )}
 
+      {/* Modal asignar (con HOY/TODOS) */}
       {modalAsignar && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-[92vw] max-w-md shadow-xl overflow-hidden">
-
-            {/* Header */}
+          <div className="bg-white rounded-2xl w-[92vw] max-w-lg shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4">
-              <h2 className="text-xl font-bold text-orange-800">Asignar viaje a paquete</h2>
+              <h2 className="text-xl font-bold text-orange-800">
+                Asignar viaje a paquete
+              </h2>
               <button
-                onClick={() =>{ setModalAsignar(false);
-                  cargarPaquetes();}
-                }
-                
+                onClick={() => {
+                  setModalAsignar(false);
+                  cargarPaquetes();
+                }}
                 aria-label="Cerrar"
                 className="p-2 rounded-md text-orange-700 hover:bg-transparent focus:outline-none focus:ring-0"
               >
-                {/*SVG*/}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5"
+                >
                   <path
                     fill="currentColor"
                     d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
@@ -503,52 +628,85 @@ function generarGuiaHTML(paquete, viaje) {
               </button>
             </div>
 
-            {/* Body */}
             <div className="px-6 pb-6">
               <div className="space-y-1 text-sm">
-                <p><span className="font-semibold text-orange-700">Folio:</span> {paqueteAsignando?.folio}</p>
-                <p><span className="font-semibold text-orange-700">Remitente:</span> {paqueteAsignando?.remitente}</p>
+                <p>
+                  <span className="font-semibold text-orange-700">Folio:</span>{" "}
+                  {paqueteAsignando?.folio}
+                </p>
+                <p>
+                  <span className="font-semibold text-orange-700">Remitente:</span>{" "}
+                  {paqueteAsignando?.remitente}
+                </p>
               </div>
 
               <label className="block mt-4 mb-1 font-medium text-orange-700">
                 Seleccione un viaje
               </label>
-              <div className="relative">
-                <select
-                  value={viajeSeleccionado}
-                  onChange={(e) => setViajeSeleccionado(e.target.value)}
-                  className="w-full appearance-none p-2.5 pr-10 rounded-md bg-[#ffe0b2] outline-none ring-1 ring-orange-200 focus:ring-2 focus:ring-orange-300"
-                >
 
-                  <option value="" disabled>Seleccione viaje</option>
-                  {viajes
-                .filter(v => esMismoDia(v.fechaSalida, new Date()))        // ← SOLO hoy
-                .sort((a,b) => new Date(a.fechaSalida) - new Date(b.fechaSalida)) // opcional: orden por hora
-                .map((viaje) => (
-                  <option key={viaje.idViaje} value={viaje.idViaje}>
-                    {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    })}`}
-                  </option>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <select
+                    value={viajeSeleccionado}
+                    onChange={(e) => setViajeSeleccionado(e.target.value)}
+                    className="w-full appearance-none p-2.5 pr-10 rounded-md bg-[#ffe0b2] outline-none ring-1 ring-orange-200 focus:ring-2 focus:ring-orange-300"
+                  >
+                    <option value="" disabled>
+                      Seleccione viaje
+                    </option>
+                    {viajesFiltradosModal.map((viaje) => (
+                      <option key={viaje.idViaje} value={viaje.idViaje}>
+                        {`${viaje.origen} → ${viaje.destino} | ${new Date(
+                          viaje.fechaSalida
+                        ).toLocaleString("es-MX", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}`}
+                      </option>
+                    ))}
+                  </select>
+
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-700"
+                  >
+                    <path fill="currentColor" d="M7 10l5 5 5-5z" />
+                  </svg>
+                </div>
+
+                {/* Segmentado HOY/TODOS del modal (suave) */}
+                <div className="shrink-0 inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
+                  {[
+                    { key: "HOY", label: "Hoy" },
+                    { key: "TODOS", label: "Todos" },
+                  ].map((opt, i) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      aria-pressed={modalFiltroFecha === opt.key}
+                      onClick={() => setModalFiltroFecha(opt.key)}
+                      className={`px-3 py-2 text-sm font-medium text-[#452B1C] transition
+                        ${i > 0 ? "border-l border-orange-200" : ""}
+                        ${
+                          modalFiltroFecha === opt.key
+                          ? "bg-orange-600 text-white"
+                          : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                      } ${i === 0 ? "border-r border-orange-200" : ""}`}
+                    >
+                      {opt.label}
+                    </button>
                   ))}
-                </select>
-
-                {/* caret */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-700">
-                  <path fill="currentColor" d="M7 10l5 5 5-5z" />
-                </svg>
+                </div>
               </div>
 
-
-              {/* Actions */}
               <div className="mt-6 flex justify-end gap-3">
                 <button
-                  onClick={() => {setModalAsignar(false);
+                  onClick={() => {
+                    setModalAsignar(false);
                     cargarPaquetes();
                   }}
                   className="px-4 py-2 rounded-md text-orange-800 bg-orange-100 hover:bg-orange-200"
@@ -567,13 +725,15 @@ function generarGuiaHTML(paquete, viaje) {
         </div>
       )}
 
-
       {/* Tabla paquetes */}
       <div className="w-2/3 bg-white p-4 rounded-lg shadow-md">
-        <h3 className="text-lg font-bold text-orange-700 mb-3">Paquetes</h3>
+        <div className="flex items-end gap-3 mb-3">
+          <h3 className="text-lg font-bold text-orange-700">Paquetes</h3>
+        </div>
+
         <div className="relative overflow-y-auto max-h-[500px]">
           <table className="w-full border-collapse text-sm">
-           <thead className="sticky top-0 z-10 bg-[#f8c98e]">
+            <thead className="sticky top-0 z-10 bg-[#f8c98e]">
               <tr className="bg-[#f8c98e]">
                 <th className="p-2 text-center text-[#452B1C]">Folio</th>
                 <th className="p-2 text-center text-[#452B1C]">Unidad</th>
@@ -587,103 +747,130 @@ function generarGuiaHTML(paquete, viaje) {
               </tr>
             </thead>
             <tbody>
-            {paquetes
-              .filter((p) => {
-                const v = obtenerViajeDePaquete(p);
-                if (!v) return false;
+              {paquetes
+                .filter((p) => {
+                  const v = obtenerViajeDePaquete(p);
+                  if (!v) return false;
 
-                // Solo del día de HOY
-                const esHoy = esMismoDia(v.fechaSalida, new Date());
-                if (!esHoy) return false;
+                  // filtro de fecha (HOY/TODOS)
+                  if (filtroFecha === "HOY" && !esMismoDia(v.fechaSalida, new Date())) {
+                    return false;
+                  }
 
-                // Si hay viaje seleccionado en el filtro, exige coincidencia
-                if (filtroIdViaje && String(v.idViaje) !== String(filtroIdViaje)) return false;
+                  // filtro por viaje específico (si se eligió en el formulario)
+                  if (filtroIdViaje && String(v.idViaje) !== String(filtroIdViaje)) {
+                    return false;
+                  }
 
-                return true;
-              })
-              .map((p, i) => (
-                <tr key={p.folio} className={i % 2 === 0 ? "bg-[#fffaf3]" : ""}>
-                  <td className="p-2 text-center">{p.folio}</td>
-                  <td className="p-2 text-center">{obtenerNombreUnidad(p)}</td>
-                  <td className="p-2 text-center">{p.remitente}</td>
-                  <td className="p-2 text-center">{p.destinatario}</td>
-                  <td className="p-2 text-center">{obtenerDestino(p)}</td>
-                  <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
-                  <td className="p-2 text-center">{obtenerFechaSalida(p)}</td>
-                  <td className="p-2 text-center">${p.importe.toFixed(2)}</td>
-                  <td className="p-2 text-center flex gap-2 justify-center">
-
-                    {/* Ticket (icono) */}
-                    <button
-                      onClick={async () => {
-    try {
-      const viaje = viajes.find(v => v.paquetes?.some(paq => paq.folio === p.folio));
-      const html = generarGuiaHTMLDoble(p, viaje);
-      await window.electronAPI.imprimirHTML(html);
-      Swal.fire({
-        icon: "success",
-        title: "Guía impresa",
-        timer: 1500,
-        showConfirmButton: false
-      });
-    } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Error al imprimir",
-        timer: 1500,
-        showConfirmButton: false
-      });
-    }
-  }}
-  className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
-  aria-label="Imprimir ticket"
-  title="Imprimir ticket"
->
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                  return true;
+                })
+                .map((p, i) => (
+                  <tr key={p.folio} className={i % 2 === 0 ? "bg-[#fffaf3]" : ""}>
+                    <td className="p-2 text-center">{p.folio}</td>
+                    <td className="p-2 text-center">{obtenerNombreUnidad(p)}</td>
+                    <td className="p-2 text-center">{p.remitente}</td>
+                    <td className="p-2 text-center">{p.destinatario}</td>
+                    <td className="p-2 text-center">{obtenerDestino(p)}</td>
+                    <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
+                    <td className="p-2 text-center">{obtenerFechaSalida(p)}</td>
+                    <td className="p-2 text-center">
+                      ${Number(p.importe || 0).toFixed(2)}
+                    </td>
+                    <td className="p-2 text-center flex gap-2 justify-center">
+                      {/* Ticket */}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const v = obtenerViajeDePaquete(p);
+                            if (!window?.electronAPI?.imprimirHTML) {
+                              Swal.fire({
+                                icon: "error",
+                                title: "Impresión no disponible",
+                                text: "No se encontró el método imprimirHTML.",
+                              });
+                              return;
+                            }
+                            const html = generarGuiaHTMLDoble(p, v);
+                            await window.electronAPI.imprimirHTML(html);
+                            Swal.fire({
+                              icon: "success",
+                              title: "Guía impresa",
+                              timer: 1500,
+                              showConfirmButton: false,
+                            });
+                          } catch (err) {
+                            Swal.fire({
+                              icon: "error",
+                              title: "Error al imprimir",
+                              text: err?.message || "Intenta de nuevo",
+                              timer: 1500,
+                              showConfirmButton: false,
+                            });
+                          }
+                        }}
+                        className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
+                        aria-label="Imprimir ticket"
+                        title="Imprimir ticket"
                       >
-                        <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />
-                        <path d="M6 20.306V12c0-.943 0-1.414.293-1.707S7.057 10 8 10h8c.943 0 1.414 0 1.707.293S18 11.057 18 12v8.306c0 .317 0 .475-.104.55s-.254.025-.554-.075l-2.184-.728c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.684.894c-.078.026-.117.04-.158.04s-.08-.014-.158-.04l-2.684-.894c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.184.728c-.3.1-.45.15-.554.075S6 20.623 6 20.306ZM18 7V5.88c0-1.008 0-1.512-.196-1.897a1.8 1.8 0 0 0-.787-.787C16.632 3 16.128 3 15.12 3H8.88c-1.008 0-1.512 0-1.897.196a1.8 1.8 0 0 0-.787.787C6 4.368 6 4.872 6 5.88V7" />
-                        <path d="M10 14h3m-3 3h4.5" strokeLinecap="round" />
-                      </svg>
-                    </button>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />
+                          <path d="M6 20.306V12c0-.943 0-1.414.293-1.707S7.057 10 8 10h8c.943 0 1.414 0 1.707.293S18 11.057 18 12v8.306c0 .317 0 .475-.104.55s-.254.025-.554-.075l-2.184-.728c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.684.894c-.078.026-.117.04-.158.04s-.08-.014-.158-.04l-2.684-.894c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.184.728c-.3.1-.45.15-.554.075S6 20.623 6 20.306ZM18 7V5.88c0-1.008 0-1.512-.196-1.897a1.8 1.8 0 0 0-.787-.787C16.632 3 16.128 3 15.12 3H8.88c-1.008 0-1.512 0-1.897.196a1.8 1.8 0 0 0-.787.787C6 4.368 6 4.872 6 5.88V7" />
+                          <path d="M10 14h3m-3 3h4.5" strokeLinecap="round" />
+                        </svg>
+                      </button>
 
-                    {/* Editar*/}
-                    <button
-                      onClick={() => prepararEdicion(p)}
-                      aria-label="Editar"
-                      title="Editar"
-                      className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5">
-                        <path fill="currentColor" d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1L377.9 88L407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9l46.1 46.1l-134.3 134.2c-2.9 2.9-6.5 5-10.4 6.1L186.9 325l16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25c-28.1-28.1-73.7-28.1-101.8 0M88 64c-48.6 0-88 39.4-88 88v272c0 48.6 39.4 88 88 88h272c48.6 0 88-39.4 88-88V312c0-13.3-10.7-24-24-24s-24 10.7-24 24v112c0 22.1-17.9 40-40 40H88c-22.1 0-40-17.9-40-40V152c0-22.1 17.9-40 40-40h112c13.3 0 24-10.7 24-24s-10.7-24-24-24z" />
-                      </svg>
-                    </button>
+                      {/* Editar */}
+                      <button
+                        onClick={() => prepararEdicion(p)}
+                        aria-label="Editar"
+                        title="Editar"
+                        className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 512 512"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            fill="currentColor"
+                            d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1L377.9 88L407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9l46.1 46.1l-134.3 134.2c-2.9 2.9-6.5 5-10.4 6.1L186.9 325l16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25c-28.1-28.1-73.7-28.1-101.8 0M88 64c-48.6 0-88 39.4-88 88v272c0 48.6 39.4 88 88 88h272c48.6 0 88-39.4 88-88V312c0-13.3-10.7-24-24-24s-24 10.7-24 24v112c0 22.1-17.9 40-40 40H88c-22.1 0-40-17.9-40-40V152c0-22.1 17.9-40 40-40h112c13.3 0 24-10.7 24-24s-10.7-24-24-24z"
+                          />
+                        </svg>
+                      </button>
 
-                    {/* Eliminar*/}
-                    <button
-                      onClick={() => eliminar(p.idPaquete)}
-                      aria-label="Eliminar"
-                      title="Eliminar"
-                      className="p-2 rounded-md hover:bg-red-50 text-red-600"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                        className="w-5 h-5">
-                        <path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
-                      </svg>
-                    </button>
-                  </td>
-
-                </tr>
-              ))}
+                      {/* Eliminar */}
+                      <button
+                        onClick={() => eliminar(p.idPaquete)}
+                        aria-label="Eliminar"
+                        title="Eliminar"
+                        className="p-2 rounded-md hover:bg-red-50 text-red-600"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            fill="currentColor"
+                            d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               {paquetes.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="text-center py-4 text-gray-500">No hay paquetes registrados.</td>
+                  <td colSpan="9" className="text-center py-4 text-gray-500">
+                    No hay paquetes registrados.
+                  </td>
                 </tr>
               )}
             </tbody>
