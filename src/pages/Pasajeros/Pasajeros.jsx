@@ -244,19 +244,17 @@ export default function Pasajeros() {
 
   /* -------------------- UI -------------------- */
   return (
-    // Altura = 100dvh menos la barra superior (ajusta 88px si tu header mide distinto)
-    <div className="min-h-[calc(100vh-88px)] w-full overflow-y-auto">
-      <div className="mx-auto h-full max-w-[1360px] px-3 md:px-4 py-2 box-border">
+    // Altura visible del viewport menos la barra superior
+    <div className="min-h-[calc(100dvh-88px)] w-full">
+      {/* ancho útil amplio en FHD y centrado */}
+      <div className="mx-auto h-full w-full max-w-[1760px] 2xl:max-w-[1880px] px-3 md:px-4 xl:px-6 py-2 box-border">
   
-        {/* Grid maestro: izquierda fija + derecha con tabla scrolleable */}
-        <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(300px,320px)_1fr] gap-4">
+        {/* Grid maestro: panel izquierdo + tabla derecha */}
+        <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(280px,320px)_1fr] xl:grid-cols-[minmax(300px,360px)_1fr] gap-4">
   
-          {/* IZQUIERDA (no hace scroll; compacta para 1024×768) */}
+          {/* IZQUIERDA */}
           <div className="min-w-0">
-            <form
-              onSubmit={manejarEnvio}
-              className="bg-white p-4 rounded-md shadow-md text-[13px] md:text-sm"
-            >
+            <form onSubmit={manejarEnvio} className="bg-white p-4 rounded-md shadow-md text-[12px] md:text-[13px] lg:text-sm">
               {/* Nombre */}
               <div>
                 <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
@@ -313,7 +311,7 @@ export default function Pasajeros() {
                 </div>
               </div>
   
-              {/* Asientos (compacto para 1024×768) */}
+              {/* Asientos */}
               <div className="bg-orange-50 p-3 rounded-md mt-3">
                 <p className="text-orange-700 font-semibold mb-2">Seleccionar asiento</p>
                 <div className="grid grid-cols-4 gap-2.5 justify-items-center">
@@ -330,11 +328,8 @@ export default function Pasajeros() {
                         className="flex flex-col items-center"
                         title={ocupado ? 'Asiento ocupado' : 'Seleccionar asiento'}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          className={`w-6 h-6 md:w-7 md:h-7 ${ocupado ? 'text-orange-900' : seleccionado ? 'text-orange-700' : 'text-orange-500'}`}
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                             className={`w-6 h-6 md:w-7 md:h-7 ${ocupado ? 'text-orange-900' : seleccionado ? 'text-orange-700' : 'text-orange-500'}`}>
                           <path fill="currentColor" d="M5.35 5.64c-.9-.64-1.12-1.88-.49-2.79c.63-.9 1.88-1.12 2.79-.49c.9.64 1.12 1.88.49 2.79c-.64.9-1.88 1.12-2.79.49M16 20c0-.55-.45-1-1-1H8.93c-1.48 0-2.74-1.08-2.96-2.54L4.16 7.78A.976.976 0 0 0 3.2 7c-.62 0-1.08.57-.96 1.18l1.75 8.58A5.01 5.01 0 0 0 8.94 21H15c.55 0 1-.45 1-1m-.46-5h-4.19l-1.03-4.1c1.28.72 2.63 1.28 4.1 1.3c.58.01 1.05-.49 1.05-1.07c0-.59-.49-1.04-1.08-1.06c-1.31-.04-2.63-.56-3.61-1.33L9.14 7.47c-.23-.18-.49-.3-.76-.38a2.2 2.2 0 0 0-.99-.06h-.02a2.27 2.27 0 0 0-1.84 2.61l1.35 5.92A3.01 3.01 0 0 0 9.83 18h6.85l3.09 2.42c.42.33 1.02.29 1.39-.08c.45-.45.4-1.18-.1-1.57l-4.29-3.35a2 2 0 0 0-1.23-.42"/>
                         </svg>
                         <span className={`text-[10px] md:text-[11px] font-bold ${ocupado ? 'text-orange-900' : seleccionado ? 'text-orange-700' : 'text-orange-500'}`}>
@@ -353,18 +348,15 @@ export default function Pasajeros() {
   
               {/* Botón */}
               <div className="flex justify-center mt-3">
-                <button
-                  type="submit"
-                  className="bg-[#C44706] text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-800 transition"
-                >
+                <button type="submit" className="bg-[#C44706] text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-800 transition">
                   Guardar
                 </button>
               </div>
             </form>
           </div>
   
-          {/* DERECHA (solo la tabla scrollea) */}
-          <div className="min-w-0 min-h-0 flex flex-col">
+          {/* DERECHA */}
+          <div className="min-w-0 flex flex-col">
             {/* Filtros */}
             <div className="bg-[#FDF7F0] p-3 rounded-md shadow-md text-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_auto_2fr] gap-3 items-end">
@@ -434,41 +426,64 @@ export default function Pasajeros() {
               </div>
             </div>
   
-            {/* Tabla (rellena resto y scrollea) */}
-            <div className="bg-white p-4 rounded-md shadow-md flex-1 min-h-0 mt-3 flex flex-col">  {/* <-- agrega flex flex-col */}
-                <h3 className="text-base font-bold text-orange-700 mb-2">Lista de pasajeros</h3>
-                <div className="flex-1 min-h-0 overflow-auto">                                  {/* <-- cambia h-full por flex-1 min-h-0 */}
-                <table className="min-w-[980px] w-full border-collapse text-[13px]">
-                  <thead className="bg-[#FECF9D] text-orange-700 sticky top-0 z-10">
+            {/* Tabla (sin scroll horizontal, se adapta por porcentajes) */}
+            <div className="bg-white p-4 rounded-md shadow-md mt-3">
+              <h3 className="text-sm lg:text-base font-bold text-orange-700 mb-2">Lista de pasajeros</h3>
+  
+              {/* Quitamos overflow-x y min-w que provocaban la barra */}
+              <div className="overflow-x-hidden">
+                <table className="w-full table-fixed border-collapse text-[12px] md:text-[13px] lg:text-sm">
+                  <colgroup>
+                    <col className="w-[7%]" />   {/* Folio */}
+                    <col className="w-[10%]" />  {/* Unidad */}
+                    <col className="w-[6%]" />   {/* Asiento */}
+                    <col className="w-[14%]" />  {/* Fecha */}
+                    <col className="w-[22%]" />  {/* Nombre */}
+                    <col className="w-[11%]" />  {/* Pago */}
+                    <col className="w-[10%]" />  {/* Tipo */}
+                    <col className="w-[8%]" />   {/* Importe */}
+                    <col className="w-[12%]" />  {/* Acciones */}
+                  </colgroup>
+  
+                  <thead className="bg-[#FECF9D] text-orange-700 sticky top-0 z-10 text-xs lg:text-sm">
                     <tr>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Folio</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Unidad</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Asiento</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Fecha de salida</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Nombre</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Pago</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Tipo</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Importe</th>
-                      <th className="p-2 text-center font-bold text-[#452B1C]">Acciones</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Folio</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Unidad</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Asiento</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C] whitespace-nowrap">Fecha de salida</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Nombre</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Pago</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Tipo</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Importe</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody>
+  
+                  <tbody className="align-top">
                     {viajeSeleccionado?.pasajeros?.length > 0 ? (
                       viajeSeleccionado.pasajeros.map((p, index) => (
                         <tr key={p.folio ?? `${p.idPasajero}-${index}`} className={`hover:bg-orange-50 ${index % 2 === 0 ? 'bg-orange-50/40' : 'bg-white'}`}>
-                          <td className="p-2 text-center">{p.folio ?? '-'}</td>
-                          <td className="p-2 text-center">{viajeSeleccionado.unidad?.nombre || 'N/A'}</td>
-                          <td className="p-2 text-center">{p.asiento}</td>
-                          <td className="p-2 text-center">{formatFecha(viajeSeleccionado.fechaSalida)} {formatHora(viajeSeleccionado.fechaSalida)}</td>
-                          <td className="p-2 text-center">{`${p.nombre ?? ''} ${p.apellido ?? ''}`.trim()}</td>
-                          <td className="p-2 text-center">{p.tipoPago}</td>
-                          <td className="p-2 text-center">{p.tipo}</td>
-                          <td className="p-2 text-center font-semibold">${parseFloat(p.importe || 0).toFixed(2)}</td>
-                          <td className="p-2 text-center whitespace-nowrap">{/* acciones */}</td>
+                          <td className="px-2 py-1.5 text-center break-words">{p.folio ?? '-'}</td>
+                          <td className="px-2 py-1.5 text-center break-words">{viajeSeleccionado.unidad?.nombre || 'N/A'}</td>
+                          <td className="px-2 py-1.5 text-center">{p.asiento}</td>
+                          <td className="px-2 py-1.5 text-center whitespace-nowrap">
+                            {formatFecha(viajeSeleccionado.fechaSalida)} {formatHora(viajeSeleccionado.fechaSalida)}
+                          </td>
+                          <td className="px-2 py-1.5 text-center overflow-hidden text-ellipsis whitespace-nowrap">
+                            {`${p.nombre ?? ''} ${p.apellido ?? ''}`.trim()}
+                          </td>
+                          <td className="px-2 py-1.5 text-center break-words">{p.tipoPago}</td>
+                          <td className="px-2 py-1.5 text-center break-words">{p.tipo}</td>
+                          <td className="px-2 py-1.5 text-center font-semibold">${parseFloat(p.importe || 0).toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-center whitespace-nowrap">{/* acciones */}</td>
                         </tr>
                       ))
                     ) : (
-                      <tr><td colSpan={9} className="text-center text-gray-500 p-4">No hay pasajeros registrados</td></tr>
+                      <tr>
+                        <td colSpan={9} className="text-center text-gray-500 p-4">
+                          No hay pasajeros registrados
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
@@ -480,6 +495,6 @@ export default function Pasajeros() {
       </div>
     </div>
   );
-}
+}  
 
 

@@ -399,71 +399,62 @@ export default function Paqueteria() {
           required
         />
 
-        {/* Viaje + filtro Hoy/Todos */}
-        <div className="w-full">
-          <label className="block text-orange-700 font-semibold mb-1">Viaje</label>
+          {/* Viaje + filtro Hoy/Todos (responsivo, sin desbordes) */}
+          <div className="w-full">
+            <label className="block text-orange-700 font-semibold mb-1">Viaje</label>
 
-          <div className="flex items-center gap-3">
-            <select
-              name="idViaje"
-              value={formulario.idViaje}
-              onChange={handleChange}
-              disabled={formulario.pendiente}
-              required={!formulario.pendiente}
-              className="flex-1 p-2.5 rounded-md bg-orange-100 text-gray-800 ring-1 ring-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            >
-              <option value="" disabled>
-                Seleccionar viaje
-              </option>
-              {viajesFiltrados.map((viaje) => (
-                <option key={viaje.idViaje} value={viaje.idViaje}>
-                  {`${viaje.origen} → ${viaje.destino} | ${new Date(
-                    viaje.fechaSalida
-                  ).toLocaleString("es-MX", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`}
-                </option>
-              ))}
-            </select>
+            {/* 1 col en móviles, 2 cols desde sm; permite colapsar y no desbordar */}
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 sm:gap-3 items-stretch min-w-0">
+              {/* SELECT */}
+              <select
+                name="idViaje"
+                value={formulario.idViaje}
+                onChange={handleChange}
+                disabled={formulario.pendiente}
+                required={!formulario.pendiente}
+                className="w-full min-w-0 max-w-full p-2.5 rounded-md bg-orange-100 text-gray-800 ring-1 ring-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="" disabled>Seleccionar viaje</option>
+                {viajesFiltrados.map((viaje) => (
+                  <option key={viaje.idViaje} value={viaje.idViaje}>
+                    {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
+                      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+                    })}`}
+                  </option>
+                ))}
+              </select>
 
-            {/* Segmentado: Hoy / Todos (suave) */}
-            <div className="shrink-0 inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
-              {[
-                { key: "HOY", label: "Hoy" },
-                { key: "TODOS", label: "Todos" },
-              ].map((opt, i) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  aria-pressed={filtroFecha === opt.key}
-                  onClick={() => {
-                    setFiltroFecha(opt.key);
-                    const existe = viajesFiltrados.some(
-                      (v) => String(v.idViaje) === String(formulario.idViaje || "")
-                    );
-                    if (!existe) {
-                      setFormulario((p) => ({ ...p, idViaje: "" }));
-                      setFiltroIdViaje("");
-                    }
-                  }}
-                  className={`px-3 py-2 text-sm font-medium text-[#452B1C] transition
-                    ${i > 0 ? "border-l border-orange-200" : ""}
-                    ${
-                      filtroFecha === opt.key
-                      ? "bg-orange-600 text-white"
-                      : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-                  } ${i === 0 ? "border-r border-orange-200" : ""}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {/* Segmentado: Hoy / Todos */}
+              <div className="w-full sm:w-auto inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
+                {[
+                  { key: "HOY", label: "Hoy" },
+                  { key: "TODOS", label: "Todos" },
+                ].map((opt, i) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    aria-pressed={filtroFecha === opt.key}
+                    onClick={() => {
+                      setFiltroFecha(opt.key);
+                      const existe = viajesFiltrados.some(
+                        (v) => String(v.idViaje) === String(formulario.idViaje || "")
+                      );
+                      if (!existe) {
+                        setFormulario((p) => ({ ...p, idViaje: "" }));
+                        setFiltroIdViaje("");
+                      }
+                    }}
+                    className={`px-3 py-2 text-sm font-medium transition
+                      ${i > 0 ? "border-l border-orange-200" : ""}
+                      ${filtroFecha === opt.key ? "bg-orange-600 text-white" : "bg-orange-100 text-orange-700 hover:bg-orange-200"}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+
 
         <label className="font-semibold text-orange-700">Contenido</label>
         <textarea

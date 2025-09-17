@@ -96,7 +96,6 @@ export default function DespachosTuxtla() {
   const v                      = viajeSeleccionado || {};
   const totalPasajeros         = N(v.totalPasajeros);
   const totalPaqueteria        = N(v.totalPaqueteria);
-  const comision               = N(v.comision);
   const paquetesPorCobrar      = N(v.totalPorCobrar);
   const pagadoEnTuxtla         = N(v.totalPagadoTuxtla);
   const pagadoEnYajalon        = N(v.totalPagadoYajalon);
@@ -106,7 +105,8 @@ export default function DespachosTuxtla() {
 
   // TOTAL (Tuxtla): todo – (Yajalón) – comisión – por cobrar – descuentos
   const total = (totalPasajeros + totalPaqueteria - pagadoEnYajalon)
-              - comision - paquetesPorCobrar - totalDescuentos;
+  - paquetesPorCobrar - totalDescuentos;
+
 
   const fmt = (n) =>
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" })
@@ -228,13 +228,12 @@ export default function DespachosTuxtla() {
       const resumen = [
         ["Pasajeros", fmt(totalPasajeros)],
         ["Paquetería", fmt(totalPaqueteria)],
-        ["Comisión (10%)", fmt(comision)],
         ["Paquetes por cobrar", fmt(paquetesPorCobrar)],
         ["Pagado en Yajalón", fmt(pagadoEnYajalon)],
         ["Viajes de SCLC", fmt(pagaAbordarSCLC)],
         ["Otros descuentos", fmt(totalDescuentos)],
         ["TOTAL", fmt(total)],
-      ];
+      ];      
       autoTable(doc, {
         startY: y,
         body: resumen.map(([k,v]) => [{ content: k, styles: { halign: "left" } }, { content: v, styles: { halign: "right" } }]),
@@ -332,7 +331,6 @@ export default function DespachosTuxtla() {
           <ul className="space-y-2 text-[13px] text-orange-800">
             <li className="flex justify-between"><span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Paquetería</span> <span>${totalPaqueteria.toFixed(2)}</span></li>
-            <li className="flex justify-between"><span>Comisión (10%)</span> <span>${comision.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Paquetes por cobrar</span> <span>${paquetesPorCobrar.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Pagado en Yajalón</span> <span>${pagadoEnYajalon.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span></li>

@@ -91,19 +91,18 @@ export default function DespachoYaja() {
 
   const N = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
 
-  const v                      = viajeSeleccionado || {};
-  const totalPasajeros         = N(v.totalPasajeros);
-  const totalPaqueteria        = N(v.totalPaqueteria);
-  const comision               = N(v.comision);
-  const paquetesPorCobrar      = N(v.totalPorCobrar);
-  const pagadoEnTuxtla         = N(v.totalPagadoTuxtla);
-  const pagaAbordarSCLC        = N(v.totalPagadoSclc);
+  const v                 = viajeSeleccionado || {};
+  const totalPasajeros    = N(v.totalPasajeros);
+  const totalPaqueteria   = N(v.totalPaqueteria);
+  const paquetesPorCobrar = N(v.totalPorCobrar);
+  const pagadoEnTuxtla    = N(v.totalPagadoTuxtla);
+  const pagaAbordarSCLC   = N(v.totalPagadoSclc);
 
   const totalDescuentos = descuentos.reduce((acc, d) => acc + N(d.importe), 0);
 
-  // TOTAL (Yajalón): todo – (lo cobrado en Tuxtla) – comisión – por cobrar – descuentos
+  // TOTAL (Yajalón): todo – (lo cobrado en Tuxtla) – por cobrar – descuentos
   const total = (totalPasajeros + totalPaqueteria - pagadoEnTuxtla)
-              - comision - paquetesPorCobrar - totalDescuentos;
+              - paquetesPorCobrar - totalDescuentos;
 
   const fmt = (n) =>
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" })
@@ -225,7 +224,6 @@ export default function DespachoYaja() {
       const resumen = [
         ["Pasajeros", fmt(totalPasajeros)],
         ["Paquetería", fmt(totalPaqueteria)],
-        ["Comisión (10%)", fmt(comision)],
         ["Paquetes por cobrar", fmt(paquetesPorCobrar)],
         ["Pagado en Tuxtla", fmt(pagadoEnTuxtla)],
         ["Viajes de SCLC", fmt(pagaAbordarSCLC)],
@@ -248,7 +246,7 @@ export default function DespachoYaja() {
       const colW = (w - M.l - M.r) / 2 - 20;
 
       doc.setFontSize(10);
-      doc.text("Corte del dia: " + obtenerFechaFormateada(), M.l + colW / 2, y, { align: "center" });
+      doc.text("Corte del día: " + obtenerFechaFormateada(), M.l + colW / 2, y, { align: "center" });
       doc.setLineWidth(0.7);
       doc.line(M.l, y + 35, M.l + colW, y + 35);
       doc.line(M.l + colW + 40, y + 35, M.l + colW + 40 + colW, y + 35);
@@ -308,20 +306,17 @@ export default function DespachoYaja() {
             onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })}
           />
 
-<label className="block text-orange-700 font-semibold mb-1 text-sm">Importe</label>
-<input
-  type="number"
-  inputMode="decimal"
-  className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3 text-sm
-             [appearance:textfield]
-             [&::-webkit-outer-spin-button]:appearance-none
-             [&::-webkit-inner-spin-button]:appearance-none"
-  value={formulario.importe ?? ""}          // permite borrar
-  onChange={(e) =>
-    setFormulario({ ...formulario, importe: e.target.value }) // sin Number()
-  }
-/>
-
+          <label className="block text-orange-700 font-semibold mb-1 text-sm">Importe</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3 text-sm
+                       [appearance:textfield]
+                       [&::-webkit-outer-spin-button]:appearance-none
+                       [&::-webkit-inner-spin-button]:appearance-none"
+            value={formulario.importe ?? ""}
+            onChange={(e) => setFormulario({ ...formulario, importe: e.target.value })}
+          />
 
           <button
             className="bg-[#cc4500] text-white font-semibold py-2 px-3 rounded-md w-full hover:bg-orange-800 text-sm"
@@ -336,7 +331,6 @@ export default function DespachoYaja() {
           <ul className="space-y-2 text-[13px] text-orange-800">
             <li className="flex justify-between"><span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Paquetería</span> <span>${totalPaqueteria.toFixed(2)}</span></li>
-            <li className="flex justify-between"><span>Comisión (10%)</span> <span>${comision.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Paquetes por cobrar</span> <span>${paquetesPorCobrar.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Pagado en Tuxtla</span> <span>${pagadoEnTuxtla.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span></li>

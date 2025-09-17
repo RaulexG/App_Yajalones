@@ -7,3 +7,9 @@
   /* peso que quieras, p.ej.: */
   font-weight: 700;
 }
+
+/* Usa esto */
+html, body, #root { height: 100%; overflow: auto; }
+
+/* Y bloquea solo scroll horizontal global por seguridad */
+:root, html, body { overflow-x: hidden; }
