@@ -114,13 +114,9 @@ async function detectarImpresora() {
 let printer = null;
 
 async function initPrinter() {
-  const interfaceName = await detectarImpresora(); // "dummy" para modo simulación
+  const interfaceName = await detectarImpresora();
   if (!interfaceName) {
     console.error("⚠️ No se detectó impresora térmica.");
-    dialog.showErrorBox(
-      "Impresora no encontrada",
-      "No se detectó la impresora térmica (58mm). Verifica que esté conectada y encendida."
-    );
     return;
   }
 
@@ -137,7 +133,6 @@ try {
   console.log("✅ Impresora inicializada:", interfaceName);
 } catch (err) {
   console.error("❌ Error al inicializar impresora:", err);
-  dialog.showErrorBox("Error de impresora", "No se pudo inicializar la impresora térmica.\n" + err.message);
   printer = null;
 }
 
