@@ -145,12 +145,6 @@ contextBridge.exposeInMainWorld('pdf', {
   },
 });
 
-contextBridge.exposeInMainWorld('ticket', {
-  imprimirPasajero: async (pasajero, viaje) => {
-    // Usamos safeInvoke para manejar errores y respuesta
-    return await safeInvoke('imprimir-ticket-pasajero', { pasajero, viaje });
-  }
-});
 
 
 contextBridge.exposeInMainWorld("electronAPI", {

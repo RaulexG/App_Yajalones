@@ -275,101 +275,63 @@ export default function Paqueteria() {
   };
 
   // -------- impresión (HTML) ----------
-  function generarGuiaHTMLDoble(paquete, viaje) {
-    const guia = generarGuiaHTML(paquete, viaje);
-    return `${guia}<hr style="margin:24px 0;">${guia}`;
-  }
 
   function generarGuiaHTML(paquete, viaje) {
-    return `
-  <style>
-    @media print {
-      body, table, th, td {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-    }
-  </style>
-  <div style="font-family: Arial, sans-serif; font-size: 13px; width: 650px; margin: 0 auto; color: #222;">
-    <div style="text-align:center; font-weight:bold; font-size:16px;">
-      UNIÓN DE TRANSPORTISTAS "LOS YAJALONES" S.C. DE R.L. DE C.V.
+  return `
+  <div style="font-family: monospace; font-size: 11px; width: 220px; margin: 0 auto;">
+    <div style="text-align:center; font-weight:bold;">
+      Unión de Transportistas<br>
+      Los Yajalones S.C. de R.L. de C.V.
     </div>
-    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-      <div>
-        TERMINAL EN YAJALÓN<br>
-        2ª. CALLE PONIENTE NORTE S/N<br>
-        YAJALÓN, CHIAPAS<br>
-        TELÉFONO: 919-674-2114
-      </div>
-      <div>
-        TERMINAL EN TUXTLA GUTIERREZ<br>
-        15ª ORIENTE SUR #817 ENTRE 7ª Y 8ª SUR<br>
-        TUXTLA GUTIÉRREZ, CHIAPAS<br>
-        TELÉFONO: 961-302-3642
-      </div>
+    <div style="text-align:center; font-size:10px; margin-bottom:6px;">
+      R.F.C. UTY-090617-ANA<br>
+      2da. Calle Poniente Norte S/N<br>
+      Centro, Yajalón, Chiapas
     </div>
-    <div style="text-align:center; font-weight:bold; margin:10px 0 4px 0;">GUÍA DE TRASLADO DE PAQUETERÍA Y MENSAJERÍA</div>
-    <table style="width:100%; border-collapse:collapse; font-size:12px;">
-      <tr>
-        <td style="border:1px solid #888; padding:4px;">FECHA:</td>
-        <td style="border:1px solid #888; padding:4px;">${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}</td>
-        <td style="border:1px solid #888; padding:4px;">UNIDAD:</td>
-        <td style="border:1px solid #888; padding:4px;">${viaje?.unidad?.nombre ?? ""}</td>
-        <td rowspan="2" style="border:1px solid #888; padding:4px;">GUÍA No.:</td>
-        <td rowspan="2" style="border:1px solid #888; padding:4px;">${paquete.folio ?? ""}</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #888; padding:4px;">RUTA:</td>
-        <td style="border:1px solid #888; padding:4px;">${viaje?.origen ?? ""} - ${viaje?.destino ?? ""}</td>
-        <td style="border:1px solid #888; padding:4px;">HORA:</td>
-        <td style="border:1px solid #888; padding:4px;">${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX") : ""}</td>
-      </tr>
-      <tr>
-        <td rowspan="2" colspan="3" style="border:1px solid #888; padding:4px;">REMITENTE: ${paquete.remitente ?? ""}</td>
-        <td rowspan="2" colspan="3" style="border:1px solid #888; padding:4px;">DESTINATARIO: ${paquete.destinatario ?? ""}</td>
-      </tr>
-    </table>
-    <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
-      <tr style="background: #c14600; color: #fff;">
-        <th style="border:1px solid #888; padding:4px;">CANTIDAD</th>
-        <th style="border:1px solid #888; padding:4px;">DESCRIPCIÓN</th>
-        <th style="border:1px solid #888; padding:4px;">CONTENIDO</th>
-        <th style="border:1px solid #888; padding:4px;">IMPORTE $</th>
-      </tr>
-      <tr>
-        <td style="border:1px solid #888; padding:4px;">1</td>
-        <td style="border:1px solid #888; padding:4px;"></td>
-        <td style="border:1px solid #888; padding:4px;">${paquete.contenido ?? ""}</td>
-        <td style="border:1px solid #888; padding:4px;">${Number(paquete.importe ?? 0).toFixed(2)}</td>
-      </tr>
-      <tr>
-        <td colspan="3" style="border:1px solid #888; padding:4px; text-align:right;">TOTAL</td>
-        <td style="border:1px solid #888; padding:4px;">${Number(paquete.importe ?? 0).toFixed(2)}</td>
-      </tr>
-    </table>
-    <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
-      <tr>
-        <td style="border:1px solid #888; padding:4px; background:${paquete.porCobrar ? '#fecf9d' : '#c8e6c9'}; color:#222; text-align:center;" colspan="2">
-          ${paquete.porCobrar ? 'POR COBRAR' : 'PAGADO'}
-        </td>
-      </tr>
-    </table>
-    <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
-      <tr>
-        <td style="border:1px solid #888; padding:4px;">RECIBÍ DE CONFORMIDAD</td>
-        <td style="border:1px solid #888; padding:4px;">FIRMA DEL DOCUMENTADOR</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #888; padding:20px;">HORA Y FECHA</td>
-        <td style="border:1px solid #888; padding:20px;"></td>
-      </tr>
-    </table>
-    <div style="font-size:11px; margin-top:10px; text-align:justify;">
-      La empresa se compromete a la entrega del(os) paquetes en un plazo no mayor a 72 horas. El conductor no está autorizado a la entrega directa de paquetería. La empresa no se responsabiliza por paquetería después de 72 horas de haberse transportado; alimentos y perecederos se transportan a cuenta y riesgo del cliente. Paquetería que sea recogida después de tres días de transportado pagará un recargo adicional de $5.00 diarios por almacenaje.
+
+    <div style="font-size:10px; margin-bottom:6px; text-align:center;">
+      Terminal Tuxtla Gutiérrez<br>
+      14 Norte No. 245, entre Central y 2a Oriente<br>
+      Tel: 961 224 52 61 – C.P. 29000
+    </div>
+
+    <div style="font-size:10px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0;">
+      Fecha/Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
+      salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
+      Guía/Folio: ${paquete?.folio ?? ""}<br>
+      Unidad: ${viaje?.unidad?.nombre ?? ""}
+    </div>
+
+    <div style="font-size:10px; margin:6px 0;">
+      Remitente: ${paquete?.remitente ?? ""}<br>
+      Consignatario: ${paquete?.destinatario ?? ""}<br>
+      Contenido: ${paquete?.contenido ?? ""}<br>
+      Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}
+    </div>
+
+    <div style="font-size:9px; margin-top:4px; text-align:justify;">
+      La empresa no se responsabiliza por paquetería después de 72 horas.<br>
+      Alimentos y perecederos viajan a cuenta y riesgo del interesado.<br>
+      Paquetería no recogida después de tres días genera recargo por bodegaje.
+    </div>
+
+    <div style="border:1px dashed #000; margin:8px 0; padding:4px; font-size:9px; text-align:center;">
+      Este boleto le da derecho al seguro del viajero.<br>
+      Consérvelo para validación.
+    </div>
+
+    <div style="margin:20px 0 8px 0; text-align:center;">
+      ___________________________<br>
+      <span style="font-size:9px;">Firma de conformidad / recibido</span>
+    </div>
+
+    <div style="font-size:9px; text-align:center; margin-top:6px;">
+      Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
     </div>
   </div>
   `;
-  }
+}
+
 
   // ---------- UI ----------
   return (
@@ -781,8 +743,9 @@ export default function Paqueteria() {
                               });
                               return;
                             }
-                            const html = generarGuiaHTMLDoble(p, v);
-                            await window.electronAPI.imprimirHTML(html);
+                            const html = generarGuiaHTML(p, v);
+                            await window.electronAPI.imprimirHTML({ html, copies: 2 });
+                            
                             Swal.fire({
                               icon: "success",
                               title: "Guía impresa",

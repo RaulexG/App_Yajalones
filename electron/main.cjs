@@ -5,9 +5,6 @@ const path = require('path');
 const axios = require('axios');
 const { registerPDFIpc } = require('./pdf.cjs'); // IPCs de PDF
 const { autoUpdater } = require("electron-updater");
-const ThermalPrinter = require("node-thermal-printer").printer;
-const PrinterTypes = require("node-thermal-printer").types;
-
 
 const isDev = !app.isPackaged;
 const API_BASE = process.env.VITE_API_BASE || 'https://yajalones-app-81c1abc5059e.herokuapp.com';
@@ -18,7 +15,6 @@ const currentUser = { username: null, terminal: null };
 
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
-
 
 // ------------ utilidades ------------
 function decodeJwtPayload(token) {
@@ -73,7 +69,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      preload: path.join(__dirname, 'preload.cjs'), // <-- usa el nombre real que tengas
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -83,8 +79,9 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  mainWindow.once('ready-to-show', async() => {
-    try {await initPrinter(); mainWindow.maximize(); mainWindow.show(); } catch {}
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize();
+    mainWindow.show();
   });
 
   // 🔒 al cerrar la ventana, limpia sesión
@@ -93,121 +90,50 @@ function createWindow() {
   mainWindow.removeMenu();
 }
 
-async function detectarImpresora() {
-  const ventana = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
-  if (!ventana) return null;
+// ------------ Cola de impresión ------------
+let printQueue = [];
+let isPrinting = false;
 
-  // 👇 espera la promesa
-  const printers = await ventana.webContents.getPrintersAsync();
+async function processPrintQueue() {
+  if (isPrinting || printQueue.length === 0) return;
 
-  console.log("🔍 Impresoras detectadas:", printers.map(p => p.name));
+  isPrinting = true;
+  const { html, copies, resolve, reject } = printQueue.shift();
 
-  const encontrada = printers.find(p =>
-    /GTP|pos|58/i.test(p.name) // busca por nombre parcial
-  );
-
-  return encontrada ? `printer:"${encontrada.name}"` : null;
-}
-
-
-// ------------ Configuración impresora térmica ------------
-let printer = null;
-
-async function initPrinter() {
-  const interfaceName = await detectarImpresora();
-  if (!interfaceName) {
-    console.error("⚠️ No se detectó impresora térmica.");
-    return;
-  }
-
-try {
-  printer = new ThermalPrinter({
-    type: PrinterTypes.EPSON,
-    interface: interfaceName,
-    options: { timeout: 5000 },
-    width: 32,
-    characterSet: "SLOVENIA",
-    removeSpecialCharacters: false,
-    lineCharacter: "-",
-  });
-  console.log("✅ Impresora inicializada:", interfaceName);
-} catch (err) {
-  console.error("❌ Error al inicializar impresora:", err);
-  printer = null;
-}
-
-  
-  console.log("✅ Impresora inicializada: " + interfaceName);
-}
-
-//------------- IPCs de ticket -------------
-ipcMain.handle("imprimir-ticket-pasajero", async (_e, { pasajero, viaje }) => {
   try {
-    if (!printer) throw new Error("La impresora térmica no está inicializada");
+    const win = new BrowserWindow({ show: false });
+    win.on("closed", () => {});
 
-    // --- Construir ticket ---
-    printer.alignCenter();
-    printer.setTextDoubleHeight();
-    printer.println(" Los Yajalones");
-    printer.setTextNormal();
-    printer.println(" TICKET DE PASAJERO");
-    printer.drawLine();
+    await win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
 
-    printer.alignLeft();
-    printer.println(`Folio: ${pasajero.folio ?? ""}`);
-    printer.println(`Nombre: ${pasajero.nombre ?? ""} ${pasajero.apellido ?? ""}`);
-    printer.println(`Asiento: ${pasajero.asiento ?? ""}`);
-    printer.println(`Unidad: ${viaje?.unidad?.nombre ?? ""}`);
-    printer.println(`Origen: ${viaje?.origen ?? ""}`);
-    printer.println(`Destino: ${viaje?.destino ?? ""}`);
-    printer.println(
-      `Fecha: ${
-        viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""
-      }`
+    win.webContents.print(
+      { silent: false, printBackground: true, copies },
+      (success, err) => {
+        win.close();
+        isPrinting = false;
+
+        if (success) resolve(true);
+        else reject(err);
+
+        processPrintQueue();
+      }
     );
-    printer.println(
-      `Hora: ${
-        viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX") : ""
-      }`
-    );
-    printer.println(`Tipo: ${pasajero.tipo ?? ""}`);
-    printer.println(`Pago: ${pasajero.tipoPago ?? ""}`);
-    printer.println(`Importe: $${parseFloat(pasajero.importe ?? 0).toFixed(2)}`);
-
-    printer.drawLine();
-    printer.alignCenter();
-    printer.println("¡Buen viaje!");
-    printer.cut();
-
-    // --- Simulación / ejecución ---
-    const buffer = printer.getBuffer();
-    console.log("🖨️ ESC/POS generado:", buffer);
-    console.log("🖨️ Texto plano:\n" + buffer.toString("ascii"));
-
-    // Solo ejecuta si no estás en dummy
-    if (printer.interface && printer.interface !== "dummy") {
-      await printer.execute();
-      return { ok: true };
-    } else {
-      return { ok: true, simulated: true };
-    }
   } catch (err) {
-    console.error("Error al imprimir ticket pasajero:", err);
-    return { ok: false, error: err.message };
+    isPrinting = false;
+    reject(err);
+    processPrintQueue();
   }
+}
+
+
+ipcMain.handle("imprimir-html", async (_e, { html, copies = 1 }) => {
+  return new Promise((resolve, reject) => {
+    printQueue.push({ html, copies, resolve, reject });
+    processPrintQueue();
+  });
 });
 
 
-
-
-//------------- IPCs de ticket Paquete-------------
-
-ipcMain.handle("imprimir-html", async (_e, html) => {
-  const win = new BrowserWindow({ show: false });
-  await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-  win.webContents.print({ silent: false, printBackground: true }, () => win.close());
-  return true;
-});
 
 // ------------ IPCs no-PDF ------------
 ipcMain.handle('app:set-title', (_e, t) => {
@@ -297,7 +223,6 @@ autoUpdater.on('update-downloaded', () => {
       if (result.response === 0) {
         autoUpdater.quitAndInstall();
       }
-      // Si elige "Más tarde", no se reinicia y la actualización se aplicará al cerrar la app.
     });
   } else {
     autoUpdater.quitAndInstall();
@@ -312,7 +237,6 @@ app.on('ready', () => {
 // ------------ ciclo de vida app ------------
 app.whenReady().then(() => {
   createWindow();
-    setTimeout(() => initPrinter(), 2000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

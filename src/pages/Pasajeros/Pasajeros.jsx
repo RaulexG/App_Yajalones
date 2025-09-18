@@ -242,6 +242,52 @@ export default function Pasajeros() {
     ? choferes.find((c) => c.unidad?.idUnidad === viajeSeleccionado.unidad?.idUnidad)
     : null;
 
+function generarTicketHTML(pasajero, viaje) {
+  return `
+  <div style="font-family: monospace; font-size: 12px; width: 220px; margin: 0 auto;">
+    <div style="text-align:center; font-weight:bold;">
+      Unión de Transportistas<br>
+      Los Yajalones S.C. de R.L. de C.V.
+    </div>
+    <div style="text-align:center; font-size:10px; margin-bottom:8px;">
+      R.F.C. UTY-090617-ANA<br>
+      2da. Calle Poniente Norte S/N, Centro, Yajalón, Chiapas
+    </div>
+
+    <div style="font-size:10px; margin-bottom:6px;">
+      Terminal Tuxtla Gutiérrez<br>
+      14 Norte No. 245, entre Central y 2a Oriente<br>
+      Tel: 961 224 52 61 – C.P. 29000
+    </div>
+
+    <div style="font-size:11px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0;">
+      Fecha/Hora: ${new Date(viaje.fechaSalida).toLocaleDateString("es-MX")} 
+      ${new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour: "2-digit", minute:"2-digit"})}<br>
+      Folio: ${pasajero.folio ?? ""}<br>
+      Asiento: ${pasajero.asiento ?? ""}<br>
+      Nombre: ${pasajero.nombre} ${pasajero.apellido}<br>
+      Destino: ${viaje.destino}<br>
+      Costo: $${Number(pasajero.importe ?? 0).toFixed(2)}
+    </div>
+
+    <div style="font-size:9px; margin-top:6px;">
+      Favor de estar 20 minutos antes de la salida.<br>
+      Verifique fecha y hora; la empresa no se hace responsable.
+    </div>
+
+    <div style="border:1px dashed #000; margin:8px 0; padding:4px; font-size:9px; text-align:center;">
+      Este boleto le da derecho al seguro del viajero. Consérvelo para validación.
+    </div>
+
+    <div style="font-size:9px; text-align:center;">
+      Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
+    </div>
+  </div>
+  `;
+}
+
+
+
   /* -------------------- UI -------------------- */
   return (
     // Altura visible del viewport menos la barra superior
@@ -468,14 +514,12 @@ export default function Pasajeros() {
                         <button
                           onClick={async () => {
     try {
-      await window.ticket.imprimirPasajero(
-        p,
-        viajeSeleccionado // <-- usa el viaje seleccionado, que tiene todos los datos
-      );
-      alert('Ticket impreso correctamente');
+      const html = generarTicketHTML(p, viajeSeleccionado);
+      await window.electronAPI.imprimirHTML({html,copies:  1});
+      Swal.fire({ icon: 'success', title: 'Ticket impreso', timer: 1000, showConfirmButton: false });
     } catch (err) {
       console.error(err);
-      alert('Error al imprimir ticket: ' + err);
+      Swal.fire({ icon: 'error', title: 'Error al imprimir ticket', timer: 1000,text: err.message || ''});
     }
   }}
   className="p-2 text-[#C14600] hover:text-orange-800 transition"
