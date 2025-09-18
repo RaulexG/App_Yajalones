@@ -426,26 +426,14 @@ export default function Pasajeros() {
               </div>
             </div>
   
-            {/* Tabla (sin scroll horizontal, se adapta por porcentajes) */}
-            <div className="bg-white p-4 rounded-md shadow-md mt-3">
-              <h3 className="text-sm lg:text-base font-bold text-orange-700 mb-2">Lista de pasajeros</h3>
-  
-              {/* Quitamos overflow-x y min-w que provocaban la barra */}
-              <div className="overflow-x-hidden">
-                <table className="w-full table-fixed border-collapse text-[12px] md:text-[13px] lg:text-sm">
-                  <colgroup>
-                    <col className="w-[7%]" />   {/* Folio */}
-                    <col className="w-[10%]" />  {/* Unidad */}
-                    <col className="w-[6%]" />   {/* Asiento */}
-                    <col className="w-[14%]" />  {/* Fecha */}
-                    <col className="w-[22%]" />  {/* Nombre */}
-                    <col className="w-[11%]" />  {/* Pago */}
-                    <col className="w-[10%]" />  {/* Tipo */}
-                    <col className="w-[8%]" />   {/* Importe */}
-                    <col className="w-[12%]" />  {/* Acciones */}
-                  </colgroup>
-  
-                  <thead className="bg-[#FECF9D] text-orange-700 sticky top-0 z-10 text-xs lg:text-sm">
+         {/* Columna derecha: Tabla */}
+         <div className="bg-white p-4 rounded-md shadow-md w-full mx-auto">
+          <h3 className="text-lg font-bold text-orange-700 mb-3">Lista de pasajeros</h3>
+          <div className="overflow-x-auto overflow-y-auto max-h-[500px] custom-scroll">
+            <table className="min-w-[900px] w-full border-collapse text-sm">
+
+              {/* Encabezado */}
+              <thead className="bg-[#FECF9D] text-orange-700 sticky top-0">
                     <tr>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Folio</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Unidad</th>
@@ -475,7 +463,47 @@ export default function Pasajeros() {
                           <td className="px-2 py-1.5 text-center break-words">{p.tipoPago}</td>
                           <td className="px-2 py-1.5 text-center break-words">{p.tipo}</td>
                           <td className="px-2 py-1.5 text-center font-semibold">${parseFloat(p.importe || 0).toFixed(2)}</td>
-                          <td className="px-2 py-1.5 text-center whitespace-nowrap">{/* acciones */}</td>
+                          <td className="p-3 text-center">
+                        {/* Botón Ticket*/}
+                        <button
+                          onClick={async () => {
+    try {
+      await window.ticket.imprimirPasajero(
+        p,
+        viajeSeleccionado // <-- usa el viaje seleccionado, que tiene todos los datos
+      );
+      alert('Ticket impreso correctamente');
+    } catch (err) {
+      console.error(err);
+      alert('Error al imprimir ticket: ' + err);
+    }
+  }}
+  className="p-2 text-[#C14600] hover:text-orange-800 transition"
+  title="Imprimir ticket"
+  aria-label="Imprimir ticket"
+>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
+                            <g fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />
+                              <path d="M6 20.306V12c0-.943 0-1.414.293-1.707S7.057 10 8 10h8c.943 0 1.414 0 1.707.293S18 11.057 18 12v8.306c0 .317 0 .475-.104.55s-.254.025-.554-.075l-2.184-.728c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.684.894c-.078.026-.117.04-.158.04s-.08-.014-.158-.04l-2.684-.894c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.184.728c-.3.1-.45.15-.554.075S6 20.623 6 20.306ZM18 7V5.88c0-1.008 0-1.512-.196-1.897a1.8 1.8 0 0 0-.787-.787C16.632 3 16.128 3 15.12 3H8.88c-1.008 0-1.512 0-1.897.196a1.8 1.8 0 0 0-.787.787C6 4.368 6 4.872 6 5.88V7" />
+                              <path strokeLinecap="round" d="M10 14h3m-3 3h4.5" />
+                            </g>
+                          </svg>
+                        </button>
+
+
+                        <button
+                          onClick={() => eliminarPasajero(p.idPasajero)}
+                          className="p-2 text-[#C14600] hover:text-orange-800 transition"
+                          title="Eliminar"
+                          aria-label="Eliminar"
+                        >
+                          {/* Icono eliminar */}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
+                          </svg>
+                        </button>
+                      </td>
                         </tr>
                       ))
                     ) : (
@@ -488,8 +516,7 @@ export default function Pasajeros() {
                   </tbody>
                 </table>
               </div>
-            </div>
-  
+            </div>  
           </div>
         </div>
       </div>

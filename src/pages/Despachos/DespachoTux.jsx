@@ -289,178 +289,188 @@ export default function DespachosTuxtla() {
   };
 
   return (
-    <div className="flex gap-3 p-1 h-[calc(100vh-112px)] overflow-hidden">
-      {/* Izquierda: Descuento + Resumen */}
-      <div className="w-1/3 flex flex-col gap-6 h-full min-h-0 ">
-        <div className="bg-[#fff7ec] p-4 rounded-lg shadow-md">
-          <h3 className="text-orange-700 font-bold mb-2 text-base">Agregar Descuento</h3>
-
-          <label className="block text-orange-700 font-semibold mb-1 text-sm">Concepto</label>
-          <input
-            type="text"
-            className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-2 text-sm"
-            value={formulario.concepto}
-            onChange={(e) => setFormulario({ ...formulario, concepto: e.target.value })}
-          />
-
-          <label className="block text-orange-700 font-semibold mb-1 text-sm">Descripción</label>
-          <textarea
-            className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-2 text-sm"
-            value={formulario.descripcion}
-            onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })}
-          />
-
-          <label className="block text-orange-700 font-semibold mb-1 text-sm">Importe</label>
-          <input
-            type="number"
-            className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3 text-sm"
-            value={formulario.importe}
-            onChange={(e) => setFormulario({ ...formulario, importe: Number(e.target.value || 0) })}
-          />
-
-          <button
-            className="bg-[#cc4500] text-white font-semibold py-2 px-3 rounded-md w-full hover:bg-orange-800 text-sm"
-            onClick={agregarDescuento}
-          >
-            Guardar descuento
-          </button>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-md h-2/3">
-          <h3 className="text-orange-700 font-bold mb-2 text-base">Resumen del viaje</h3>
-          <ul className="space-y-2 text-[13px] text-orange-800">
-            <li className="flex justify-between"><span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span></li>
-            <li className="flex justify-between"><span>Paquetería</span> <span>${totalPaqueteria.toFixed(2)}</span></li>
-            <li className="flex justify-between"><span>Paquetes por cobrar</span> <span>${paquetesPorCobrar.toFixed(2)}</span></li>
-            <li className="flex justify-between"><span>Pagado en Yajalón</span> <span>${pagadoEnYajalon.toFixed(2)}</span></li>
-            <li className="flex justify-between"><span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span></li>
-            <li className="flex justify-between"><span>Viajes de SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span></li>
-            <li className="flex justify-between font-bold text-base"><span>TOTAL</span> <span>${total.toFixed(2)}</span></li>
-          </ul>
-
-          <button
-            className="bg-[#cc4500] text-white font-semibold py-2 rounded-md w-full mt-4 hover:bg-orange-800 text-sm"
-            onClick={generarPDF}
-          >
-            PDF
-          </button>
-        </div>
-      </div>
-
-      {/* Derecha: selector + tablas */}
-      <div className="w-2/3 flex flex-col gap-3 h-full min-h-0">
-        <div className="bg-white p-3 rounded-lg shadow-md">
-          <h3 className="text-orange-700 font-bold mb-2 text-base">Seleccionar Viaje</h3>
-
-          <div className="flex items-center gap-3">
-            {/* SELECT filtrado */}
-            <select
-              value={viajeSeleccionado?.idViaje || ""}
-              onChange={(e) => seleccionarViaje(Number(e.target.value))}
-              className="flex-1 p-2 rounded-md bg-[#ffe0b2] outline-none ring-1 ring-orange-200 focus:ring-2 focus:ring-orange-300 text-sm"
+    <div className="h-dvh w-full overflow-hidden p-2 md:p-3">
+      {/* Grid fluida: 1 col en sm, 3 fracciones en lg (1/3 | 2/3) */}
+      <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
+        
+        {/* IZQUIERDA (1/3) */}
+        <section className="min-h-0 flex flex-col gap-3 lg:col-span-1">
+          {/* Descuento (contenido compacto) */}
+          <div className="bg-[#fff7ec] rounded-lg shadow-md p-3 md:p-4">
+            <h3 className="text-orange-700 font-bold mb-2 text-sm md:text-base">Agregar Descuento</h3>
+  
+            <label className="block text-orange-700 font-semibold mb-1 text-xs md:text-sm">Concepto</label>
+            <input
+              type="text"
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-2 text-sm"
+              value={formulario.concepto}
+              onChange={(e) => setFormulario({ ...formulario, concepto: e.target.value })}
+            />
+  
+            <label className="block text-orange-700 font-semibold mb-1 text-xs md:text-sm">Descripción</label>
+            <textarea
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-2 text-sm"
+              value={formulario.descripcion}
+              onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })}
+            />
+  
+            <label className="block text-orange-700 font-semibold mb-1 text-xs md:text-sm">Importe</label>
+            <input
+              type="number"
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3 text-sm"
+              value={formulario.importe}
+              onChange={(e) => setFormulario({ ...formulario, importe: Number(e.target.value || 0) })}
+            />
+  
+            <button
+              className="bg-[#cc4500] text-white font-semibold py-2 px-3 rounded-md w-full hover:bg-orange-800 text-sm"
+              onClick={agregarDescuento}
             >
-              <option value="">-- Selecciona un viaje --</option>
-              {viajesFiltrados.map((v) => (
-                <option key={v.idViaje} value={v.idViaje}>
-                  {v.origen} → {v.destino} | {new Date(v.fechaSalida).toLocaleString("es-MX", {
-                    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
-                  })}
-                </option>
-              ))}
-            </select>
-
-            {/* HOY / TODOS (compacto) */}
-            <div className="shrink-0 inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
-              {[
-                { key: "HOY", label: "Hoy" },
-                { key: "TODOS", label: "Todos" },
-              ].map((opt, i) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  aria-pressed={filtroFecha === opt.key}
-                  onClick={() => {
-                    setFiltroFecha(opt.key);
-                    const existe = viajesFiltrados.some(
-                      (v) => String(v.idViaje) === String(viajeSeleccionado?.idViaje || "")
-                    );
-                    if (!existe) setViajeSeleccionado(null);
-                  }}
-                  className={`px-2.5 py-1.5 text-xs font-medium text-[#452B1C] transition
-                    ${i > 0 ? "border-l border-orange-200" : ""}
-                    ${filtroFecha === opt.key ? "bg-orange-600 text-white" : "bg-orange-100 text-orange-700 hover:bg-orange-200"}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              Guardar descuento
+            </button>
+          </div>
+  
+          {/* Resumen (toma el resto y scrollea si hace falta) */}
+          <div className="bg-white rounded-lg shadow-md p-3 md:p-4 min-h-0 flex flex-col">
+            <h3 className="text-orange-700 font-bold mb-2 text-sm md:text-base">Resumen del viaje</h3>
+  
+            <div className="min-h-0 overflow-auto">
+              <ul className="space-y-2 text-[12px] md:text-[13px] text-orange-800">
+                <li className="flex justify-between"><span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span></li>
+                <li className="flex justify-between"><span>Paquetería</span> <span>${totalPaqueteria.toFixed(2)}</span></li>
+                <li className="flex justify-between"><span>Paquetes por cobrar</span> <span>${paquetesPorCobrar.toFixed(2)}</span></li>
+                <li className="flex justify-between"><span>Pagado en Yajalón</span> <span>${pagadoEnYajalon.toFixed(2)}</span></li>
+                <li className="flex justify-between"><span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span></li>
+                <li className="flex justify-between"><span>Viajes de SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span></li>
+                <li className="flex justify-between font-bold text-base"><span>TOTAL</span> <span>${total.toFixed(2)}</span></li>
+              </ul>
+            </div>
+  
+            <button
+              className="bg-[#cc4500] text-white font-semibold py-2 rounded-md w-full mt-3 hover:bg-orange-800 text-sm"
+              onClick={generarPDF}
+            >
+              PDF
+            </button>
+          </div>
+        </section>
+  
+        {/* DERECHA (2/3) */}
+        <section className="min-h-0 flex flex-col gap-3 lg:col-span-2">
+          {/* Selector (no crece) */}
+          <div className="bg-white p-3 md:p-4 rounded-lg shadow-md">
+            <h3 className="text-orange-700 font-bold mb-2 text-sm md:text-base">Seleccionar Viaje</h3>
+  
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              <select
+                value={viajeSeleccionado?.idViaje || ""}
+                onChange={(e) => seleccionarViaje(Number(e.target.value))}
+                className="flex-1 p-2 rounded-md bg-[#ffe0b2] outline-none ring-1 ring-orange-200 focus:ring-2 focus:ring-orange-300 text-sm"
+              >
+                <option value="">-- Selecciona un viaje --</option>
+                {viajesFiltrados.map((v) => (
+                  <option key={v.idViaje} value={v.idViaje}>
+                    {v.origen} → {v.destino} | {new Date(v.fechaSalida).toLocaleString("es-MX", {
+                      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                    })}
+                  </option>
+                ))}
+              </select>
+  
+              <div className="sm:shrink-0 inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
+                {[
+                  { key: "HOY", label: "Hoy" },
+                  { key: "TODOS", label: "Todos" },
+                ].map((opt, i) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    aria-pressed={filtroFecha === opt.key}
+                    onClick={() => {
+                      setFiltroFecha(opt.key);
+                      const existe = viajesFiltrados.some(
+                        (v) => String(v.idViaje) === String(viajeSeleccionado?.idViaje || "")
+                      );
+                      if (!existe) setViajeSeleccionado(null);
+                    }}
+                    className={`px-3 py-1.5 text-xs font-medium transition
+                      ${i > 0 ? "border-l border-orange-200" : ""}
+                      ${filtroFecha === opt.key ? "bg-orange-600 text-white" : "bg-orange-100 text-orange-700 hover:bg-orange-200"}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Pasajeros */}
-        <div className="bg-white p-4 rounded-lg shadow-md">
-          <h3 className="text-base font-bold text-orange-700 mb-2">Pasajeros</h3>
-          <div className="overflow-y-auto max-h-[240px] rounded-md ring-1 ring-orange-100">
-            <table className="w-full table-fixed border-collapse text-xs">
-              <thead className="bg-[#f8c98e] sticky top-0 z-10">
-                <tr className="h-9">
-                  <th className="p-2 text-center text-[#452B1C]">Folio</th>
-                  <th className="p-2 text-center text-[#452B1C]">Nombre</th>
-                  <th className="p-2 text-center text-[#452B1C]">Tipo</th>
-                  <th className="p-2 text-center text-[#452B1C]">Pago</th>
-                  <th className="p-2 text-center text-[#452B1C]">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pasajeros.map((p, i) => (
-                  <tr key={i} className={`h-9 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
-                    <td className="p-2 text-center whitespace-nowrap">{p.folio}</td>
-                    <td className="p-2 text-center whitespace-nowrap">{p.nombre}</td>
-                    <td className="p-2 text-center whitespace-nowrap">{p.tipo}</td>
-                    <td className="p-2 text-center whitespace-nowrap">{p.tipoPago}</td>
-                    <td className="p-2 text-center whitespace-nowrap">${Number(p.importe || 0).toFixed(2)}</td>
+  
+          {/* Pasajeros (flex-1, scroll interno; sin min-width fija) */}
+          <div className="bg-white rounded-lg shadow-md p-3 md:p-4 min-h-0 flex flex-col flex-1">
+            <h3 className="text-sm md:text-base font-bold text-orange-700 mb-2">Pasajeros</h3>
+  
+            <div className="min-h-0 overflow-auto rounded-md ring-1 ring-orange-100">
+              <table className="w-full table-auto border-collapse text-xs">
+                <thead className="bg-[#f8c98e] sticky top-0 z-10">
+                  <tr className="h-9">
+                    <th className="p-2 text-center text-[#452B1C]">Folio</th>
+                    <th className="p-2 text-center text-[#452B1C]">Nombre</th>
+                    <th className="p-2 text-center text-[#452B1C]">Tipo</th>
+                    <th className="p-2 text-center text-[#452B1C]">Pago</th>
+                    <th className="p-2 text-center text-[#452B1C]">Monto</th>
                   </tr>
-                ))}
-                {pasajeros.length === 0 && (
-                  <tr><td colSpan="5" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pasajeros.map((p, i) => (
+                    <tr key={i} className={`h-9 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+                      <td className="p-2 text-center whitespace-nowrap">{p.folio}</td>
+                      <td className="p-2 text-center truncate">{p.nombre}</td>
+                      <td className="p-2 text-center whitespace-nowrap">{p.tipo}</td>
+                      <td className="p-2 text-center whitespace-nowrap">{p.tipoPago}</td>
+                      <td className="p-2 text-center whitespace-nowrap">${Number(p.importe || 0).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {pasajeros.length === 0 && (
+                    <tr><td colSpan="5" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-
-        {/* Paquetería */}
-        <div className="bg-white p-4 rounded-lg shadow-md">
-          <h3 className="text-base font-bold text-orange-700 mb-2">Paquetería</h3>
-          <div className="overflow-y-auto max-h-[240px] rounded-md ring-1 ring-orange-100">
-            <table className="w-full table-fixed border-collapse text-xs">
-              <thead className="bg-[#f8c98e] sticky top-0 z-10">
-                <tr className="h-9">
-                  <th className="p-2 text-center text-[#452B1C]">Folio</th>
-                  <th className="p-2 text-center text-[#452B1C]">Remitente</th>
-                  <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
-                  <th className="p-2 text-center text-[#452B1C]">Por cobrar</th>
-                  <th className="p-2 text-center text-[#452B1C]">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paquetes.map((p, i) => (
-                  <tr key={i} className={`h-9 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
-                    <td className="p-2 text-center whitespace-nowrap">{p.folio}</td>
-                    <td className="p-2 text-center whitespace-nowrap">{p.remitente}</td>
-                    <td className="p-2 text-center whitespace-nowrap">{p.destinatario}</td>
-                    <td className="p-2 text-center whitespace-nowrap">{p.porCobrar ? "Sí" : "No"}</td>
-                    <td className="p-2 text-center whitespace-nowrap">${Number(p.importe || 0).toFixed(2)}</td>
+  
+          {/* Paquetería (flex-1, scroll interno) */}
+          <div className="bg-white rounded-lg shadow-md p-3 md:p-4 min-h-0 flex flex-col flex-1">
+            <h3 className="text-sm md:text-base font-bold text-orange-700 mb-2">Paquetería</h3>
+  
+            <div className="min-h-0 overflow-auto rounded-md ring-1 ring-orange-100">
+              <table className="w-full table-auto border-collapse text-xs">
+                <thead className="bg-[#f8c98e] sticky top-0 z-10">
+                  <tr className="h-9">
+                    <th className="p-2 text-center text-[#452B1C]">Folio</th>
+                    <th className="p-2 text-center text-[#452B1C]">Remitente</th>
+                    <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
+                    <th className="p-2 text-center text-[#452B1C]">Por cobrar</th>
+                    <th className="p-2 text-center text-[#452B1C]">Monto</th>
                   </tr>
-                ))}
-                {paquetes.length === 0 && (
-                  <tr><td colSpan="5" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {paquetes.map((p, i) => (
+                    <tr key={i} className={`h-9 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+                      <td className="p-2 text-center whitespace-nowrap">{p.folio}</td>
+                      <td className="p-2 text-center truncate">{p.remitente}</td>
+                      <td className="p-2 text-center truncate">{p.destinatario}</td>
+                      <td className="p-2 text-center whitespace-nowrap">{p.porCobrar ? "Sí" : "No"}</td>
+                      <td className="p-2 text-center whitespace-nowrap">${Number(p.importe || 0).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {paquetes.length === 0 && (
+                    <tr><td colSpan="5" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
-}
+}  
