@@ -358,172 +358,86 @@ export default function Ajustes() {
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="">
-          {/* Card */}
-          <div className="bg-white rounded-2xl w-[92vw] max-w-3xl shadow-2xl overflow-hidden">
-            {/* Encabezado */}
-            <div className="flex items-center justify-between px-6 py-4">
-              <h2 className="text-xl font-bold text-orange-800 capitalize">Lista de {mostrarTabla}</h2>
-              <button
-                onClick={cerrarTabla}
-                aria-label="Cerrar"
-                className="p-2 rounded-md text-orange-700 hover:bg-orange-100 focus:outline-none focus:ring-0"
-              >
-                {/* ícono X */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
-                  <path
-                    fill="currentColor"
-                    d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Contenido: tabla */}
-            <div className="px-6 pb-6">
-              <div className="overflow-hidden rounded-xl ring-1 ring-orange-200">
-                <table className="w-full table-auto border-collapse">
-                  {/* encabezado */}
-                  <thead className="sticky top-0 bg-orange-100 text-orange-900">
-                    <tr>
-                      {columnas[mostrarTabla].map((col) => (
-                        <th key={col} className="px-4 py-3 text-left font-semibold">
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-
-                  {/* filas */}
-                  <tbody className="divide-y divide-orange-100">
-                    {filas[mostrarTabla].map((fila, idx) => (
-                      <tr
-                        key={idx}
-                        className="odd:bg-white even:bg-orange-50/40 hover:bg-orange-100 transition-colors"
-                      >
-                        {fila.map((cell, i) => {
-                          const esUltima = i === fila.length - 1;
-
-                          // Turnos/Unidades: última celda = Editar/Eliminar
-                          if (esUltima && mostrarTabla !== 'viajes') {
-                            return (
-                              <td key={i} className="px-4 py-2 text-left">
-                                <button
-                                  onClick={() => editar(mostrarTabla, cell)}
-                                  aria-label="Editar"
-                                  title="Editar"
-                                  className="inline-flex items-center justify-center w-9 h-9 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 cursor-pointer hover:scale-120 transition-transform" 
-                                >
-                                  {/* Ícono editar */}
-                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
-                                    <g
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth="2"
-                                    >
-                                      <path d="m16.475 5.408 2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
-                                      <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
-                                    </g>
-                                  </svg>
-                                </button>
-
-                                <button
-                                  onClick={async () => {
-                                    if (mostrarTabla === 'turnos') {
-                                      const result = await Swal.fire({
-                                        icon: 'question',
-                                        title: '¿Seguro que quieres eliminar este turno?',
-                                        showCancelButton: true,
-                                        confirmButtonText: 'Sí',
-                                        cancelButtonText: 'No',
-                                        reverseButtons: true,
-                                      });
-                                      if (result.isConfirmed) {
-                                        try {
-                                          const turno = cell;
-                                          await EliminarTurno(turno.idTurno);
-                                          await cargarDatos();
-                                          Swal.fire({
-                                            icon: 'success',
-                                            title: 'Turno eliminado',
-                                            timer: 1500,
-                                            showConfirmButton: false,
-                                          });
-                                        } catch (err) {
-                                          Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error al eliminar el turno',
-                                            timer: 1500,
-                                            showConfirmButton: false,
-                                          });
-                                        }
-                                      }
-                                    }
-                                    if (mostrarTabla === 'unidades') {
-                                      const result = await Swal.fire({
-                                        icon: 'question',
-                                        title: '¿Seguro que quieres eliminar esta unidad?',
-                                        showCancelButton: true,
-                                        confirmButtonText: 'Sí',
-                                        cancelButtonText: 'No',
-                                        reverseButtons: true,
-                                      });
-                                      if (result.isConfirmed) {
-                                        try {
-                                          const unidad = cell;
-                                          await EliminarUnidad(unidad.idUnidad);
-                                          await cargarDatos();
-                                          Swal.fire({
-                                            icon: 'success',
-                                            title: 'Unidad eliminada',
-                                            timer: 1500,
-                                            showConfirmButton: false,
-                                          });
-                                        } catch (err) {
-                                          Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error al eliminar la unidad',
-                                            timer: 1500,
-                                            showConfirmButton: false,
-                                          });
-                                        }
-                                      }
-                                    }
-                                  }}
-                                  aria-label="Eliminar"
-                                  title="Eliminar"
-                                  className="text-red-600 hover:text-red-800 ml-2"
-                                >
-                                  {/* Ícono eliminar */}
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    className="w-6 h-6 cursor-pointer hover:scale-120 transition-transform"
-                                    style={{ color: '#C14600' }}
+        {/* Card */}
+        <div className="bg-white rounded-2xl w-[92vw] max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+          {/* Encabezado */}
+          <div className="flex items-center justify-between px-6 py-4 shrink-0">
+            <h2 className="text-xl font-bold text-orange-800 capitalize">Lista de {mostrarTabla}</h2>
+            <button
+              onClick={cerrarTabla}
+              aria-label="Cerrar"
+              className="p-2 rounded-md text-orange-700 hover:bg-orange-100 focus:outline-none focus:ring-0"
+            >
+              {/* ícono X */}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                <path
+                  fill="currentColor"
+                  d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
+                />
+              </svg>
+            </button>
+          </div>
+    
+          {/* Contenido: tabla */}
+          <div className="flex-1 min-h-0 px-6 pb-6">
+            {/* Scroll vertical; tope = thead(3rem) + 8 filas(8*2.5rem) */}
+            <div
+              className="overflow-auto rounded-xl ring-1 ring-orange-200"
+              style={{ maxHeight: 'calc(3rem + 8 * 2.5rem)' }}
+            >
+              <table className="w-full table-auto border-collapse">
+                {/* encabezado fijo con altura estable */}
+                <thead className="sticky top-0 z-10 bg-orange-100 text-orange-900">
+                  <tr className="h-12">
+                    {columnas[mostrarTabla].map((col) => (
+                      <th key={col} className="px-4 text-left font-semibold">
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+    
+                {/* filas */}
+                <tbody className="divide-y divide-orange-100">
+                  {filas[mostrarTabla].map((fila, idx) => (
+                    <tr
+                      key={idx}
+                      className="h-10 odd:bg-white even:bg-orange-50/40 hover:bg-orange-100 transition-colors"
+                    >
+                      {fila.map((cell, i) => {
+                        const esUltima = i === fila.length - 1;
+    
+                        // Turnos/Unidades: última celda = Editar/Eliminar
+                        if (esUltima && mostrarTabla !== 'viajes') {
+                          return (
+                            <td key={i} className="px-4 py-2 text-left">
+                              <button
+                                onClick={() => editar(mostrarTabla, cell)}
+                                aria-label="Editar"
+                                title="Editar"
+                                className="inline-flex items-center justify-center w-9 h-9 rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 cursor-pointer hover:scale-120 transition-transform"
+                              >
+                                {/* Ícono editar */}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                  <g
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
                                   >
-                                    <path
-                                      fill="currentColor"
-                                      d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
-                                    />
-                                  </svg>
-                                </button>
-                              </td>
-                            );
-                          }
-
-                          // Viajes: última celda con acciones Editar / Eliminar
-                          if (esUltima && mostrarTabla === 'viajes') {
-                            const viaje = cell;
-                            return (
-                              <td key={i} className="px-4 py-2 text-right">
-                                {/* Botón Eliminar */}
-                                <button
-                                  onClick={async () => {
+                                    <path d="m16.475 5.408 2.117 2.117m-.756-3.982L12.109 9.27a2.1 2.1 0 0 0-.58 1.082L11 13l2.648-.53c.41-.082.786-.283 1.082-.579l5.727-5.727a1.853 1.853 0 1 0-2.621-2.621" />
+                                    <path d="M19 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" />
+                                  </g>
+                                </svg>
+                              </button>
+    
+                              <button
+                                onClick={async () => {
+                                  if (mostrarTabla === 'turnos') {
                                     const result = await Swal.fire({
                                       icon: 'question',
-                                      title: '¿Seguro que quieres eliminar el viaje?',
+                                      title: '¿Seguro que quieres eliminar este turno?',
                                       showCancelButton: true,
                                       confirmButtonText: 'Sí',
                                       cancelButtonText: 'No',
@@ -531,57 +445,145 @@ export default function Ajustes() {
                                     });
                                     if (result.isConfirmed) {
                                       try {
-                                        await EliminarViaje(viaje.idViaje);
+                                        const turno = cell;
+                                        await EliminarTurno(turno.idTurno);
                                         await cargarDatos();
                                         Swal.fire({
                                           icon: 'success',
-                                          title: 'Viaje eliminado',
+                                          title: 'Turno eliminado',
                                           timer: 1500,
                                           showConfirmButton: false,
                                         });
                                       } catch (err) {
                                         Swal.fire({
                                           icon: 'error',
-                                          title: 'Error al eliminar el viaje',
+                                          title: 'Error al eliminar el turno',
                                           timer: 1500,
                                           showConfirmButton: false,
                                         });
                                       }
                                     }
-                                  }}
-                                  aria-label="Eliminar viaje"
-                                  title="Eliminar"
-                                  className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 ml-2 cursor-pointer hover:scale-120 transition-transform"
+                                  }
+                                  if (mostrarTabla === 'unidades') {
+                                    const result = await Swal.fire({
+                                      icon: 'question',
+                                      title: '¿Seguro que quieres eliminar esta unidad?',
+                                      showCancelButton: true,
+                                      confirmButtonText: 'Sí',
+                                      cancelButtonText: 'No',
+                                      reverseButtons: true,
+                                    });
+                                    if (result.isConfirmed) {
+                                      try {
+                                        const unidad = cell;
+                                        await EliminarUnidad(unidad.idUnidad);
+                                        await cargarDatos();
+                                        Swal.fire({
+                                          icon: 'success',
+                                          title: 'Unidad eliminada',
+                                          timer: 1500,
+                                          showConfirmButton: false,
+                                        });
+                                      } catch (err) {
+                                        Swal.fire({
+                                          icon: 'error',
+                                          title: 'Error al eliminar la unidad',
+                                          timer: 1500,
+                                          showConfirmButton: false,
+                                        });
+                                      }
+                                    }
+                                  }
+                                }}
+                                aria-label="Eliminar"
+                                title="Eliminar"
+                                className="text-red-600 hover:text-red-800 ml-2"
+                              >
+                                {/* Ícono eliminar */}
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  className="w-6 h-6 cursor-pointer hover:scale-120 transition-transform"
+                                  style={{ color: '#C14600' }}
                                 >
-                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
-                                    <path
-                                      fill="currentColor"
-                                      d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
-                                    />
-                                  </svg>
-                                </button>
-                              </td>
-                            );
-                          }
-
-                          // Celdas normales
-                          return (
-                            <td key={i} className="px-4 py-2 text-left text-gray-800">
-                              {cell ?? ''}
+                                  <path
+                                    fill="currentColor"
+                                    d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                  />
+                                </svg>
+                              </button>
                             </td>
                           );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        }
+    
+                        // Viajes: última celda con acciones Editar / Eliminar
+                        if (esUltima && mostrarTabla === 'viajes') {
+                          const viaje = cell;
+                          return (
+                            <td key={i} className="px-4 py-2 text-right">
+                              {/* Botón Eliminar */}
+                              <button
+                                onClick={async () => {
+                                  const result = await Swal.fire({
+                                    icon: 'question',
+                                    title: '¿Seguro que quieres eliminar el viaje?',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Sí',
+                                    cancelButtonText: 'No',
+                                    reverseButtons: true,
+                                  });
+                                  if (result.isConfirmed) {
+                                    try {
+                                      await EliminarViaje(viaje.idViaje);
+                                      await cargarDatos();
+                                      Swal.fire({
+                                        icon: 'success',
+                                        title: 'Viaje eliminado',
+                                        timer: 1500,
+                                        showConfirmButton: false,
+                                      });
+                                    } catch (err) {
+                                      Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error al eliminar el viaje',
+                                        timer: 1500,
+                                        showConfirmButton: false,
+                                      });
+                                    }
+                                  }
+                                }}
+                                aria-label="Eliminar viaje"
+                                title="Eliminar"
+                                className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 ml-2 cursor-pointer hover:scale-120 transition-transform"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                  <path
+                                    fill="currentColor"
+                                    d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                  />
+                                </svg>
+                              </button>
+                            </td>
+                          );
+                        }
+    
+                        // Celdas normales
+                        return (
+                          <td key={i} className="px-4 py-2 text-left text-gray-800">
+                            {cell ?? ''}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
     );
-  };
+  };    
 
   /* -------------------- Render -------------------- */
   return (

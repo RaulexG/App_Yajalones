@@ -34,7 +34,7 @@ export default function DespachosTuxtla() {
   const [formulario, setFormulario] = useState({
     concepto: "",
     descripcion: "",
-    importe: 0,
+    importe: "",
   });
 
   // HOY | TODOS
@@ -130,7 +130,7 @@ export default function DespachosTuxtla() {
         importe: Number(formulario.importe),
       };
       setDescuentos(prev => [...prev, nuevo]);
-      setFormulario({ concepto: "", descripcion: "", importe: 0 });
+      setFormulario({ concepto: "", descripcion: "" , importe: "" });
       await CrearDescuentoTuxtla(nuevo);
     } catch (err) {
       console.error("Error al agregar descuento:", err);
@@ -317,9 +317,15 @@ export default function DespachosTuxtla() {
             <label className="block text-orange-700 font-semibold mb-1 text-xs md:text-sm">Importe</label>
             <input
               type="number"
-              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3 text-sm"
-              value={formulario.importe}
-              onChange={(e) => setFormulario({ ...formulario, importe: Number(e.target.value || 0) })}
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3 text-sm
+                        [appearance:textfield]
+                        [&::-webkit-outer-spin-button]:appearance-none
+                        [&::-webkit-inner-spin-button]:appearance-none"
+              value={formulario.importe ?? ""}
+              onChange={(e) => setFormulario({ ...formulario, importe: e.target.value })}
             />
   
             <button

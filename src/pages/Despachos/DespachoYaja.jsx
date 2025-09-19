@@ -32,7 +32,7 @@ export default function DespachoYaja() {
   const [formulario, setFormulario] = useState({
     concepto: "",
     descripcion: "",
-    importe: 0,
+    importe: "",
   });
 
   // Filtro HOY | TODOS
@@ -126,7 +126,7 @@ export default function DespachoYaja() {
         importe: Number(formulario.importe),
       };
       setDescuentos(prev => [...prev, nuevo]);
-      setFormulario({ concepto: "", descripcion: "", importe: 0 });
+      setFormulario({ concepto: "", descripcion: "", importe: "" });
       await CrearDescuentoYajalon(nuevo);
     } catch (err) {
       console.error("Error al agregar descuento:", err);
@@ -285,7 +285,7 @@ export default function DespachoYaja() {
   };
 
   return (
-    <div className="flex gap-3 p-1 h-[calc(100vh-112px)] overflow-hidden">
+    <div className="flex gap-3 p-1 h-[calc(100vh-112px)] overflow-y-auto">
       {/* Izquierda: Descuento + Resumen */}
       <div className="w-1/3 flex flex-col gap-6 h-full min-h-0">
         <div className="bg-[#fff7ec] p-4 rounded-lg shadow-md">
@@ -309,7 +309,10 @@ export default function DespachoYaja() {
           <label className="block text-orange-700 font-semibold mb-1 text-sm">Importe</label>
           <input
             type="number"
+            step="0.01"
+            min="0"
             inputMode="decimal"
+            placeholder="0.00"
             className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none mb-3 text-sm
                        [appearance:textfield]
                        [&::-webkit-outer-spin-button]:appearance-none
