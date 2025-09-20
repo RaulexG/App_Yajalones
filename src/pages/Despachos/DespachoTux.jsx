@@ -1,6 +1,6 @@
 // DespachosTuxtla.jsx
 import { useEffect, useMemo, useState } from "react";
-import { CrearDescuentoTuxtla, ListarViajes } from "../../services/Admin/adminService";
+import { CrearDescuentoTuxtla, ListarViajes,ActualizarViaje } from "../../services/Admin/adminService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
@@ -101,7 +101,7 @@ export default function DespachosTuxtla() {
   const pagadoEnYajalon        = N(v.totalPagadoYajalon);
   const pagaAbordarSCLC        = N(v.totalPagadoSclc);
 
-  const totalDescuentos = descuentos.reduce((acc, d) => acc + N(d.importe), 0);
+  const totalDescuentos = N(v.descuentos?.reduce((sum, d) => sum + N(d.importe), 0) );
 
   // TOTAL (Tuxtla): todo – (Yajalón) – comisión – por cobrar – descuentos
   const total = (totalPasajeros + totalPaqueteria - pagadoEnYajalon)
@@ -112,30 +112,66 @@ export default function DespachosTuxtla() {
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" })
       .format(Number(n || 0));
 
-  const agregarDescuento = async (e) => {
-    e.preventDefault();
-    if (!formulario.concepto || !formulario.importe) {
+const agregarDescuento = async (e) => {
+  e.preventDefault();
+
+  if (!formulario.concepto || !formulario.importe) {
+    Swal.fire({
+      icon: "warning",
+      title: "Llene los campos obligatorios",
+      timer: 1500,
+      showConfirmButton: false
+    });
+    return;
+  }
+
+  try {
+    const nuevo = {
+      concepto: formulario.concepto,
+      descripcion: formulario.descripcion,
+      importe: Number(formulario.importe),
+    };
+
+    // 1) Actualizar en el estado local
+    const nuevosDescuentos = [...descuentos, nuevo];
+    setDescuentos(nuevosDescuentos);
+    setFormulario({ concepto: "", descripcion: "" , importe: "" });
+
+    // 2) Calcular el total de descuentos y guardarlo en el viaje
+    const totalDescuento = nuevosDescuentos.reduce((acc, d) => acc + d.importe, 0);
+
+    if (viajeSeleccionado) {
+      const dataViaje = {
+        ...viajeSeleccionado,
+        descuento: totalDescuento   // 👈 aquí mandamos solo el total
+      };
+
+      await ActualizarViaje(viajeSeleccionado.idViaje, dataViaje);
+
+      // refrescar viajes
+      const listaViajes = await ListarViajes();
+      setViajes(Array.isArray(listaViajes) ? listaViajes : []);
+
       Swal.fire({
-        icon: "warning",
-        title: "Llene los campos obligatorios",
+        icon: "success",
+        title: "Descuento agregado",
         timer: 1500,
         showConfirmButton: false
       });
-      return;
     }
-    try {
-      const nuevo = {
-        concepto: formulario.concepto,
-        descripcion: formulario.descripcion,
-        importe: Number(formulario.importe),
-      };
-      setDescuentos(prev => [...prev, nuevo]);
-      setFormulario({ concepto: "", descripcion: "" , importe: "" });
-      await CrearDescuentoTuxtla(nuevo);
-    } catch (err) {
-      console.error("Error al agregar descuento:", err);
-    }
-  };
+  } catch (err) {
+    console.error("Error al agregar descuento:", err);
+    Swal.fire({
+      icon: "error",
+      title: "Error al guardar",
+      text: "No se pudo agregar el descuento" + (err?.message ? `: ${err.message}` : ""),
+      timer: 2000,
+      showConfirmButton: false
+    });
+  }
+};
+
+
 
   const generarPDF = async () => {
     try {

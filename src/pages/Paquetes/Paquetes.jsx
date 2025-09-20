@@ -276,61 +276,107 @@ export default function Paqueteria() {
 
   // -------- impresión (HTML) ----------
 
-  function generarGuiaHTML(paquete, viaje) {
+function generarGuiaHTML(paquete, viaje) {
   return `
-  <div style="font-family: monospace; font-size: 11px; width: 220px; margin: 0 auto;">
-    <div style="text-align:center; font-weight:bold;">
-      Unión de Transportistas<br>
-      Los Yajalones S.C. de R.L. de C.V.
-    </div>
-    <div style="text-align:center; font-size:10px; margin-bottom:6px;">
-      R.F.C. UTY-090617-ANA<br>
-      2da. Calle Poniente Norte S/N<br>
-      Centro, Yajalón, Chiapas
-    </div>
+  <html>
+  <head>
+    <style>
+      @page {
+        size: auto;
+        margin: 0; /* sin márgenes en la impresión */
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        width: 220px; /* ancho real para 58mm */
+        font-family: monospace;
+        font-size: 11px;
+      }
+      .ticket {
+        width: 220px;
+        margin: 0;
+        padding: 0;
+      }
+      .center { text-align: center; }
+      .bold { font-weight: bold; }
+      .box {
+        border: 1px dashed #000;
+        margin: 8px 0;
+        padding: 4px;
+        font-size: 9px;
+        text-align: center;
+      }
+      .firma {
+        margin: 20px 0 8px 0;
+        text-align: center;
+      }
+      .firma-line {
+        border-top: 1px solid #000;
+        width: 180px;
+        margin: 0 auto 2px auto;
+      }
+      .firma-text {
+        font-size: 9px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ticket">
+      <div class="center bold">
+        Unión de Transportistas<br>
+        Los Yajalones S.C. de R.L. de C.V.
+      </div>
+      <div class="center" style="font-size:10px; margin-bottom:6px;">
+        R.F.C. UTY-090617-ANA<br>
+        2da. Calle Poniente Norte S/N<br>
+        Centro, Yajalón, Chiapas
+      </div>
 
-    <div style="font-size:10px; margin-bottom:6px; text-align:center;">
-      Terminal Tuxtla Gutiérrez<br>
-      14 Norte No. 245, entre Central y 2a Oriente<br>
-      Tel: 961 224 52 61 – C.P. 29000
-    </div>
+      <div class="center" style="font-size:10px; margin-bottom:6px;">
+        Terminal Tuxtla Gutiérrez<br>
+        14 Norte No. 245, entre Central y 2a Oriente<br>
+        Tel: 961 224 52 61 – C.P. 29000
+      </div>
 
-    <div style="font-size:10px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0;">
-      Fecha/Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
-      salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
-      Guía/Folio: ${paquete?.folio ?? ""}<br>
-      Unidad: ${viaje?.unidad?.nombre ?? ""}
-    </div>
+      <div style="font-size:10px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0;">
+        Fecha/Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
+        salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
+        Guía/Folio: ${paquete?.folio ?? ""}<br>
+        Unidad: ${viaje?.unidad?.nombre ?? ""}
+      </div>
 
-    <div style="font-size:10px; margin:6px 0;">
-      Remitente: ${paquete?.remitente ?? ""}<br>
-      Consignatario: ${paquete?.destinatario ?? ""}<br>
-      Contenido: ${paquete?.contenido ?? ""}<br>
-      Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}
-    </div>
+      <div style="font-size:10px; margin:6px 0;">
+        Remitente: ${paquete?.remitente ?? ""}<br>
+        Consignatario: ${paquete?.destinatario ?? ""}<br>
+        Contenido: ${paquete?.contenido ?? ""}<br>
+        Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}
+      </div>
 
-    <div style="font-size:9px; margin-top:4px; text-align:justify;">
-      La empresa no se responsabiliza por paquetería después de 72 horas.<br>
-      Alimentos y perecederos viajan a cuenta y riesgo del interesado.<br>
-      Paquetería no recogida después de tres días genera recargo por bodegaje.
-    </div>
+      <div style="font-size:9px; margin-top:4px; text-align:justify;">
+        La empresa no se responsabiliza por paquetería después de 72 horas.<br>
+        Alimentos y perecederos viajan a cuenta y riesgo del interesado.<br>
+        Paquetería no recogida después de tres días genera recargo por bodegaje.
+      </div>
 
-    <div style="border:1px dashed #000; margin:8px 0; padding:4px; font-size:9px; text-align:center;">
-      Este boleto le da derecho al seguro del viajero.<br>
-      Consérvelo para validación.
-    </div>
+      <div class="box">
+        Este boleto le da derecho al seguro del viajero.<br>
+        Consérvelo para validación.
+      </div>
 
-    <div style="margin:20px 0 8px 0; text-align:center;">
-      ___________________________<br>
-      <span style="font-size:9px;">Firma de conformidad / recibido</span>
-    </div>
+      <div class="firma">
+        <div class="firma-line"></div>
+        <div class="firma-text">Firma de conformidad / recibido</div>
+      </div>
 
-    <div style="font-size:9px; text-align:center; margin-top:6px;">
-      Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
+      <div class="center" style="font-size:9px; margin-top:6px;">
+        Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
+      </div>
     </div>
-  </div>
+  </body>
+  </html>
   `;
 }
+
 
 
   // ---------- UI ----------
