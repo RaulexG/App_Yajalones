@@ -256,8 +256,8 @@ function generarTicketHTML(pasajero, viaje) {
         padding: 0;
         width: 218px; /* ancho seguro para impresora 58mm */
         font-family: monospace;
-        font-size: 13px; /* base más grande */
-        line-height: 1.5; /* más alto para alargar */
+        font-size: 18px; /* base más grande */
+        line-height: 1.8; /* alarga verticalmente */
       }
       .ticket {
         width: 218px;
@@ -265,25 +265,25 @@ function generarTicketHTML(pasajero, viaje) {
         padding: 0;
       }
       .center { text-align: center; }
-      .bold { font-weight: bold; font-size: 15px; }
+      .bold { font-weight: bold; font-size: 22px; }
       .box {
-        border: 1px dashed #000;
-        margin: 14px 0;
-        padding: 6px;
-        font-size: 12px;
+        border: 2px dashed #000;
+        margin: 24px 0;
+        padding: 12px;
+        font-size: 16px;
         text-align: center;
       }
       .firma {
-        margin: 30px 0 14px 0;
+        margin: 60px 0 30px 0;
         text-align: center;
       }
       .firma-line {
-        border-top: 1px solid #000;
-        width: 180px;
-        margin: 0 auto 4px auto;
+        border-top: 2px solid #000;
+        width: 200px;
+        margin: 0 auto 8px auto;
       }
       .firma-text {
-        font-size: 12px;
+        font-size: 16px;
       }
     </style>
   </head>
@@ -293,18 +293,19 @@ function generarTicketHTML(pasajero, viaje) {
         Unión de Transportistas<br>
         Los Yajalones S.C. de R.L. de C.V.
       </div>
-      <div class="center" style="font-size:12px; margin-bottom:12px;">
+
+      <div class="center" style="font-size:18px; margin-bottom:24px;">
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N, Centro, Yajalón, Chiapas
       </div>
 
-      <div class="center" style="font-size:12px; margin-bottom:12px;">
+      <div class="center" style="font-size:18px; margin-bottom:24px;">
         Terminal Tuxtla Gutiérrez<br>
-        14 Norte No. 245, entre Central y 2a Oriente<br>
-        Tel: 961 224 52 61 – C.P. 29000
+        15 Oriente sur #817 entre 7ma y 8va sur<br>
+        Tel: 961 302 36 42
       </div>
 
-      <div style="font-size:13px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:8px 0; margin-bottom:12px;">
+      <div style="font-size:18px; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
         Fecha/Hora: ${new Date(viaje.fechaSalida).toLocaleDateString("es-MX")} 
         ${new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour: "2-digit", minute:"2-digit"})}<br>
         Folio: ${pasajero.folio ?? ""}<br>
@@ -314,7 +315,7 @@ function generarTicketHTML(pasajero, viaje) {
         Costo: $${Number(pasajero.importe ?? 0).toFixed(2)}
       </div>
 
-      <div style="font-size:12px; margin-top:10px; text-align:justify;">
+      <div style="font-size:16px; margin-top:20px; text-align:justify;">
         Favor de estar 20 minutos antes de la salida.<br>
         Verifique fecha y hora; la empresa no se hace responsable.
       </div>
@@ -324,22 +325,15 @@ function generarTicketHTML(pasajero, viaje) {
         Consérvelo para validación.
       </div>
 
-      <div class="firma">
-        <div class="firma-line"></div>
-        <div class="firma-text">Firma de conformidad / recibido</div>
-      </div>
-
-      <div class="center" style="font-size:12px; margin-top:10px;">
+      <div class="center" style="font-size:16px; margin-top:20px;">
         Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
       </div>
-
-      <!-- Espacio extra al final para que salga más largo -->
-      <div style="height:50px;"></div>
     </div>
   </body>
   </html>
   `;
 }
+
 
 
 

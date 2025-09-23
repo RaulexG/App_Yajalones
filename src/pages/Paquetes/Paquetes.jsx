@@ -283,15 +283,15 @@ function generarGuiaHTML(paquete, viaje) {
     <style>
       @page {
         size: auto;
-        margin: 0; /* sin márgenes en la impresión */
+        margin: 0;
       }
       body {
         margin: 0;
         padding: 0;
-        width: 218px; /* ancho seguro para 58mm */
+        width: 218px; /* ancho seguro 58mm */
         font-family: monospace;
-        font-size: 13px; /* base más grande */
-        line-height: 1.5; /* más alto para alargar */
+        font-size: 18px; /* tamaño base grande */
+        line-height: 1.8; /* aumenta separación */
       }
       .ticket {
         width: 218px;
@@ -299,25 +299,25 @@ function generarGuiaHTML(paquete, viaje) {
         padding: 0;
       }
       .center { text-align: center; }
-      .bold { font-weight: bold; font-size: 15px; }
+      .bold { font-weight: bold; font-size: 22px; }
       .box {
-        border: 1px dashed #000;
-        margin: 14px 0;
-        padding: 6px;
-        font-size: 12px;
+        border: 2px dashed #000;
+        margin: 24px 0;
+        padding: 12px;
+        font-size: 16px;
         text-align: center;
       }
       .firma {
-        margin: 30px 0 14px 0;
+        margin: 60px 0 30px 0;
         text-align: center;
       }
       .firma-line {
-        border-top: 1px solid #000;
-        width: 180px;
-        margin: 0 auto 4px auto;
+        border-top: 2px solid #000;
+        width: 200px;
+        margin: 0 auto 8px auto;
       }
       .firma-text {
-        font-size: 12px;
+        font-size: 16px;
       }
     </style>
   </head>
@@ -327,41 +327,36 @@ function generarGuiaHTML(paquete, viaje) {
         Unión de Transportistas<br>
         Los Yajalones S.C. de R.L. de C.V.
       </div>
-      <div class="center" style="font-size:12px; margin-bottom:12px;">
+      <div class="center" style="font-size:18px; margin-bottom:24px;">
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N<br>
         Centro, Yajalón, Chiapas
       </div>
 
-      <div class="center" style="font-size:12px; margin-bottom:12px;">
+      <div class="center" style="font-size:18px; margin-bottom:24px;">
         Terminal Tuxtla Gutiérrez<br>
-        14 Norte No. 245, entre Central y 2a Oriente<br>
-        Tel: 961 224 52 61 – C.P. 29000
+        15 Oriente sur #817 entre 7ma y 8va sur<br>
+        Tel: 961 302 36 42
       </div>
 
-      <div style="font-size:13px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:8px 0; margin-bottom:12px;">
+      <div style="font-size:18px; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
         Fecha/Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
         Salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
         Guía/Folio: ${paquete?.folio ?? ""}<br>
         Unidad: ${viaje?.unidad?.nombre ?? ""}
       </div>
 
-      <div style="font-size:13px; margin:10px 0;">
+      <div style="font-size:18px; margin:20px 0;">
         Remitente: ${paquete?.remitente ?? ""}<br>
         Consignatario: ${paquete?.destinatario ?? ""}<br>
         Contenido: ${paquete?.contenido ?? ""}<br>
         Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}
       </div>
 
-      <div style="font-size:12px; margin-top:10px; text-align:justify;">
+      <div style="font-size:16px; margin-top:20px; text-align:justify;">
         La empresa no se responsabiliza por paquetería después de 72 horas.<br>
         Alimentos y perecederos viajan a cuenta y riesgo del interesado.<br>
         Paquetería no recogida después de tres días genera recargo por bodegaje.
-      </div>
-
-      <div class="box">
-        Este boleto le da derecho al seguro del viajero.<br>
-        Consérvelo para validación.
       </div>
 
       <div class="firma">
@@ -369,17 +364,15 @@ function generarGuiaHTML(paquete, viaje) {
         <div class="firma-text">Firma de conformidad / recibido</div>
       </div>
 
-      <div class="center" style="font-size:12px; margin-top:10px;">
+      <div class="center" style="font-size:16px; margin-top:20px;">
         Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
       </div>
-
-      <!-- Espacio extra al final para alargar -->
-      <div style="height:50px;"></div>
     </div>
   </body>
   </html>
   `;
 }
+
 
 
 
