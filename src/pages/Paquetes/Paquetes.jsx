@@ -288,35 +288,36 @@ function generarGuiaHTML(paquete, viaje) {
       body {
         margin: 0;
         padding: 0;
-        width: 220px; /* ancho real para 58mm */
+        width: 218px; /* ancho seguro para 58mm */
         font-family: monospace;
-        font-size: 11px;
+        font-size: 13px; /* base más grande */
+        line-height: 1.5; /* más alto para alargar */
       }
       .ticket {
-        width: 220px;
+        width: 218px;
         margin: 0;
         padding: 0;
       }
       .center { text-align: center; }
-      .bold { font-weight: bold; }
+      .bold { font-weight: bold; font-size: 15px; }
       .box {
         border: 1px dashed #000;
-        margin: 8px 0;
-        padding: 4px;
-        font-size: 9px;
+        margin: 14px 0;
+        padding: 6px;
+        font-size: 12px;
         text-align: center;
       }
       .firma {
-        margin: 20px 0 8px 0;
+        margin: 30px 0 14px 0;
         text-align: center;
       }
       .firma-line {
         border-top: 1px solid #000;
         width: 180px;
-        margin: 0 auto 2px auto;
+        margin: 0 auto 4px auto;
       }
       .firma-text {
-        font-size: 9px;
+        font-size: 12px;
       }
     </style>
   </head>
@@ -326,33 +327,33 @@ function generarGuiaHTML(paquete, viaje) {
         Unión de Transportistas<br>
         Los Yajalones S.C. de R.L. de C.V.
       </div>
-      <div class="center" style="font-size:10px; margin-bottom:6px;">
+      <div class="center" style="font-size:12px; margin-bottom:12px;">
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N<br>
         Centro, Yajalón, Chiapas
       </div>
 
-      <div class="center" style="font-size:10px; margin-bottom:6px;">
+      <div class="center" style="font-size:12px; margin-bottom:12px;">
         Terminal Tuxtla Gutiérrez<br>
         14 Norte No. 245, entre Central y 2a Oriente<br>
         Tel: 961 224 52 61 – C.P. 29000
       </div>
 
-      <div style="font-size:10px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0;">
+      <div style="font-size:13px; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:8px 0; margin-bottom:12px;">
         Fecha/Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
-        salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
+        Salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
         Guía/Folio: ${paquete?.folio ?? ""}<br>
         Unidad: ${viaje?.unidad?.nombre ?? ""}
       </div>
 
-      <div style="font-size:10px; margin:6px 0;">
+      <div style="font-size:13px; margin:10px 0;">
         Remitente: ${paquete?.remitente ?? ""}<br>
         Consignatario: ${paquete?.destinatario ?? ""}<br>
         Contenido: ${paquete?.contenido ?? ""}<br>
         Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}
       </div>
 
-      <div style="font-size:9px; margin-top:4px; text-align:justify;">
+      <div style="font-size:12px; margin-top:10px; text-align:justify;">
         La empresa no se responsabiliza por paquetería después de 72 horas.<br>
         Alimentos y perecederos viajan a cuenta y riesgo del interesado.<br>
         Paquetería no recogida después de tres días genera recargo por bodegaje.
@@ -368,14 +369,18 @@ function generarGuiaHTML(paquete, viaje) {
         <div class="firma-text">Firma de conformidad / recibido</div>
       </div>
 
-      <div class="center" style="font-size:9px; margin-top:6px;">
+      <div class="center" style="font-size:12px; margin-top:10px;">
         Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
       </div>
+
+      <!-- Espacio extra al final para alargar -->
+      <div style="height:50px;"></div>
     </div>
   </body>
   </html>
   `;
 }
+
 
 
 
