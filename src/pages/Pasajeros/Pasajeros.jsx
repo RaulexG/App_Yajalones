@@ -47,6 +47,9 @@ export default function Pasajeros() {
   const [filtroFecha, setFiltroFecha] = useState('HOY'); // HOY | TODOS
 
   const [choferes, setChoferes] = useState([]);
+  const esTuxtla = (s = "") => s.toLowerCase().includes("tuxtla");
+  const esYajalon = (s = "") => s.toLowerCase().includes("yajal");
+
 
   const [formulario, setFormulario] = useState({
     nombre: '',
@@ -82,6 +85,28 @@ export default function Pasajeros() {
       }
     })();
   }, []);
+
+  const pagoOptions = useMemo(() => {
+  const origen = viajeSeleccionado?.origen || "";
+  // Regla:
+  // - Si el viaje es Tuxtla → Yajalón:
+  //     "Tuxtla"    => PAGADO
+  //     "Yajalón"   => DESTINO
+  // - Si el viaje es Yajalón → Tuxtla:
+  //     "Yajalón"   => PAGADO
+  //     "Tuxtla"    => DESTINO
+  // - "San Cristóbal" siempre => SCLC
+
+  const tuxtlaEsPagado  = esTuxtla(origen);
+  const yajalEsPagado   = esYajalon(origen);
+
+  return [
+    { label: "Tuxtla",      value: tuxtlaEsPagado ? "PAGADO" : "DESTINO" },
+    { label: "Yajalón",     value: yajalEsPagado  ? "PAGADO" : "DESTINO" },
+    { label: "San Cristóbal", value: "SCLC" },
+  ];
+}, [viajeSeleccionado]);
+
 
   /* Viajes filtrados por turno + fecha */
   const viajesFiltrados = useMemo(() => {
@@ -223,20 +248,31 @@ export default function Pasajeros() {
 
   const ObtenerAsientos = (unidad) => parseInt(unidad?.numeroPasajeros || 20, 10);
 
-  const manejarSeleccionViaje = (viaje) => {
-    setViajeSeleccionado(viaje);
-    setFormulario((prev) => ({
-      ...prev,
-      viaje,
-      origen: viaje.origen,
-      destino: viaje.destino,
-      fechaSalida: formatFecha(viaje.fechaSalida),
-      hora: formatHora(viaje.fechaSalida),
-      asiento: null
-    }));
-    setAsientosOcupados((viaje.pasajeros || []).map((p) => p.asiento));
-    setIdPasajeroEditando(null);
-  };
+const manejarSeleccionViaje = (viaje) => {
+  setViajeSeleccionado(viaje);
+
+  // por defecto: origen = PAGADO
+  const tipoPagoDefault = esTuxtla(viaje.origen)
+    ? "PAGADO"   // si el origen es Tuxtla
+    : esYajalon(viaje.origen)
+      ? "PAGADO" // si el origen es Yajalón
+      : "PAGADO"; // fallback
+
+  setFormulario((prev) => ({
+    ...prev,
+    viaje,
+    origen: viaje.origen,
+    destino: viaje.destino,
+    fechaSalida: formatFecha(viaje.fechaSalida),
+    hora: formatHora(viaje.fechaSalida),
+    asiento: null,
+    tipoPago: tipoPagoDefault,
+  }));
+
+  setAsientosOcupados((viaje.pasajeros || []).map((p) => p.asiento));
+  setIdPasajeroEditando(null);
+};
+
 
   const choferAsignado = viajeSeleccionado
     ? choferes.find((c) => c.unidad?.idUnidad === viajeSeleccionado.unidad?.idUnidad)
@@ -296,13 +332,15 @@ function generarTicketHTML(pasajero, viaje) {
 
       <div class="center" style="font-size:18px; margin-bottom:24px;">
         R.F.C. UTY-090617-ANA<br>
-        2da. Calle Poniente Norte S/N, Centro, Yajalón, Chiapas
+        2da. Calle Poniente Norte S/N, Centro, Yajalón, Chiapas<br>
+        Tel: 919 67 4 21 14<br>
+        Whatsapp:919 145 97 11
       </div>
 
       <div class="center" style="font-size:18px; margin-bottom:24px;">
         Terminal Tuxtla Gutiérrez<br>
         15 Oriente sur #817 entre 7ma y 8va sur<br>
-        Tel: 961 302 36 42
+        Tel: 961 106 65 23
       </div>
 
       <div style="font-size:18px; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
@@ -400,12 +438,14 @@ function generarTicketHTML(pasajero, viaje) {
                     value={formulario.tipoPago}
                     onChange={manejarCambio}
                     className="w-full p-2 rounded-md bg-orange-100 text-gray-800"
+                    disabled={!viajeSeleccionado} // opcional: obliga a elegir viaje primero
                   >
-                    <option value="PAGADO">Pagado</option>
-                    <option value="DESTINO">Paga al llegar</option>
-                    <option value="SCLC">San Cristóbal</option>
+                    {pagoOptions.map(opt => (
+                      <option key={opt.label} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
+
               </div>
   
               {/* Asientos */}

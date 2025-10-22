@@ -330,13 +330,15 @@ function generarGuiaHTML(paquete, viaje) {
       <div class="center" style="font-size:18px; margin-bottom:24px;">
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N<br>
-        Centro, Yajalón, Chiapas
+        Centro, Yajalón, Chiapas<br>
+        Tel: 919 67 4 21 14<br>
+        Whatsapp:919 145 97 11
       </div>
 
       <div class="center" style="font-size:18px; margin-bottom:24px;">
         Terminal Tuxtla Gutiérrez<br>
         15 Oriente sur #817 entre 7ma y 8va sur<br>
-        Tel: 961 302 36 42
+        Tel: 961 106 65 23
       </div>
 
       <div style="font-size:18px; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
@@ -482,16 +484,7 @@ function generarGuiaHTML(paquete, viaje) {
         />
 
         <div className="flex gap-4 text-orange-700">
-          <label>
-            <input
-              type="checkbox"
-              name="pendiente"
-              checked={formulario.pendiente}
-              onChange={handleChange}
-              className="mr-2"
-            />
-            Pendiente
-          </label>
+          
           <label>
             <input
               type="checkbox"
@@ -507,94 +500,12 @@ function generarGuiaHTML(paquete, viaje) {
         <div className="flex gap-3">
           <button
             type="submit"
-            className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2"
+            className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-full"
           >
             Guardar
           </button>
-          <button
-            type="button"
-            onClick={cargarPendientes}
-            className="bg-[#cc4500] text-white px-4 py-2 rounded-md w-1/2"
-          >
-            Paquetes pendientes
-          </button>
         </div>
       </form>
-
-      {/* Modal de pendientes */}
-      {mostrarModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-[92vw] max-w-3xl max-h-[90vh] shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4">
-              <h2 className="text-xl font-bold text-orange-800">
-                Paquetes pendientes
-              </h2>
-              <button
-                onClick={() => setMostrarModal(false)}
-                aria-label="Cerrar"
-                className="p-2 rounded-md text-orange-700 hover:bg-orange-100"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5"
-                >
-                  <path
-                    fill="currentColor"
-                    d="m12 13.4l-4.9 4.9q-.275.275-.7.275t-.7-.275t-.275-.7t.275-.7l4.9-4.9l-4.9-4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l4.9 4.9l4.9-4.9q.275-.275.7-.275t.7.275t.275.7t-.275.7L13.4 12l4.9 4.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275z"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="p-6">
-              <div className="overflow-hidden rounded-xl ring-1 ring-orange-200">
-                <table className="w-full table-auto border-collapse">
-                  <thead className="sticky top-0 bg-orange-100 text-orange-900">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold ">Folio</th>
-                      <th className="px-4 py-3 text-left font-semibold">Remitente</th>
-                      <th className="px-4 py-3 text-left font-semibold">Contenido</th>
-                      <th className="px-4 py-3 text-center font-semibold"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-orange-100">
-                    {pendientes.map((paquete) => (
-                      <tr
-                        key={paquete.idPaquete}
-                        className="odd:bg-white even:bg-orange-50/40 hover:bg-orange-100 transition-colors"
-                      >
-                        <td className="px-4 py-2">{paquete.folio}</td>
-                        <td className="px-4 py-2">{paquete.remitente}</td>
-                        <td className="px-4 py-2">{paquete.contenido}</td>
-                        <td className="px-4 py-2 text-center">
-                          <button
-                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-[#cc4500] hover:bg-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
-                            onClick={() => {
-                              setPaqueteAsignando(paquete);
-                              setModalAsignar(true);
-                              cargarPaquetes();
-                            }}
-                          >
-                            Asignar viaje
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {pendientes.length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="text-center py-4 text-gray-500">
-                          No hay paquetes pendientes.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal asignar (con HOY/TODOS) */}
       {modalAsignar && (
