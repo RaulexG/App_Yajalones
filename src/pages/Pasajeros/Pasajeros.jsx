@@ -293,7 +293,7 @@ function generarTicketHTML(pasajero, viaje) {
         width: 218px; /* ancho seguro para impresora 58mm */
         font-family: monospace;
         font-size: 18px; /* base más grande */
-        line-height: 1.8; /* alarga verticalmente */
+        line-height: 1.4; /* alarga verticalmente */
       }
       .ticket {
         width: 218px;
