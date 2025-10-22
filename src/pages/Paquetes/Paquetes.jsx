@@ -331,18 +331,18 @@ function generarGuiaHTML(paquete, viaje) {
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N<br>
         Centro, Yajalón, Chiapas<br>
-        Tel: 919 67 4 21 14<br>
-        Whatsapp:919 145 97 11
+        Tel: 919 67 4 2114<br>
+        Whatsapp:919 145 9711
       </div>
 
       <div class="center" style="font-size:18px; margin-bottom:24px;">
         Terminal Tuxtla Gutiérrez<br>
         15 Oriente sur #817 entre 7ma y 8va sur<br>
-        Tel: 961 106 65 23
+        Tel: 961 106 6523
       </div>
 
       <div style="font-size:18px; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
-        Fecha/Hora: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
+        Fecha/Hora:${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
         Salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
         Guía/Folio: ${paquete?.folio ?? ""}<br>
         Unidad: ${viaje?.unidad?.nombre ?? ""}
