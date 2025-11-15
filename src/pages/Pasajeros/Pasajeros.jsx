@@ -279,9 +279,14 @@ const manejarSeleccionViaje = (viaje) => {
     : null;
 
 function generarTicketHTML(pasajero, viaje) {
-    const destinoTicket = pasajero.tipoPago === "SCLC"
-    ? "SCLC"
-    : viaje.destino;
+  const rutaYajalonTuxtla =
+    esYajalon(viaje?.origen || "") && esTuxtla(viaje?.destino || "");
+
+  // Destino que se imprimirá en el ticket
+  const destinoTicket =
+    rutaYajalonTuxtla && pasajero.tipoPago === "SCLC"
+      ? "SCLC"           // pasajero baja en San Cristóbal
+      : viaje.destino; 
   return `
   <html>
   <head>
