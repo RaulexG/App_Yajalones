@@ -288,13 +288,13 @@ function generarGuiaHTML(paquete, viaje) {
       body {
         margin: 0;
         padding: 0;
-        width: 218px; /* ancho seguro 58mm */
+        width: 216px; /* ancho seguro 58mm */
         font-family: monospace;
         font-size: 18px; /* tamaño base grande */
         line-height: 1.4; /* aumenta separación */
       }
       .ticket {
-        width: 218px;
+        width: 216px;
         margin: 0;
         padding: 0;
       }
