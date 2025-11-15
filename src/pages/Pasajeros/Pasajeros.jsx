@@ -279,6 +279,9 @@ const manejarSeleccionViaje = (viaje) => {
     : null;
 
 function generarTicketHTML(pasajero, viaje) {
+    const destinoTicket = pasajero.tipoPago === "SCLC"
+    ? "SCLC"
+    : viaje.destino;
   return `
   <html>
   <head>
@@ -349,7 +352,7 @@ function generarTicketHTML(pasajero, viaje) {
         Folio: ${pasajero.folio ?? ""}<br>
         Asiento: ${pasajero.asiento ?? ""}<br>
         Nombre: ${pasajero.nombre} ${pasajero.apellido}<br>
-        Destino: ${viaje.destino}<br>
+        Destino: ${destinoTicket}<br>
         Costo: $${Number(pasajero.importe ?? 0).toFixed(2)}
       </div>
 

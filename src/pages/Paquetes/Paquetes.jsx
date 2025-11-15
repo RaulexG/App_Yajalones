@@ -352,7 +352,8 @@ function generarGuiaHTML(paquete, viaje) {
         Remitente: ${paquete?.remitente ?? ""}<br>
         Consignatario: ${paquete?.destinatario ?? ""}<br>
         Contenido: ${paquete?.contenido ?? ""}<br>
-        Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}
+        Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}<br>
+        Status: ${paquete?.porCobrar ? "Por cobrar" : "Pagado"}
       </div>
 
       <div style="font-size:16px; margin-top:20px; text-align:justify;">
