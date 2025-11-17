@@ -25,6 +25,7 @@ export default function Paqueteria() {
     pendiente: false,
     porCobrar: false,
     idViaje: "",
+    destino: "",          // NUEVO: destino del paquete
   });
 
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -88,7 +89,8 @@ export default function Paqueteria() {
     return v?.unidad?.nombre || "Unidad no encontrada";
   };
 
-  const obtenerDestino = (paquete) => {
+  const obtenerDestinoViaje = (paquete) => {
+    // renombrado helper para evitar confusión con paquete.destino
     const v = obtenerViajeDePaquete(paquete);
     return v?.destino || "Destino no encontrado";
   };
@@ -126,6 +128,15 @@ export default function Paqueteria() {
     return arr;
   }, [viajes, modalFiltroFecha]);
 
+  // Viaje actualmente seleccionado en el formulario (para mostrar su destino por default)
+  const viajeFormulario = useMemo(
+    () =>
+      viajes.find(
+        (v) => String(v.idViaje) === String(formulario.idViaje || "")
+      ) || null,
+    [viajes, formulario.idViaje]
+  );
+
   // ---- handlers ----
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -149,6 +160,7 @@ export default function Paqueteria() {
         contenido: formulario.contenido,
         porCobrar: formulario.porCobrar,
         idViaje: formulario.idViaje ? parseInt(formulario.idViaje) : null,
+        destino: formulario.destino || null,   // NUEVO
       };
 
       if (modoEdicion && idEditando) {
@@ -174,6 +186,7 @@ export default function Paqueteria() {
         contenido: formulario.contenido,
         porCobrar: formulario.porCobrar,
         idViaje: parseInt(formulario.idViaje),
+        destino: formulario.destino || null,   // NUEVO
       };
 
       if (modoEdicion && idEditando) {
@@ -192,6 +205,7 @@ export default function Paqueteria() {
       pendiente: false,
       porCobrar: false,
       idViaje: "",
+      destino: "",          // NUEVO
     });
     setModoEdicion(false);
     setIdEditando(null);
@@ -216,6 +230,7 @@ export default function Paqueteria() {
       pendiente: paquete.pendiente || false,
       porCobrar: paquete.porCobrar || false,
       idViaje: idViajeEncontrado,
+      destino: paquete.destino || "",     // NUEVO: cargar destino guardado
     });
     setModoEdicion(true);
     setIdEditando(paquete.idPaquete);
@@ -276,8 +291,10 @@ export default function Paqueteria() {
 
   // -------- impresión (HTML) ----------
 
-function generarGuiaHTML(paquete, viaje) {
-  return `
+  function generarGuiaHTML(paquete, viaje) {
+    const destinoReal = paquete?.destino || viaje?.destino || "";  // NUEVO
+
+    return `
   <html>
   <head>
     <style>
@@ -351,6 +368,7 @@ function generarGuiaHTML(paquete, viaje) {
       <div style="font-size:18px; margin:20px 0;">
         Remitente: ${paquete?.remitente ?? ""}<br>
         Consignatario: ${paquete?.destinatario ?? ""}<br>
+        Destino: ${destinoReal}<br>
         Contenido: ${paquete?.contenido ?? ""}<br>
         Costo: $${Number(paquete?.importe ?? 0).toFixed(2)}<br>
         Status: ${paquete?.porCobrar ? "Por cobrar" : "Pagado"}
@@ -374,11 +392,7 @@ function generarGuiaHTML(paquete, viaje) {
   </body>
   </html>
   `;
-}
-
-
-
-
+  }
 
   // ---------- UI ----------
   return (
@@ -408,62 +422,79 @@ function generarGuiaHTML(paquete, viaje) {
           required
         />
 
-          {/* Viaje + filtro Hoy/Todos (responsivo, sin desbordes) */}
-          <div className="w-full">
-            <label className="block text-orange-700 font-semibold mb-1">Viaje</label>
+        {/* Viaje + filtro Hoy/Todos */}
+        <div className="w-full">
+          <label className="block text-orange-700 font-semibold mb-1">Viaje</label>
 
-            {/* 1 col en móviles, 2 cols desde sm; permite colapsar y no desbordar */}
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 sm:gap-3 items-stretch min-w-0">
-              {/* SELECT */}
-              <select
-                name="idViaje"
-                value={formulario.idViaje}
-                onChange={handleChange}
-                disabled={formulario.pendiente}
-                required={!formulario.pendiente}
-                className="w-full min-w-0 max-w-full p-2.5 rounded-md bg-orange-100 text-gray-800 ring-1 ring-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              >
-                <option value="" disabled>Seleccionar viaje</option>
-                {viajesFiltrados.map((viaje) => (
-                  <option key={viaje.idViaje} value={viaje.idViaje}>
-                    {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
-                      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
-                    })}`}
-                  </option>
-                ))}
-              </select>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 sm:gap-3 items-stretch min-w-0">
+            {/* SELECT */}
+            <select
+              name="idViaje"
+              value={formulario.idViaje}
+              onChange={handleChange}
+              disabled={formulario.pendiente}
+              required={!formulario.pendiente}
+              className="w-full min-w-0 max-w-full p-2.5 rounded-md bg-orange-100 text-gray-800 ring-1 ring-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
+              <option value="" disabled>Seleccionar viaje</option>
+              {viajesFiltrados.map((viaje) => (
+                <option key={viaje.idViaje} value={viaje.idViaje}>
+                  {`${viaje.origen} → ${viaje.destino} | ${new Date(viaje.fechaSalida).toLocaleString("es-MX", {
+                    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+                  })}`}
+                </option>
+              ))}
+            </select>
 
-              {/* Segmentado: Hoy / Todos */}
-              <div className="w-full sm:w-auto inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
-                {[
-                  { key: "HOY", label: "Hoy" },
-                  { key: "TODOS", label: "Todos" },
-                ].map((opt, i) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    aria-pressed={filtroFecha === opt.key}
-                    onClick={() => {
-                      setFiltroFecha(opt.key);
-                      const existe = viajesFiltrados.some(
-                        (v) => String(v.idViaje) === String(formulario.idViaje || "")
-                      );
-                      if (!existe) {
-                        setFormulario((p) => ({ ...p, idViaje: "" }));
-                        setFiltroIdViaje("");
-                      }
-                    }}
-                    className={`px-3 py-2 text-sm font-medium transition
+            {/* Segmentado: Hoy / Todos */}
+            <div className="w-full sm:w-auto inline-flex rounded-md overflow-hidden ring-1 ring-orange-200 bg-[#ffe0b2]">
+              {[
+                { key: "HOY", label: "Hoy" },
+                { key: "TODOS", label: "Todos" },
+              ].map((opt, i) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  aria-pressed={filtroFecha === opt.key}
+                  onClick={() => {
+                    setFiltroFecha(opt.key);
+                    const existe = viajesFiltrados.some(
+                      (v) => String(v.idViaje) === String(formulario.idViaje || "")
+                    );
+                    if (!existe) {
+                      setFormulario((p) => ({ ...p, idViaje: "", destino: "" }));
+                      setFiltroIdViaje("");
+                    }
+                  }}
+                  className={`px-3 py-2 text-sm font-medium transition
                       ${i > 0 ? "border-l border-orange-200" : ""}
                       ${filtroFecha === opt.key ? "bg-orange-600 text-white" : "bg-orange-100 text-orange-700 hover:bg-orange-200"}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
+        </div>
 
+        {/* NUEVO: Destino del paquete */}
+        <label className="font-semibold text-orange-700">Destino del paquete</label>
+        <select
+          name="destino"
+          value={formulario.destino}
+          onChange={handleChange}
+          className="p-2 rounded-md bg-[#ffe0b2]"
+        >
+          <option value="">
+            {viajeFormulario
+              ? `Mismo destino del viaje (${viajeFormulario.destino})`
+              : "Mismo destino del viaje"}
+          </option>
+          <option value="San Cristóbal">San Cristóbal</option>
+          {/* puedes agregar más destinos si los usan, ej: */}
+          {/* <option value="Tuxtla Gutiérrez">Tuxtla Gutiérrez</option>
+          <option value="Yajalón">Yajalón</option> */}
+        </select>
 
         <label className="font-semibold text-orange-700">Contenido</label>
         <textarea
@@ -485,7 +516,6 @@ function generarGuiaHTML(paquete, viaje) {
         />
 
         <div className="flex gap-4 text-orange-700">
-          
           <label>
             <input
               type="checkbox"
@@ -602,9 +632,9 @@ function generarGuiaHTML(paquete, viaje) {
                         ${i > 0 ? "border-l border-orange-200" : ""}
                         ${
                           modalFiltroFecha === opt.key
-                          ? "bg-orange-600 text-white"
-                          : "bg-orange-100 text-orange-700 hover:bg-orange-200"
-                      } ${i === 0 ? "border-r border-orange-200" : ""}`}
+                            ? "bg-orange-600 text-white"
+                            : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                        } ${i === 0 ? "border-r border-orange-200" : ""}`}
                     >
                       {opt.label}
                     </button>
@@ -679,7 +709,9 @@ function generarGuiaHTML(paquete, viaje) {
                     <td className="p-2 text-center">{obtenerNombreUnidad(p)}</td>
                     <td className="p-2 text-center">{p.remitente}</td>
                     <td className="p-2 text-center">{p.destinatario}</td>
-                    <td className="p-2 text-center">{obtenerDestino(p)}</td>
+                    <td className="p-2 text-center">
+                      {p.destino || obtenerDestinoViaje(p)}
+                    </td>
                     <td className="p-2 text-center">{p.porCobrar ? "Sí" : "No"}</td>
                     <td className="p-2 text-center">{obtenerFechaSalida(p)}</td>
                     <td className="p-2 text-center">
