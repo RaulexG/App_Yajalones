@@ -149,68 +149,86 @@ export default function Paqueteria() {
     if (name === "idViaje") setFiltroIdViaje(String(value || ""));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const obtenerDestinoFinal = (formulario, viajes) => {
+  const viajeSel = viajes.find(
+    (v) => String(v.idViaje) === String(formulario.idViaje || "")
+  );
 
-    if (formulario.pendiente) {
-      const dataPendiente = {
-        remitente: formulario.remitente,
-        destinatario: formulario.destinatario,
-        importe: parseFloat(formulario.importe),
-        contenido: formulario.contenido,
-        porCobrar: formulario.porCobrar,
-        idViaje: formulario.idViaje ? parseInt(formulario.idViaje) : null,
-        destino: formulario.destino || null,   // NUEVO
-      };
+  if (formulario.destino && formulario.destino.trim() !== "") {
+    return formulario.destino;       // San Cristóbal u otro que elijas
+  }
 
-      if (modoEdicion && idEditando) {
-        await ponerPaqueteComoPendiente(idEditando, dataPendiente.idViaje);
-      } else {
-        await paquetePendiente(dataPendiente);
-      }
+  return viajeSel?.destino || null;  // mismo destino del viaje (Tuxtla/Yajalón)
+};
 
-      await cargarPendientes();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // Aquí calculamos el destino que SÍ se debe guardar
+  const destinoFinal = obtenerDestinoFinal(formulario, viajes);
+
+  if (formulario.pendiente) {
+    const dataPendiente = {
+      remitente: formulario.remitente,
+      destinatario: formulario.destinatario,
+      importe: parseFloat(formulario.importe),
+      contenido: formulario.contenido,
+      porCobrar: formulario.porCobrar,
+      idViaje: formulario.idViaje ? parseInt(formulario.idViaje) : null,
+      destino: destinoFinal,   // ⬅️ ya no va null si es mismo destino del viaje
+    };
+
+    if (modoEdicion && idEditando) {
+      await ponerPaqueteComoPendiente(idEditando, dataPendiente.idViaje);
+      // OJO: si después quieres que también actualice destino en pendiente,
+      // en el backend tendrías que aceptar también ese campo.
     } else {
-      if (!formulario.idViaje)
-        return Swal.fire({
-          icon: "warning",
-          title: "Llene los campos obligatorios",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-
-      const data = {
-        remitente: formulario.remitente,
-        destinatario: formulario.destinatario,
-        importe: parseFloat(formulario.importe),
-        contenido: formulario.contenido,
-        porCobrar: formulario.porCobrar,
-        idViaje: parseInt(formulario.idViaje),
-        destino: formulario.destino || null,   // NUEVO
-      };
-
-      if (modoEdicion && idEditando) {
-        await actualizarPaquete(idEditando, data);
-      } else {
-        await crearPaquete(data);
-      }
+      await paquetePendiente(dataPendiente);
     }
 
-    // Resetear formulario
-    setFormulario({
-      remitente: "",
-      destinatario: "",
-      importe: 70,
-      contenido: "",
-      pendiente: false,
-      porCobrar: false,
-      idViaje: "",
-      destino: "",          // NUEVO
-    });
-    setModoEdicion(false);
-    setIdEditando(null);
-    await Promise.all([cargarPaquetes(), cargarViajes()]);
-  };
+    await cargarPendientes();
+  } else {
+    if (!formulario.idViaje)
+      return Swal.fire({
+        icon: "warning",
+        title: "Llene los campos obligatorios",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+    const data = {
+      remitente: formulario.remitente,
+      destinatario: formulario.destinatario,
+      importe: parseFloat(formulario.importe),
+      contenido: formulario.contenido,
+      porCobrar: formulario.porCobrar,
+      idViaje: parseInt(formulario.idViaje),
+      destino: destinoFinal,   // ⬅️ aquí también
+    };
+
+    if (modoEdicion && idEditando) {
+      await actualizarPaquete(idEditando, data);
+    } else {
+      await crearPaquete(data);
+    }
+  }
+
+  // Resetear formulario
+  setFormulario({
+    remitente: "",
+    destinatario: "",
+    importe: 70,
+    contenido: "",
+    pendiente: false,
+    porCobrar: false,
+    idViaje: "",
+    destino: "",
+  });
+  setModoEdicion(false);
+  setIdEditando(null);
+  await Promise.all([cargarPaquetes(), cargarViajes()]);
+};
+
 
   const prepararEdicion = (paquete) => {
     // buscar idViaje del paquete en la lista de viajes
