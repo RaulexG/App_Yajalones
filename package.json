@@ -1,7 +1,7 @@
 {
   "name": "yajalon-app",
   "private": true,
-  "version": "1.1.16",
+  "version": "1.1.17",
   "description": "Sistema de Transporte Los Yajalones",
   "author": "Wolfpack Software",
   "main": "electron/main.cjs",
