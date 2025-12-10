@@ -298,23 +298,23 @@ function generarTicketHTML(pasajero, viaje) {
       body {
         margin: 0;
         padding: 0;
-        width: 216px; /* ancho seguro para impresora 58mm */
+        width: 58mm; /* ancho seguro para impresora 58mm */
         font-family: monospace;
-        font-size: 18px; /* base más grande */
+        font-size: 3.2mm; /* base más grande */
         line-height: 1.4; /* alarga verticalmente */
       }
       .ticket {
-        width: 216px;
+        width: 58mm;
         margin: 0;
         padding: 0;
       }
       .center { text-align: center; }
-      .bold { font-weight: bold; font-size: 22px; }
+      .bold { font-weight: bold; font-size: 4mm; }
       .box {
         border: 2px dashed #000;
         margin: 24px 0;
         padding: 12px;
-        font-size: 16px;
+        font-size: 2.3mm;
         text-align: center;
       }
       .firma {
@@ -323,11 +323,11 @@ function generarTicketHTML(pasajero, viaje) {
       }
       .firma-line {
         border-top: 2px solid #000;
-        width: 200px;
+        width: 20mm;
         margin: 0 auto 8px auto;
       }
       .firma-text {
-        font-size: 16px;
+        font-size: 2.3mm;
       }
     </style>
   </head>
@@ -338,20 +338,20 @@ function generarTicketHTML(pasajero, viaje) {
         Los Yajalones S.C. de R.L. de C.V.
       </div>
 
-      <div class="center" style="font-size:18px; margin-bottom:24px;">
+      <div class="center" style="font-size:3.6mm; margin-bottom:24px;">
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N, Centro, Yajalón, Chiapas<br>
         Tel: 919 67 4 2114<br>
         Whatsapp:919 145 9711
       </div>
 
-      <div class="center" style="font-size:18px; margin-bottom:24px;">
+      <div class="center" style="font-size:3.6mm; margin-bottom:24px;">
         Terminal Tuxtla Gutiérrez<br>
         15 Oriente sur #817 entre 7ma y 8va sur<br>
         Tel: 961 106 6523
       </div>
 
-      <div style="font-size:18px; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
+      <div style="font-size:3.6mm; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
         Fecha/Hora:${new Date(viaje.fechaSalida).toLocaleDateString("es-MX")} 
         ${new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour: "2-digit", minute:"2-digit"})}<br>
         Folio: ${pasajero.folio ?? ""}<br>
@@ -361,7 +361,7 @@ function generarTicketHTML(pasajero, viaje) {
         Costo: $${Number(pasajero.importe ?? 0).toFixed(2)}
       </div>
 
-      <div style="font-size:16px; margin-top:20px; text-align:justify;">
+      <div style="font-size:3.2mm; margin-top:20px; text-align:justify;">
         Favor de estar 20 minutos antes de la salida.<br>
         Verifique fecha y hora; la empresa no se hace responsable.
       </div>
@@ -371,7 +371,7 @@ function generarTicketHTML(pasajero, viaje) {
         Consérvelo para validación.
       </div>
 
-      <div class="center" style="font-size:16px; margin-top:20px;">
+      <div class="center" style="font-size:3.2mm; margin-top:20px;">
         Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
       </div>
     </div>

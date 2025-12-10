@@ -65,15 +65,27 @@ export default function Paqueteria() {
   };
 
   // ---- helpers de fecha / viaje ----
-  const esMismoDia = (d1, d2) => {
-    const a = new Date(d1),
-      b = new Date(d2);
-    return (
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth() === b.getMonth() &&
-      a.getDate() === b.getDate()
-    );
-  };
+const esMismoDia = (d1, d2) => {
+  const a = new Date(d1),
+    b = new Date(d2);
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+};
+
+const startOfToday = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const startOfYesterday = () => {
+  const d = startOfToday();
+  d.setDate(d.getDate() - 1);
+  return d;
+};
 
   const obtenerViajeDePaquete = (paquete) => {
     for (const viaje of viajes) {
@@ -103,30 +115,57 @@ export default function Paqueteria() {
   };
 
   // ---- viajes filtrados (para el SELECT del formulario) ----
-  const viajesFiltrados = useMemo(() => {
-    const hoy = new Date();
-    const arr = (viajes || []).filter((v) =>
-      filtroFecha === "HOY" ? esMismoDia(v.fechaSalida, hoy) : true
-    );
-    arr.sort(
+const viajesFiltrados = useMemo(() => {
+  const hoy0 = startOfToday();
+  const ayer0 = startOfYesterday();
+
+  const arr = (viajes || [])
+    .filter((v) => {
+      const f = new Date(v.fechaSalida);
+      if (Number.isNaN(f.getTime())) return false;
+
+      if (filtroFecha === "HOY") {
+        // solo viajes de hoy
+        return esMismoDia(f, hoy0);
+      }
+
+      // "TODOS": solo viajes desde ayer 00:00 en adelante
+      return f >= ayer0;
+    })
+    .sort(
       (a, b) =>
         new Date(a.fechaSalida).getTime() - new Date(b.fechaSalida).getTime()
     );
-    return arr;
-  }, [viajes, filtroFecha]);
+
+  return arr;
+}, [viajes, filtroFecha]);
+
 
   // ---- viajes filtrados (para el SELECT del modal asignar) ----
-  const viajesFiltradosModal = useMemo(() => {
-    const hoy = new Date();
-    const arr = (viajes || []).filter((v) =>
-      modalFiltroFecha === "HOY" ? esMismoDia(v.fechaSalida, hoy) : true
-    );
-    arr.sort(
+const viajesFiltradosModal = useMemo(() => {
+  const hoy0 = startOfToday();
+  const ayer0 = startOfYesterday();
+
+  const arr = (viajes || [])
+    .filter((v) => {
+      const f = new Date(v.fechaSalida);
+      if (Number.isNaN(f.getTime())) return false;
+
+      if (modalFiltroFecha === "HOY") {
+        return esMismoDia(f, hoy0);
+      }
+
+      // "TODOS": desde ayer en adelante
+      return f >= ayer0;
+    })
+    .sort(
       (a, b) =>
         new Date(a.fechaSalida).getTime() - new Date(b.fechaSalida).getTime()
     );
-    return arr;
-  }, [viajes, modalFiltroFecha]);
+
+  return arr;
+}, [viajes, modalFiltroFecha]);
+
 
   // Viaje actualmente seleccionado en el formulario (para mostrar su destino por default)
   const viajeFormulario = useMemo(
@@ -323,23 +362,23 @@ const handleSubmit = async (e) => {
       body {
         margin: 0;
         padding: 0;
-        width: 216px; /* ancho seguro 58mm */
+        width: 58mm; /* ancho seguro 58mm */
         font-family: monospace;
-        font-size: 18px; /* tamaño base grande */
+        font-size: 3.2mm; /* tamaño base grande */
         line-height: 1.4; /* aumenta separación */
       }
       .ticket {
-        width: 216px;
+        width: 58mm;
         margin: 0;
         padding: 0;
       }
       .center { text-align: center; }
-      .bold { font-weight: bold; font-size: 22px; }
+      .bold { font-weight: bold; font-size: 4mm; }
       .box {
         border: 2px dashed #000;
         margin: 24px 0;
         padding: 12px;
-        font-size: 16px;
+        font-size: 3.2mm;
         text-align: center;
       }
       .firma {
@@ -348,11 +387,11 @@ const handleSubmit = async (e) => {
       }
       .firma-line {
         border-top: 2px solid #000;
-        width: 200px;
+        width: 56mm;
         margin: 0 auto 8px auto;
       }
       .firma-text {
-        font-size: 16px;
+        font-size: 3.2mm;
       }
     </style>
   </head>
@@ -362,7 +401,7 @@ const handleSubmit = async (e) => {
         Unión de Transportistas<br>
         Los Yajalones S.C. de R.L. de C.V.
       </div>
-      <div class="center" style="font-size:18px; margin-bottom:24px;">
+      <div class="center" style="font-size:3.2mm; margin-bottom:2.7mm;">
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N<br>
         Centro, Yajalón, Chiapas<br>
@@ -370,20 +409,20 @@ const handleSubmit = async (e) => {
         Whatsapp:919 145 9711
       </div>
 
-      <div class="center" style="font-size:18px; margin-bottom:24px;">
+      <div class="center" style="font-size:3.2mm; margin-bottom:2.7mm;">
         Terminal Tuxtla Gutiérrez<br>
         15 Oriente sur #817 entre 7ma y 8va sur<br>
         Tel: 961 106 6523
       </div>
 
-      <div style="font-size:18px; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
+      <div style="font-size:3.2mm; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:2.7mm;">
         Fecha/Hora:${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleDateString("es-MX") : ""}<br>
         Salida: ${viaje?.fechaSalida ? new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : ""}<br>
         Guía/Folio: ${paquete?.folio ?? ""}<br>
         Unidad: ${viaje?.unidad?.nombre ?? ""}
       </div>
 
-      <div style="font-size:18px; margin:20px 0;">
+      <div style="font-size:3.2mm; margin:2.7mm 0;">
         Remitente: ${paquete?.remitente ?? ""}<br>
         Consignatario: ${paquete?.destinatario ?? ""}<br>
         Destino: ${destinoReal}<br>
@@ -392,7 +431,7 @@ const handleSubmit = async (e) => {
         Status: ${paquete?.porCobrar ? "Por cobrar" : "Pagado"}
       </div>
 
-      <div style="font-size:16px; margin-top:20px; text-align:justify;">
+      <div style="font-size:3.2mm; margin-top:2.7mm; text-align:justify;">
         La empresa no se responsabiliza por paquetería después de 72 horas.<br>
         Alimentos y perecederos viajan a cuenta y riesgo del interesado.<br>
         Paquetería no recogida después de tres días genera recargo por bodegaje.
@@ -403,7 +442,7 @@ const handleSubmit = async (e) => {
         <div class="firma-text">Firma de conformidad / recibido</div>
       </div>
 
-      <div class="center" style="font-size:16px; margin-top:20px;">
+      <div class="center" style="font-size:3.2mm; margin-top:2.7mm;">
         Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
       </div>
     </div>
