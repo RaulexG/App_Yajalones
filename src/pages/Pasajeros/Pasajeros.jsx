@@ -281,7 +281,7 @@ const manejarSeleccionViaje = (viaje) => {
     ? choferes.find((c) => c.unidad?.idUnidad === viajeSeleccionado.unidad?.idUnidad)
     : null;
 
-function generarTicketHTML(pasajero, viaje, escala = 1) {
+function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) {
   const rutaYajalonTuxtla =
     esYajalon(viaje?.origen || "") && esTuxtla(viaje?.destino || "");
 
@@ -299,16 +299,16 @@ function generarTicketHTML(pasajero, viaje, escala = 1) {
         margin: 0;
       }
       body {
-        margin: 0;
+        margin: ${margin}mm;
         padding: 0;
-        width: 58mm; /* ancho seguro para impresora 58mm */
+        width: ${width}mm; /* ancho seguro para impresora 58mm */
         font-family: monospace;
         font-size: 3.2mm; /* base más grande */
         line-height: 1.4; /* alarga verticalmente */
       }
       .ticket {
-        width: 58mm;
-        margin: 0;
+        width: ${width}mm;
+        margin: ${margin}mm;
         padding: 0;
         transform: scale(${escala});       
         transform-origin: top left;
@@ -619,7 +619,9 @@ function generarTicketHTML(pasajero, viaje, escala = 1) {
                           onClick={async () => {
     try {
       const escala = esTuxtla1 ? 0.85 : 1;
-      const html = generarTicketHTML(p, viajeSeleccionado, escala);
+      const width = esTuxtla1 ? 56 : 58;
+      const margin = esTuxtla1 ? 2 : 0;
+      const html = generarTicketHTML(p, viajeSeleccionado, escala, width, margin);
       await window.electronAPI.imprimirHTML({html,copies:  1});
       Swal.fire({ icon: 'success', title: 'Ticket impreso', timer: 1000, showConfirmButton: false });
     } catch (err) {

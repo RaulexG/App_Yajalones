@@ -344,7 +344,7 @@ const handleSubmit = async (e) => {
 
   // -------- impresión (HTML) ----------
 
-  function generarGuiaHTML(paquete, viaje, escala = 1) {
+  function generarGuiaHTML(paquete, viaje, escala = 1,width =58, margin=0) {
     const destinoReal = paquete?.destino || viaje?.destino || "";  // NUEVO
 
     return `
@@ -356,16 +356,16 @@ const handleSubmit = async (e) => {
         margin: 0;
       }
       body {
-        margin: 0;
+        margin: ${margin}mm;
         padding: 0;
-        width: 58mm; /* ancho seguro 58mm */
+        width: ${width}mm; /* ancho seguro 58mm */
         font-family: monospace;
         font-size: 3.2mm; /* tamaño base grande */
         line-height: 1.4; /* aumenta separación */
       }
       .ticket {
-        width: 58mm;
-        margin: 0;
+        width: ${width}mm;
+        margin: ${margin}mm;
         padding: 0;
         transform: scale(${escala});       
         transform-origin: top left;
@@ -787,7 +787,9 @@ const handleSubmit = async (e) => {
                               return;
                             }
                             const escala = esTuxtla ? 0.85 : 1;
-                            const html = generarGuiaHTML(p, v,escala);
+                            const width = esTuxtla ? 56 : 58;
+                            const margin = esTuxtla ? 2 : 0;
+                            const html = generarGuiaHTML(p, v,escala, width, margin);
                             await window.electronAPI.imprimirHTML({ html, copies: 2 });
                             
                             Swal.fire({
