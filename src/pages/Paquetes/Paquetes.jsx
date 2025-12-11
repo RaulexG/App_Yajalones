@@ -6,16 +6,17 @@ import {
   actualizarPaquete,
   eliminarPaquete,
   paquetePendiente,
-  obtenerPaquetesPendientes,
   asignarPaqueteAViaje,
   ponerPaqueteComoPendiente,
 } from "../../services/Admin/adminService";
 import Swal from "sweetalert2";
+import { useTerminal } from "../../hooks/useTerminal";
 
 export default function Paqueteria() {
   const [viajes, setViajes] = useState([]);
   const [paquetes, setPaquetes] = useState([]);
-  const [pendientes, setPendientes] = useState([]);
+  const terminal = useTerminal();
+  const esTuxtla = terminal === "TUXTLA";
 
   const [formulario, setFormulario] = useState({
     remitente: "",
@@ -58,11 +59,6 @@ export default function Paqueteria() {
     setPaquetes(Array.isArray(response) ? response : []);
   };
 
-  const cargarPendientes = async () => {
-    const response = await obtenerPaquetesPendientes();
-    setPendientes(Array.isArray(response) ? response : []);
-    setMostrarModal(true);
-  };
 
   // ---- helpers de fecha / viaje ----
 const esMismoDia = (d1, d2) => {
@@ -348,7 +344,7 @@ const handleSubmit = async (e) => {
 
   // -------- impresión (HTML) ----------
 
-  function generarGuiaHTML(paquete, viaje) {
+  function generarGuiaHTML(paquete, viaje, escala = 1) {
     const destinoReal = paquete?.destino || viaje?.destino || "";  // NUEVO
 
     return `
@@ -371,6 +367,8 @@ const handleSubmit = async (e) => {
         width: 58mm;
         margin: 0;
         padding: 0;
+        transform: scale(${escala});       
+        transform-origin: top left;
       }
       .center { text-align: center; }
       .bold { font-weight: bold; font-size: 4mm; }
@@ -788,7 +786,8 @@ const handleSubmit = async (e) => {
                               });
                               return;
                             }
-                            const html = generarGuiaHTML(p, v);
+                            const escala = esTuxtla ? 0.85 : 1;
+                            const html = generarGuiaHTML(p, v,escala);
                             await window.electronAPI.imprimirHTML({ html, copies: 2 });
                             
                             Swal.fire({

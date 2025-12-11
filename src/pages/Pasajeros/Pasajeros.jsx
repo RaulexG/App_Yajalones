@@ -9,6 +9,7 @@ import {
   ListarChoferes
 } from '../../services/Admin/adminService';
 import Swal from 'sweetalert2';
+import { useTerminal } from "../../hooks/useTerminal";
 
 /* -------------------- Helpers -------------------- */
 const formatFecha = (dLike) => {
@@ -42,6 +43,8 @@ export default function Pasajeros() {
   const [viajeSeleccionado, setViajeSeleccionado] = useState(null);
   const [asientosOcupados, setAsientosOcupados] = useState([]);
   const [idPasajeroEditando, setIdPasajeroEditando] = useState(null);
+  const terminal = useTerminal();
+  const esTuxtla1 = terminal === "TUXTLA"
 
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('');
   const [filtroFecha, setFiltroFecha] = useState('HOY'); // HOY | TODOS
@@ -278,7 +281,7 @@ const manejarSeleccionViaje = (viaje) => {
     ? choferes.find((c) => c.unidad?.idUnidad === viajeSeleccionado.unidad?.idUnidad)
     : null;
 
-function generarTicketHTML(pasajero, viaje) {
+function generarTicketHTML(pasajero, viaje, escala = 1) {
   const rutaYajalonTuxtla =
     esYajalon(viaje?.origen || "") && esTuxtla(viaje?.destino || "");
 
@@ -307,6 +310,8 @@ function generarTicketHTML(pasajero, viaje) {
         width: 58mm;
         margin: 0;
         padding: 0;
+        transform: scale(${escala});       
+        transform-origin: top left;
       }
       .center { text-align: center; }
       .bold { font-weight: bold; font-size: 4mm; }
@@ -613,7 +618,8 @@ function generarTicketHTML(pasajero, viaje) {
                         <button
                           onClick={async () => {
     try {
-      const html = generarTicketHTML(p, viajeSeleccionado);
+      const escala = esTuxtla1 ? 0.85 : 1;
+      const html = generarTicketHTML(p, viajeSeleccionado, escala);
       await window.electronAPI.imprimirHTML({html,copies:  1});
       Swal.fire({ icon: 'success', title: 'Ticket impreso', timer: 1000, showConfirmButton: false });
     } catch (err) {
