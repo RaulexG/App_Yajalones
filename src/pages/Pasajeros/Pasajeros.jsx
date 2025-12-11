@@ -620,7 +620,7 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
     try {
       const escala = esTuxtla1 ? 0.85 : 1;
       const width = esTuxtla1 ? 56 : 58;
-      const margin = esTuxtla1 ? 2 : 0;
+      const margin = esTuxtla1 ? 3 : 0;
       const html = generarTicketHTML(p, viajeSeleccionado, escala, width, margin);
       await window.electronAPI.imprimirHTML({html,copies:  1});
       Swal.fire({ icon: 'success', title: 'Ticket impreso', timer: 1000, showConfirmButton: false });

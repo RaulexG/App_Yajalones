@@ -788,7 +788,7 @@ const handleSubmit = async (e) => {
                             }
                             const escala = esTuxtla ? 0.85 : 1;
                             const width = esTuxtla ? 56 : 58;
-                            const margin = esTuxtla ? 2 : 0;
+                            const margin = esTuxtla ? 3 : 0;
                             const html = generarGuiaHTML(p, v,escala, width, margin);
                             await window.electronAPI.imprimirHTML({ html, copies: 2 });
                             
