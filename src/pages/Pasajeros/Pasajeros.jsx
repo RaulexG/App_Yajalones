@@ -12,19 +12,61 @@ import Swal from 'sweetalert2';
 import { useTerminal } from "../../hooks/useTerminal";
 
 /* -------------------- Helpers -------------------- */
+const esTuxtla = (s = "") => s.toLowerCase().includes("tuxtla");
+const esYajalon = (s = "") => s.toLowerCase().includes("yajal");
+
+const getCobroPorTerminal = (viaje, pasajero) => {
+  const origenViaje = viaje?.origen || "";
+  const destinoViaje = viaje?.destino || "";
+
+  const rutaTuxtlaYajalon = esTuxtla(origenViaje) && esYajalon(destinoViaje);
+  const rutaYajalonTuxtla = esYajalon(origenViaje) && esTuxtla(destinoViaje);
+
+  const importe = Number(pasajero?.importe || 0);
+
+  // default: nada
+  let pagoTuxtla = 0;
+  let pagoYajalon = 0;
+
+  // Reglas:
+  // - tipoPago === "PAGADO": se cobra en el ORIGEN del viaje
+  // - tipoPago === "DESTINO": se cobra en el DESTINO del viaje
+  // - tipoPago === "SCLC": SIEMPRE se cobra en YAJALÓN (como dijiste)
+  if (pasajero?.tipoPago === "SCLC") {
+    pagoYajalon = importe;
+    return { pagoTuxtla, pagoYajalon };
+  }
+
+  if (pasajero?.tipoPago === "PAGADO") {
+    if (esTuxtla(origenViaje)) pagoTuxtla = importe;
+    else if (esYajalon(origenViaje)) pagoYajalon = importe;
+    return { pagoTuxtla, pagoYajalon };
+  }
+
+  if (pasajero?.tipoPago === "DESTINO") {
+    if (esTuxtla(destinoViaje)) pagoTuxtla = importe;
+    else if (esYajalon(destinoViaje)) pagoYajalon = importe;
+    return { pagoTuxtla, pagoYajalon };
+  }
+
+  // fallback por si llega algo raro
+  if (rutaTuxtlaYajalon) {
+    // si no sabemos, ponlo en origen
+    pagoTuxtla = importe;
+  } else if (rutaYajalonTuxtla) {
+    pagoYajalon = importe;
+  }
+
+  return { pagoTuxtla, pagoYajalon };
+};
+
 const formatFecha = (dLike) => {
   const d = new Date(dLike);
   if (Number.isNaN(d.getTime())) return '';
   const p = (n) => String(n).padStart(2, '0');
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
-const formatHora = (dLike) => {
-  const d = new Date(dLike);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n) => String(n).padStart(2, '0');
-  return `${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-
+const formatHora = (dLike) => { const d = new Date(dLike); if (Number.isNaN(d.getTime())) return ''; const p = (n) => String(n).padStart(2, '0'); return `${p(d.getHours())}:${p(d.getMinutes())}`; };
 const startOfToday = () => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -35,6 +77,33 @@ const startOfYesterday = () => {
   d.setDate(d.getDate() - 1);
   return d;
 };
+
+const getOrigenDestinoPasajero = (viaje, pasajero) => {
+  const origenViaje = viaje?.origen || "";
+  const destinoViaje = viaje?.destino || "";
+
+  const rutaTuxtlaYajalon = esTuxtla(origenViaje) && esYajalon(destinoViaje);
+  const rutaYajalonTuxtla = esYajalon(origenViaje) && esTuxtla(destinoViaje);
+
+  // default: lo del viaje
+  let origen = origenViaje;
+  let destino = destinoViaje;
+
+  if (pasajero?.tipoPago === "SCLC") {
+    if (rutaTuxtlaYajalon) {
+      // Tuxtla -> Yajalón, comprado en SCLC: origen SCLC, destino Yajalón
+      origen = "SCLC";
+      destino = destinoViaje; // Yajalón
+    } else if (rutaYajalonTuxtla) {
+      // Yajalón -> Tuxtla, comprado en SCLC: origen Yajalón, destino SCLC
+      origen = origenViaje;   // Yajalón
+      destino = "SCLC";
+    }
+  }
+
+  return { origen, destino };
+};
+
 
 /* -------------------- Componente -------------------- */
 export default function Pasajeros() {
@@ -54,18 +123,20 @@ export default function Pasajeros() {
   const esYajalon = (s = "") => s.toLowerCase().includes("yajal");
 
 
-  const [formulario, setFormulario] = useState({
-    nombre: '',
-    apellido: '',
-    origen: '',
-    destino: '',
-    fechaSalida: '',
-    hora: '',
-    tipo: 'ADULTO',
-    tipoPago: 'PAGADO',
-    asiento: null,
-    viaje: null
-  });
+const [formulario, setFormulario] = useState({
+  nombreCompleto: '',
+  nombre: '',
+  apellido: '',
+  origen: '',
+  destino: '',
+  fechaSalida: '',
+  hora: '',
+  tipo: 'ADULTO',
+  tipoPago: 'PAGADO',
+  asiento: null,
+  viaje: null
+});
+
 
   /* Carga inicial */
   useEffect(() => {
@@ -140,12 +211,44 @@ export default function Pasajeros() {
 
 const manejarCambioAsiento = (numero) => {
   setFormulario((prev) => ({ ...prev, asiento: numero }));
-  // ❌ antes tenías: setIdPasajeroEditando(null);
 };
+
+const manejarNombreCompleto = (e) => {
+  const value = e.target.value;
+
+  setFormulario((prev) => {
+    // Separa usando la versión "limpia" SOLO para calcular,
+    // pero NO le quites al input el valor que el usuario está escribiendo.
+    const clean = value.replace(/\s+/g, ' ').trim();
+
+    const firstSpace = clean.indexOf(' ');
+
+    let nombre = '';
+    let apellido = '';
+
+    if (firstSpace === -1) {
+      nombre = clean;
+      apellido = '';
+    } else {
+      nombre = clean.slice(0, firstSpace).trim();
+      apellido = clean.slice(firstSpace + 1).trim();
+    }
+
+    return {
+      ...prev,
+      nombreCompleto: value, //  aquí se guarda tal cual lo escribe (con espacios)
+      nombre,
+      apellido
+    };
+  });
+};
+
+
 
   const limpiarFormulario = () => {
     if (!viajeSeleccionado) {
       setFormulario({
+        nombreCompleto: '',
         nombre: '',
         apellido: '',
         origen: '',
@@ -162,12 +265,13 @@ const manejarCambioAsiento = (numero) => {
     }
 
     setFormulario({
+      nombreCompleto: '',
       nombre: '',
       apellido: '',
       origen: viajeSeleccionado.origen,
       destino: viajeSeleccionado.destino,
       fechaSalida: formatFecha(viajeSeleccionado.fechaSalida),
-      hora: formatHora(viajeSeleccionado.fechaSalida),
+      hora: '',
       tipo: 'ADULTO',
       tipoPago: 'PAGADO',
       asiento: null,
@@ -196,7 +300,7 @@ const manejarCambioAsiento = (numero) => {
       const viajeId = formulario.viaje.idViaje;
       const payload = {
         nombre: formulario.nombre.trim(),
-        apellido: formulario.apellido.trim(),
+        apellido: (formulario.apellido || 'xx').trim(),
         tipo: formulario.tipo,
         tipoPago: formulario.tipoPago,
         asiento: formulario.asiento,
@@ -230,6 +334,7 @@ const manejarCambioAsiento = (numero) => {
 
   setFormulario((prev) => ({
     ...prev,
+    nombreCompleto: `${pasajero.nombre || ''}${pasajero.apellido ? ' ' + pasajero.apellido : ''}`,
     nombre: pasajero.nombre || '',
     apellido: pasajero.apellido || '',
     tipo: pasajero.tipo || 'ADULTO',
@@ -239,7 +344,7 @@ const manejarCambioAsiento = (numero) => {
     origen: viajeSeleccionado.origen,
     destino: viajeSeleccionado.destino,
     fechaSalida: formatFecha(viajeSeleccionado.fechaSalida),
-    hora: formatHora(viajeSeleccionado.fechaSalida),
+    hora: '',
   }));
 };
 
@@ -288,7 +393,7 @@ const manejarSeleccionViaje = (viaje) => {
     origen: viaje.origen,
     destino: viaje.destino,
     fechaSalida: formatFecha(viaje.fechaSalida),
-    hora: formatHora(viaje.fechaSalida),
+    hora: '',
     asiento: null,
     tipoPago: tipoPagoDefault,
   }));
@@ -424,31 +529,20 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
           {/* IZQUIERDA */}
           <div className="min-w-0">
             <form onSubmit={manejarEnvio} className="bg-white p-4 rounded-md shadow-md text-[12px] md:text-[13px] lg:text-sm">
-              {/* Nombre */}
-              <div>
-                <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
-                <input
-                  type="text"
-                  name="nombre"
-                  value={formulario.nombre}
-                  onChange={manejarCambio}
-                  className="w-full p-2.5 rounded-md bg-orange-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  required
-                />
-              </div>
-  
-              {/* Apellido */}
-              <div className="mt-2.5">
-                <label className="block text-orange-700 font-semibold mb-1">Apellido</label>
-                <input
-                  type="text"
-                  name="apellido"
-                  value={formulario.apellido}
-                  onChange={manejarCambio}
-                  className="w-full p-2.5 rounded-md bg-orange-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  required
-                />
-              </div>
+              {/* Nombre completo */}
+                <div>
+                  <label className="block text-orange-700 font-semibold mb-1">Nombre</label>
+                  <input
+                    type="text"
+                    name="nombreCompleto"
+                    value={formulario.nombreCompleto}
+                    onChange={manejarNombreCompleto}
+                    className="w-full p-2.5 rounded-md bg-orange-100 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Ej: Juan Pérez López"
+                    required
+                  />
+
+                </div>
   
               {/* Tipo de boleto / pago */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2.5">
@@ -607,103 +701,124 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
               <thead className="bg-[#FECF9D] text-orange-700 sticky top-0">
                     <tr>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Folio</th>
-                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Unidad</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Asiento</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C] whitespace-nowrap">Fecha de salida</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Nombre</th>
-                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Pago</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Tipo</th>
-                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Importe</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Origen</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Destino</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Pago Tuxtla</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Pago Yajalon</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Acciones</th>
                     </tr>
                   </thead>
   
                   <tbody className="align-top">
                     {viajeSeleccionado?.pasajeros?.length > 0 ? (
-                      viajeSeleccionado.pasajeros.map((p, index) => (
-                        <tr key={p.folio ?? `${p.idPasajero}-${index}`} className={`hover:bg-orange-50 ${index % 2 === 0 ? 'bg-orange-50/40' : 'bg-white'}`}>
-                          <td className="px-2 py-1.5 text-center break-words">{p.folio ?? '-'}</td>
-                          <td className="px-2 py-1.5 text-center break-words">{viajeSeleccionado.unidad?.nombre || 'N/A'}</td>
-                          <td className="px-2 py-1.5 text-center">{p.asiento}</td>
-                          <td className="px-2 py-1.5 text-center whitespace-nowrap">
-                            {formatFecha(viajeSeleccionado.fechaSalida)} {formatHora(viajeSeleccionado.fechaSalida)}
-                          </td>
-                          <td className="px-2 py-1.5 text-center overflow-hidden text-ellipsis whitespace-nowrap">
-                            {`${p.nombre ?? ''} ${p.apellido ?? ''}`.trim()}
-                          </td>
-                          <td className="px-2 py-1.5 text-center break-words">{p.tipoPago}</td>
-                          <td className="px-2 py-1.5 text-center break-words">{p.tipo}</td>
-                          <td className="px-2 py-1.5 text-center font-semibold">${parseFloat(p.importe || 0).toFixed(2)}</td>
-                          <td className="p-3 text-center">
-                        {/* Botón Ticket*/}
-                        <button
-                          onClick={async () => {
-    try {
-      const escala = esTuxtla1 ? 0.85 : 1;
-      const width = esTuxtla1 ? 54 : 58;
-      const margin = esTuxtla1 ? 2.5 : 0;
-      const html = generarTicketHTML(p, viajeSeleccionado, escala, width, margin);
-      await window.electronAPI.imprimirHTML({html,copies:  1});
-      Swal.fire({ icon: 'success', title: 'Ticket impreso', timer: 1000, showConfirmButton: false });
-    } catch (err) {
-      console.error(err);
-      Swal.fire({ icon: 'error', title: 'Error al imprimir ticket', timer: 1000,text: err.message || ''});
-    }
-  }}
-  className="p-2 text-[#C14600] hover:text-orange-800 transition"
-  title="Imprimir ticket"
-  aria-label="Imprimir ticket"
->
-                          <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
-                            <g fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />
-                              <path d="M6 20.306V12c0-.943 0-1.414.293-1.707S7.057 10 8 10h8c.943 0 1.414 0 1.707.293S18 11.057 18 12v8.306c0 .317 0 .475-.104.55s-.254.025-.554-.075l-2.184-.728c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.684.894c-.078.026-.117.04-.158.04s-.08-.014-.158-.04l-2.684-.894c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.184.728c-.3.1-.45.15-.554.075S6 20.623 6 20.306ZM18 7V5.88c0-1.008 0-1.512-.196-1.897a1.8 1.8 0 0 0-.787-.787C16.632 3 16.128 3 15.12 3H8.88c-1.008 0-1.512 0-1.897.196a1.8 1.8 0 0 0-.787.787C6 4.368 6 4.872 6 5.88V7" />
-                              <path strokeLinecap="round" d="M10 14h3m-3 3h4.5" />
-                            </g>
-                          </svg>
-                        </button>
+                      viajeSeleccionado.pasajeros.map((p, index) => {
+                        const { origen, destino } = getOrigenDestinoPasajero(viajeSeleccionado, p);
+                        const { pagoTuxtla, pagoYajalon } = getCobroPorTerminal(viajeSeleccionado, p);
 
-                        {/* Botón Editar */}
-                        <button
-                          onClick={() => empezarEdicionPasajero(p)}
-                          aria-label="Editar"
-                        title="Editar"
-                        className="p-2 rounded-md hover:bg-orange-100 text-[#C14600]"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 512 512"
-                          className="w-5 h-5"
-                        >
-                          <path
-                            fill="currentColor"
-                            d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1L377.9 88L407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9l46.1 46.1l-134.3 134.2c-2.9 2.9-6.5 5-10.4 6.1L186.9 325l16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25c-28.1-28.1-73.7-28.1-101.8 0M88 64c-48.6 0-88 39.4-88 88v272c0 48.6 39.4 88 88 88h272c48.6 0 88-39.4 88-88V312c0-13.3-10.7-24-24-24s-24 10.7-24 24v112c0 22.1-17.9 40-40 40H88c-22.1 0-40-17.9-40-40V152c0-22.1 17.9-40 40-40h112c13.3 0 24-10.7 24-24s-10.7-24-24-24z"
-                          />
-                        </svg>
-                        </button>
-                        
-                        {/* Botón Eliminar */}
-                        <button
-                          onClick={() => eliminarPasajero(p.idPasajero)}
-                          className="p-2 text-[#C14600] hover:text-orange-800 transition"
-                          title="Eliminar"
-                          aria-label="Eliminar"
-                        >
-                          {/* Icono eliminar */}
-                          <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
-                          </svg>
-                        </button>
-                      </td>
-                        </tr>
-                      ))
+                        return (
+                          <tr
+                            key={p.folio ?? `${p.idPasajero}-${index}`}
+                            className={`hover:bg-orange-50 ${index % 2 === 0 ? 'bg-orange-50/40' : 'bg-white'}`}
+                          >
+                            <td className="px-2 py-1.5 text-center break-words">{p.folio ?? '-'}</td>
+                            <td className="px-2 py-1.5 text-center">{p.asiento}</td>
+                            <td className="px-2 py-1.5 text-center whitespace-nowrap">
+                              {formatFecha(viajeSeleccionado.fechaSalida)}
+                            </td>
+                            <td className="px-2 py-1.5 text-center overflow-hidden text-ellipsis whitespace-nowrap">
+                              {`${p.nombre ?? ''} ${p.apellido ?? ''}`.trim()}
+                            </td>
+                            <td className="px-2 py-1.5 text-center break-words">{p.tipo}</td>
+
+                            {/* ORIGEN / DESTINO calculados */}
+                            <td className="px-2 py-1.5 text-center break-words">{origen}</td>
+                            <td className="px-2 py-1.5 text-center break-words">{destino}</td>
+
+                            <td className="px-2 py-1.5 text-center font-semibold">
+                                {pagoTuxtla > 0 ? `$${pagoTuxtla.toFixed(2)}` : "-"}
+                              </td>
+                              <td className="px-2 py-1.5 text-center font-semibold">
+                                {pagoYajalon > 0 ? `$${pagoYajalon.toFixed(2)}` : "-"}
+                              </td>
+                            <td className="px-1 py-1.5 text-center">
+                              {/* Botón Ticket */}
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const escala = esTuxtla1 ? 0.5 : 8;
+                                    const width = esTuxtla1 ? 54 : 58;
+                                    const margin = esTuxtla1 ? 2.5 : 0;
+                                    const html = generarTicketHTML(p, viajeSeleccionado, escala, width, margin);
+                                    await window.electronAPI.imprimirHTML({ html, copies: 1 });
+                                    Swal.fire({ icon: 'success', title: 'Ticket impreso', timer: 1000, showConfirmButton: false });
+                                  } catch (err) {
+                                    console.error(err);
+                                    Swal.fire({ icon: 'error', title: 'Error al imprimir ticket', timer: 1000, text: err.message || '' });
+                                  }
+                                }}
+                                className="p-1 text-[#C14600] hover:text-orange-800 transition"
+                                title="Imprimir ticket"
+                                aria-label="Imprimir ticket"
+                              >
+                                {/* icono */}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
+                                  <g fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18.353 14H19c.943 0 1.414 0 1.707-.293S21 12.943 21 12v-1c0-1.886 0-2.828-.586-3.414S18.886 7 17 7H7c-1.886 0-2.828 0-3.414.586S3 9.114 3 11v2c0 .471 0 .707.146.854C3.293 14 3.53 14 4 14h1.647" />
+                                    <path d="M6 20.306V12c0-.943 0-1.414.293-1.707S7.057 10 8 10h8c.943 0 1.414 0 1.707.293S18 11.057 18 12v8.306c0 .317 0 .475-.104.55s-.254.025-.554-.075l-2.184-.728c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.684.894c-.078.026-.117.04-.158.04s-.08-.014-.158-.04l-2.684-.894c-.078-.026-.117-.04-.158-.04s-.08.014-.158.04l-2.184.728c-.3.1-.45.15-.554.075S6 20.623 6 20.306ZM18 7V5.88c0-1.008 0-1.512-.196-1.897a1.8 1.8 0 0 0-.787-.787C16.632 3 16.128 3 15.12 3H8.88c-1.008 0-1.512 0-1.897.196a1.8 1.8 0 0 0-.787.787C6 4.368 6 4.872 6 5.88V7" />
+                                    <path strokeLinecap="round" d="M10 14h3m-3 3h4.5" />
+                                  </g>
+                                </svg>
+                              </button>
+
+                              {/* Editar */}
+                              <button
+                                onClick={() => empezarEdicionPasajero(p)}
+                                aria-label="Editar"
+                                title="Editar"
+                                className="p-1 rounded-md hover:bg-orange-100 text-[#C14600]"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 512 512"
+                                  className="w-5 h-5"
+                                >
+                                  <path
+                                    fill="currentColor"
+                                    d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1L377.9 88L407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9l46.1 46.1l-134.3 134.2c-2.9 2.9-6.5 5-10.4 6.1L186.9 325l16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25c-28.1-28.1-73.7-28.1-101.8 0M88 64c-48.6 0-88 39.4-88 88v272c0 48.6 39.4 88 88 88h272c48.6 0 88-39.4 88-88V312c0-13.3-10.7-24-24-24s-24 10.7-24 24v112c0 22.1-17.9 40-40 40H88c-22.1 0-40-17.9-40-40V152c0-22.1 17.9-40 40-40h112c13.3 0 24-10.7 24-24s-10.7-24-24-24z"
+                                  />
+                                </svg>
+                              </button>
+
+                              {/* Eliminar */}
+                              <button
+                                onClick={() => eliminarPasajero(p.idPasajero)}
+                                className="p-1 text-[#C14600] hover:text-orange-800 transition"
+                                title="Eliminar"
+                                aria-label="Eliminar"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="1.8em" height="1.8em" viewBox="0 0 24 24">
+                                  <path
+                                    fill="currentColor"
+                                    d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                  />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ); 
+                      })   
                     ) : (
                       <tr>
-                        <td colSpan={9} className="text-center text-gray-500 p-4">
+                        <td colSpan={10} className="text-center text-gray-500 p-4">
                           No hay pasajeros registrados
                         </td>
                       </tr>
                     )}
+
                   </tbody>
                 </table>
               </div>
