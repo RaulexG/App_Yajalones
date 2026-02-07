@@ -749,7 +749,7 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
                               <button
                                 onClick={async () => {
                                   try {
-                                    const escala = esTuxtla1 ? 0.5 : 8;
+                                    const escala = esTuxtla1 ? 0.5 : 1;
                                     const width = esTuxtla1 ? 54 : 58;
                                     const margin = esTuxtla1 ? 2.5 : 0;
                                     const html = generarTicketHTML(p, viajeSeleccionado, escala, width, margin);
