@@ -171,6 +171,17 @@ export const ObtenerViajePorId = async (id) => {
   }
 }
 
+// Actualizar unidad de viaje
+export const ActualizarUnidadDeViaje = async (idViaje, idUnidad) => {
+  try {
+    const response = await axios.put(`/viajes/${idViaje}/actualizar/unidad/${idUnidad}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error actualizando unidad de viaje:', error);
+    throw error;
+  }
+};
+
 //Paquetes------------------------------------------------------------
 // Listar paquetes
 export const ListarPaquetes = async () => {

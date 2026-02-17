@@ -12,6 +12,7 @@ import {
   EliminarViaje,
   EliminarTurno,
   EliminarUnidad,
+  ActualizarUnidadDeViaje,
 } from '../../services/Admin/adminService';
 import Swal from 'sweetalert2';
 
@@ -301,6 +302,70 @@ export default function Ajustes() {
 
   const cerrarTabla = () => setMostrarTabla(null);
 
+  const handleCambiarUnidadViaje = async (viaje) => {
+  if (!viaje?.idViaje) return;
+
+  // Si no hay unidades cargadas, evita abrir modal vacío
+  if (!unidades?.length) {
+    Swal.fire({ icon: 'warning', title: 'Sin unidades', text: 'No hay unidades registradas.' });
+    return;
+  }
+
+  const optionsHtml = `
+    <select id="unidadSelect" class="swal2-select" style="width: 80%">
+      ${unidades
+        .map(
+          (u) => `
+          <option value="${u.idUnidad}" ${viaje?.unidad?.idUnidad === u.idUnidad ? 'selected' : ''}>
+            ${u.nombre ?? `Unidad ${u.idUnidad}`}
+          </option>`
+        )
+        .join('')}
+    </select>
+  `;
+
+  const res = await Swal.fire({
+    icon: 'question',
+    title: 'Cambiar unidad del viaje',
+    html: optionsHtml,
+    showCancelButton: true,
+    confirmButtonText: 'Actualizar',
+    cancelButtonText: 'Cancelar',
+    reverseButtons: true,
+    preConfirm: () => {
+      const val = document.getElementById('unidadSelect')?.value;
+      const idUnidad = parseInt(val, 10);
+      if (Number.isNaN(idUnidad)) {
+        Swal.showValidationMessage('Selecciona una unidad válida');
+        return null;
+      }
+      return idUnidad;
+    },
+  });
+
+  if (!res.isConfirmed) return;
+
+  const idUnidadNueva = res.value;
+
+  // Si elige la misma unidad, no hagas llamada
+  if (viaje?.unidad?.idUnidad === idUnidadNueva) {
+    Swal.fire({ icon: 'info', title: 'Sin cambios', text: 'Seleccionaste la misma unidad.' });
+    return;
+  }
+
+  const loader = createSwalLoader(10000);
+  loader.start('Actualizando...', 'Cambiando unidad del viaje');
+
+  try {
+    await ActualizarUnidadDeViaje(viaje.idViaje, idUnidadNueva);
+    loader.success('Listo', 'Unidad del viaje actualizada');
+    await cargarDatos();
+  } catch (err) {
+    loader.failure('Error', err?.response?.data?.message || 'No se pudo actualizar la unidad del viaje');
+  }
+};
+
+
   /* -------------------- Tabla Modal -------------------- */
   const TablaDatos = () => {
     const columnas = {
@@ -518,54 +583,77 @@ export default function Ajustes() {
     
                         // Viajes: última celda con acciones Editar / Eliminar
                         if (esUltima && mostrarTabla === 'viajes') {
-                          const viaje = cell;
-                          return (
-                            <td key={i} className="px-4 py-2 text-right">
-                              {/* Botón Eliminar */}
-                              <button
-                                onClick={async () => {
-                                  const result = await Swal.fire({
-                                    icon: 'question',
-                                    title: '¿Seguro que quieres eliminar el viaje?',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'Sí',
-                                    cancelButtonText: 'No',
-                                    reverseButtons: true,
-                                  });
-                                  if (result.isConfirmed) {
-                                    try {
-                                      await EliminarViaje(viaje.idViaje);
-                                      await cargarDatos();
-                                      Swal.fire({
-                                        icon: 'success',
-                                        title: 'Viaje eliminado',
-                                        timer: 1500,
-                                        showConfirmButton: false,
-                                      });
-                                    } catch (err) {
-                                      Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error al eliminar el viaje',
-                                        timer: 1500,
-                                        showConfirmButton: false,
-                                      });
+                            const viaje = cell;
+                            return (
+                              <td key={i} className="px-4 py-2 text-right whitespace-nowrap">
+                                {/* Cambiar unidad */}
+                                <button
+                                  onClick={async () => {
+                                    cerrarTabla(); // opcional: cerrar modal antes de abrir SweetAlert
+                                    await handleCambiarUnidadViaje(viaje);
+                                  }}
+                                  title="Cambiar unidad"
+                                  className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100
+                                            focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 cursor-pointer
+                                            hover:scale-110 transition-transform mr-2"
+                                >
+                                  {/* Ícono camioncito / refresh (puedes cambiarlo) */}
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                    <path
+                                      fill="currentColor"
+                                      d="M3 7h11v8H3zm12 2h3l3 3v3h-6zM6 19a2 2 0 1 0 0-4a2 2 0 0 0 0 4m12 0a2 2 0 1 0 0-4a2 2 0 0 0 0 4"
+                                    />
+                                  </svg>
+                                </button>
+
+                                {/* Eliminar viaje */}
+                                <button
+                                  onClick={async () => {
+                                    const result = await Swal.fire({
+                                      icon: 'question',
+                                      title: '¿Seguro que quieres eliminar el viaje?',
+                                      showCancelButton: true,
+                                      confirmButtonText: 'Sí',
+                                      cancelButtonText: 'No',
+                                      reverseButtons: true,
+                                    });
+                                    if (result.isConfirmed) {
+                                      try {
+                                        await EliminarViaje(viaje.idViaje);
+                                        await cargarDatos();
+                                        Swal.fire({
+                                          icon: 'success',
+                                          title: 'Viaje eliminado',
+                                          timer: 1500,
+                                          showConfirmButton: false,
+                                        });
+                                      } catch (err) {
+                                        Swal.fire({
+                                          icon: 'error',
+                                          title: 'Error al eliminar el viaje',
+                                          timer: 1500,
+                                          showConfirmButton: false,
+                                        });
+                                      }
                                     }
-                                  }
-                                }}
-                                aria-label="Eliminar viaje"
-                                title="Eliminar"
-                                className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 ml-2 cursor-pointer hover:scale-120 transition-transform"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
-                                  <path
-                                    fill="currentColor"
-                                    d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
-                                  />
-                                </svg>
-                              </button>
-                            </td>
-                          );
-                        }
+                                  }}
+                                  aria-label="Eliminar viaje"
+                                  title="Eliminar"
+                                  className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-[#C14600] hover:bg-orange-100
+                                            focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1 cursor-pointer
+                                            hover:scale-110 transition-transform"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5">
+                                    <path
+                                      fill="currentColor"
+                                      d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z"
+                                    />
+                                  </svg>
+                                </button>
+                              </td>
+                            );
+                          }
+
     
                         // Celdas normales
                         return (
