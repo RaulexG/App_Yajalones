@@ -401,6 +401,30 @@ const manejarSeleccionViaje = (viaje) => {
   setAsientosOcupados((viaje.pasajeros || []).map((p) => p.asiento));
   setIdPasajeroEditando(null);
 };
+const getLugarPago = (viaje, pasajero) => {
+  const origenViaje = viaje?.origen || "";
+  const destinoViaje = viaje?.destino || "";
+
+  // SCLC: siempre se cobra/paga en Yajalón (según tu regla)
+  if (pasajero?.tipoPago === "SCLC") return "Yajalón";
+
+  // PAGADO: pagó en el ORIGEN del viaje
+  if (pasajero?.tipoPago === "PAGADO") {
+    if (esTuxtla(origenViaje)) return "Tuxtla";
+    if (esYajalon(origenViaje)) return "Yajalón";
+    return origenViaje || "Origen";
+  }
+
+  // DESTINO: paga en el DESTINO del viaje
+  if (pasajero?.tipoPago === "DESTINO") {
+    if (esTuxtla(destinoViaje)) return "Tuxtla";
+    if (esYajalon(destinoViaje)) return "Yajalón";
+    return destinoViaje || "Destino";
+  }
+
+  return "N/D";
+};
+
 
 
   const choferAsignado = viajeSeleccionado
@@ -408,60 +432,63 @@ const manejarSeleccionViaje = (viaje) => {
     : null;
 
 function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) {
-  const rutaYajalonTuxtla =
-    esYajalon(viaje?.origen || "") && esTuxtla(viaje?.destino || "");
+  const { origen, destino } = getOrigenDestinoPasajero(viaje, pasajero);
+  const lugarPago = getLugarPago(viaje, pasajero);
 
-  // Destino que se imprimirá en el ticket
-  const destinoTicket =
-    rutaYajalonTuxtla && pasajero.tipoPago === "SCLC"
-      ? "SCLC"           // pasajero baja en San Cristóbal
-      : viaje.destino; 
+  const fechaSalida = new Date(viaje?.fechaSalida);
+  const fechaHoraStr = Number.isNaN(fechaSalida.getTime())
+    ? ""
+    : `${fechaSalida.toLocaleDateString("es-MX")} ${fechaSalida.toLocaleTimeString("es-MX", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+
+  const costo = Number(pasajero?.importe ?? 0).toFixed(2);
+
   return `
   <html>
   <head>
     <style>
-      @page {
-        size: auto;
-        margin: 0;
-      }
+      @page { size: auto; margin: 0; }
       body {
         margin: ${margin}mm;
         padding: 0;
-        width: ${width}mm; /* ancho seguro para impresora 58mm */
+        width: ${width}mm;
         font-family: monospace;
-        font-size: 3.2mm; /* base más grande */
-        line-height: 1.4; /* alarga verticalmente */
+        font-size: 3.2mm;
+        line-height: 1.35;
       }
       .ticket {
         width: ${width}mm;
         margin: ${margin}mm;
         padding: 0;
-        transform: scale(${escala});       
+        transform: scale(${escala});
         transform-origin: top left;
       }
       .center { text-align: center; }
       .bold { font-weight: bold; font-size: 4mm; }
+      .sep {
+        border-top: 2px dashed #000;
+        margin: 10px 0;
+      }
+      .data {
+        font-size: 3.4mm;
+        border-top: 2px dashed #000;
+        border-bottom: 2px dashed #000;
+        padding: 10px 0;
+      }
+      .row { margin: 3px 0; }
+      .label { font-weight: bold; }
       .box {
         border: 2px dashed #000;
-        margin: 24px 0;
-        padding: 12px;
-        font-size: 2.3mm;
+        margin: 14px 0;
+        padding: 10px;
+        font-size: 2.6mm;
         text-align: center;
-      }
-      .firma {
-        margin: 60px 0 30px 0;
-        text-align: center;
-      }
-      .firma-line {
-        border-top: 2px solid #000;
-        width: 20mm;
-        margin: 0 auto 8px auto;
-      }
-      .firma-text {
-        font-size: 2.3mm;
       }
     </style>
   </head>
+
   <body>
     <div class="ticket">
       <div class="center bold">
@@ -469,30 +496,30 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
         Los Yajalones S.C. de R.L. de C.V.
       </div>
 
-      <div class="center" style="font-size:3.6mm; margin-bottom:24px;">
+      <div class="center" style="font-size:3.2mm; margin-bottom:10px;">
         R.F.C. UTY-090617-ANA<br>
         2da. Calle Poniente Norte S/N, Centro, Yajalón, Chiapas<br>
-        Tel: 919 67 4 2114<br>
-        Whatsapp:919 145 9711
+        Tel: 919 67 4 2114 — Whatsapp: 919 145 9711
       </div>
 
-      <div class="center" style="font-size:3.6mm; margin-bottom:24px;">
+      <div class="center" style="font-size:3.2mm; margin-bottom:10px;">
         Terminal Tuxtla Gutiérrez<br>
         15 Oriente sur #817 entre 7ma y 8va sur<br>
         Tel: 961 106 6523
       </div>
 
-      <div style="font-size:3.6mm; border-top:2px dashed #000; border-bottom:2px dashed #000; padding:16px 0; margin-bottom:24px;">
-        Fecha/Hora:${new Date(viaje.fechaSalida).toLocaleDateString("es-MX")} 
-        ${new Date(viaje.fechaSalida).toLocaleTimeString("es-MX", {hour: "2-digit", minute:"2-digit"})}<br>
-        Folio: ${pasajero.folio ?? ""}<br>
-        Asiento: ${pasajero.asiento ?? ""}<br>
-        Nombre: ${pasajero.nombre} ${pasajero.apellido}<br>
-        Destino: ${destinoTicket}<br>
-        Costo: $${Number(pasajero.importe ?? 0).toFixed(2)}
+      <div class="data">
+        <div class="row"><span class="label">Fecha:</span> ${fechaHoraStr}</div>
+        <div class="row"><span class="label">Folio:</span> ${pasajero?.folio ?? ""}</div>
+        <div class="row"><span class="label">Asiento:</span> ${pasajero?.asiento ?? ""}</div>
+        <div class="row"><span class="label">Nombre:</span> ${(pasajero?.nombre ?? "")} ${(pasajero?.apellido ?? "")}</div>
+        <div class="row"><span class="label">Origen:</span> ${origen ?? ""}</div>
+        <div class="row"><span class="label">Destino:</span> ${destino ?? ""}</div>
+        <div class="row"><span class="label">Lugar de pago:</span> ${lugarPago}</div>
+        <div class="row"><span class="label">Costo del boleto:</span> $${costo}</div>
       </div>
 
-      <div style="font-size:3.2mm; margin-top:20px; text-align:justify;">
+      <div style="font-size:3.0mm; margin-top:10px; text-align:justify;">
         Favor de estar 20 minutos antes de la salida.<br>
         Verifique fecha y hora; la empresa no se hace responsable.
       </div>
@@ -502,7 +529,7 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
         Consérvelo para validación.
       </div>
 
-      <div class="center" style="font-size:3.2mm; margin-top:20px;">
+      <div class="center" style="font-size:3.0mm; margin-top:10px;">
         Fecha de venta: ${new Date().toLocaleDateString("es-MX")}
       </div>
     </div>
@@ -510,6 +537,7 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
   </html>
   `;
 }
+
 
 
 
