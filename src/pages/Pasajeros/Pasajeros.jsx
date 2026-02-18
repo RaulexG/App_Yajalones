@@ -60,6 +60,27 @@ const getCobroPorTerminal = (viaje, pasajero) => {
   return { pagoTuxtla, pagoYajalon };
 };
 
+const isTuxtlaToYajalon = (viaje) => esTuxtla(viaje?.origen || "") && esYajalon(viaje?.destino || "");
+const isYajalonToTuxtla = (viaje) => esYajalon(viaje?.origen || "") && esTuxtla(viaje?.destino || "");
+
+const calcularTipoPagoDesdeUI = (viaje, f) => {
+  if (!viaje) return "PAGADO";
+
+  const tuxtlaToYaj = isTuxtlaToYajalon(viaje);
+  const yajToTuxtla = isYajalonToTuxtla(viaje);
+
+  // bandera SCLC según tu negocio
+  if (tuxtlaToYaj && f.origenUI === "SCLC") return "SCLC";
+  if (yajToTuxtla && f.destinoUI === "SCLC") return "SCLC";
+
+  // si no es SCLC, depende del lugar de pago vs ruta
+  if (f.lugarPagoUI === "Tuxtla" && esTuxtla(viaje.origen)) return "PAGADO";
+  if (f.lugarPagoUI === "Yajalón" && esYajalon(viaje.origen)) return "PAGADO";
+
+  return "DESTINO";
+};
+
+
 const formatFecha = (dLike) => {
   const d = new Date(dLike);
   if (Number.isNaN(d.getTime())) return '';
@@ -132,10 +153,68 @@ const [formulario, setFormulario] = useState({
   fechaSalida: '',
   hora: '',
   tipo: 'ADULTO',
+  origenUI: '',
+  destinoUI: '',
+  lugarPagoUI: '',
   tipoPago: 'PAGADO',
   asiento: null,
   viaje: null
 });
+
+const opcionesUI = useMemo(() => {
+  if (!viajeSeleccionado) {
+    return {
+      origen: [],
+      destino: [],
+      lugarPago: ["Tuxtla", "Yajalón"],
+    };
+  }
+
+  const tuxtlaToYaj = isTuxtlaToYajalon(viajeSeleccionado);
+  const yajToTuxtla = isYajalonToTuxtla(viajeSeleccionado);
+
+  if (tuxtlaToYaj) {
+    return {
+      origen: ["Tuxtla", "SCLC"],
+      destino: ["Yajalón"],
+      lugarPago: ["Tuxtla", "Yajalón"],
+    };
+  }
+
+  if (yajToTuxtla) {
+    return {
+      origen: ["Yajalón"],
+      destino: ["Tuxtla", "SCLC"],
+      lugarPago: ["Tuxtla", "Yajalón"],
+    };
+  }
+
+  // fallback si llega otra ruta rara
+  return {
+    origen: ["Tuxtla", "Yajalón", "SCLC"],
+    destino: ["Tuxtla", "Yajalón", "SCLC"],
+    lugarPago: ["Tuxtla", "Yajalón"],
+  };
+}, [viajeSeleccionado]);
+
+useEffect(() => {
+  if (!viajeSeleccionado) return;
+
+  setFormulario((prev) => {
+    // si el valor actual no está en opciones válidas, lo corrige
+    const fix = (val, opts) => (opts.includes(val) ? val : (opts[0] || ''));
+
+    const origenUI = fix(prev.origenUI, opcionesUI.origen);
+    const destinoUI = fix(prev.destinoUI, opcionesUI.destino);
+    const lugarPagoUI = fix(prev.lugarPagoUI, opcionesUI.lugarPago);
+
+    // regla extra: si destinoUI es SCLC => pago siempre Yajalón (como tu regla)
+    const lugarPagoFinal =
+      prev.tipoPago === "SCLC" || destinoUI === "SCLC" ? "Yajalón" : lugarPagoUI;
+
+    return { ...prev, origenUI, destinoUI, lugarPagoUI: lugarPagoFinal };
+  });
+}, [viajeSeleccionado, opcionesUI.origen, opcionesUI.destino, opcionesUI.lugarPago]);
 
 
   /* Carga inicial */
@@ -180,6 +259,9 @@ const [formulario, setFormulario] = useState({
     { label: "San Cristóbal", value: "SCLC" },
   ];
 }, [viajeSeleccionado]);
+
+
+
 
 
   /* Viajes filtrados por turno + fecha */
@@ -256,6 +338,9 @@ const manejarNombreCompleto = (e) => {
         fechaSalida: '',
         hora: '',
         tipo: 'ADULTO',
+        origenUI: '',
+        destinoUI: '',
+        lugarPagoUI: '',
         tipoPago: 'PAGADO',
         asiento: null,
         viaje: null
@@ -302,7 +387,7 @@ const manejarNombreCompleto = (e) => {
         nombre: formulario.nombre.trim(),
         apellido: (formulario.apellido || 'xx').trim(),
         tipo: formulario.tipo,
-        tipoPago: formulario.tipoPago,
+        tipoPago: calcularTipoPagoDesdeUI(viajeSeleccionado, formulario),
         asiento: formulario.asiento,
         idViaje: viajeId
       };
@@ -387,7 +472,15 @@ const manejarSeleccionViaje = (viaje) => {
       ? "PAGADO" // si el origen es Yajalón
       : "PAGADO"; // fallback
 
-  setFormulario((prev) => ({
+setFormulario((prev) => {
+  const tuxtlaToYaj = isTuxtlaToYajalon(viaje);
+  const yajToTuxtla = isYajalonToTuxtla(viaje);
+
+  const origenUI = tuxtlaToYaj ? "Tuxtla" : "Yajalón";
+  const destinoUI = tuxtlaToYaj ? "Yajalón" : "Tuxtla";
+  const lugarPagoUI = tuxtlaToYaj ? "Tuxtla" : "Yajalón";
+
+  return {
     ...prev,
     viaje,
     origen: viaje.origen,
@@ -395,8 +488,13 @@ const manejarSeleccionViaje = (viaje) => {
     fechaSalida: formatFecha(viaje.fechaSalida),
     hora: '',
     asiento: null,
-    tipoPago: tipoPagoDefault,
-  }));
+    origenUI,
+    destinoUI,
+    lugarPagoUI,
+    tipoPago: "PAGADO",
+  };
+});
+
 
   setAsientosOcupados((viaje.pasajeros || []).map((p) => p.asiento));
   setIdPasajeroEditando(null);
@@ -587,23 +685,59 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
                     <option value="INCENT_INAPAM">INAPAM</option>
                   </select>
                 </div>
+                {/* LUGAR DE PAGO */}
                 <div>
-                  <label className="block text-orange-700 font-semibold mb-1">Tipo de pago</label>
+                  <label className="block text-orange-700 font-semibold mb-1">Lugar de pago</label>
                   <select
-                    name="tipoPago"
-                    value={formulario.tipoPago}
-                    onChange={manejarCambio}
+                    name="lugarPagoUI"
+                    value={formulario.lugarPagoUI}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, lugarPagoUI: e.target.value }))}
                     className="w-full p-2 rounded-md bg-orange-100 text-gray-800"
-                    disabled={!viajeSeleccionado} // opcional: obliga a elegir viaje primero
+                    disabled={!viajeSeleccionado || formulario.destinoUI === "SCLC"} // si baja en SCLC, pago fijo en Yajalón
                   >
-                    {pagoOptions.map(opt => (
-                      <option key={opt.label} value={opt.value}>{opt.label}</option>
+                    {opcionesUI.lugarPago.map(o => (
+                      <option key={o} value={o}>{o}</option>
                     ))}
                   </select>
                 </div>
 
               </div>
-  
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2.5">
+                {/* ORIGEN */}
+                <div>
+                  <label className="block text-orange-700 font-semibold mb-1">Origen</label>
+                  <select
+                    name="origenUI"
+                    value={formulario.origenUI}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, origenUI: e.target.value }))}
+                    className="w-full p-2 rounded-md bg-orange-100 text-gray-800"
+                    disabled={!viajeSeleccionado}
+                  >
+                    {opcionesUI.origen.map(o => (
+                      <option key={o} value={o}>{o === "SCLC" ? "San Cristóbal" : o}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* DESTINO */}
+                <div>
+                  <label className="block text-orange-700 font-semibold mb-1">Destino</label>
+                  <select
+                    name="destinoUI"
+                    value={formulario.destinoUI}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, destinoUI: e.target.value }))}
+                    className="w-full p-2 rounded-md bg-orange-100 text-gray-800"
+                    disabled={!viajeSeleccionado}
+                  >
+                    {opcionesUI.destino.map(o => (
+                      <option key={o} value={o}>{o === "SCLC" ? "San Cristóbal" : o}</option>
+                    ))}
+                  </select>
+                </div>
+
+                
+              </div>
+
               {/* Asientos */}
               <div className="bg-orange-50 p-3 rounded-md mt-3">
                 <p className="text-orange-700 font-semibold mb-2">Seleccionar asiento</p>
