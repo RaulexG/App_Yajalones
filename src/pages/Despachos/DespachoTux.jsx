@@ -91,21 +91,51 @@ export default function DespachosTuxtla() {
     return `${dia} de ${meses[fecha.getMonth()]}, ${fecha.getFullYear()}`;
   };
 
+  const norm = (s = "") => String(s || "").toLowerCase().trim();
+
+const terminalFromLugarPago = (lugarPago) => {
+  const x = norm(lugarPago);
+  if (x.includes("yaj")) return "YAJALON";
+  if (x.includes("tux")) return "TUXTLA";
+  return "OTRO";
+};
+
+const montoPasajero = (p) => N(p?.importe ?? p?.monto ?? p?.precio ?? 0);
+
+const splitPagoPorTerminal = (p) => {
+  const t = terminalFromLugarPago(p?.lugarPago);
+  const m = montoPasajero(p);
+  return {
+    yajalon: t === "YAJALON" ? m : 0,
+    tuxtla:  t === "TUXTLA"  ? m : 0,
+  };
+};
+
+const montoPaquete = (p) => N(p?.importe ?? p?.monto ?? 0);
+
+
   const N = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
 
   const v                      = viajeSeleccionado || {};
-  const totalPasajeros         = N(v.totalPasajeros);
-  const totalPaqueteria        = N(v.totalPaqueteria);
-  const paquetesPorCobrar      = N(v.totalPorCobrar);
-  const pagadoEnTuxtla         = N(v.totalPagadoTuxtla);
-  const pagadoEnYajalon        = N(v.totalPagadoYajalon);
-  const pagaAbordarSCLC        = N(v.totalPagadoSclc);
+  const totalPasajes = pasajeros.reduce((acc, p) => acc + montoPasajero(p), 0);
+  const totalPaqueteria = paquetes.reduce((acc, p) => acc + montoPaquete(p), 0);
 
-  const totalDescuentos = N(v.descuentos?.reduce((sum, d) => sum + N(d.importe), 0) );
+  const paquetesPorCobrar = paquetes
+    .filter(p => !!p.porCobrar)
+    .reduce((acc, p) => acc + montoPaquete(p), 0);
 
-  // TOTAL (Tuxtla): todo – (Yajalón) – comisión – por cobrar – descuentos
-  const total = (totalPasajeros + totalPaqueteria - pagadoEnYajalon)
-  - paquetesPorCobrar - totalDescuentos;
+  const pagadoEnYajalon = pasajeros.reduce((acc, p) => acc + splitPagoPorTerminal(p).yajalon, 0);
+  const pagadoEnTuxtla  = pasajeros.reduce((acc, p) => acc + splitPagoPorTerminal(p).tuxtla, 0);
+
+  // descuentos: usa el estado local
+  const totalDescuentos = descuentos.reduce((sum, d) => sum + N(d.importe), 0);
+
+  const subtotal = totalPasajes + totalPaqueteria;
+  const comision10 = subtotal * 0.10;
+
+  // TOTAL DESPACHO (igual Excel)
+  const total = subtotal - comision10 - pagadoEnYajalon - paquetesPorCobrar - totalDescuentos;
+
 
 
   const fmt = (n) =>
@@ -211,18 +241,42 @@ const agregarDescuento = async (e) => {
       let y = M.t + 60;
 
       doc.setFontSize(12);
+      doc.setFontSize(12);
       doc.text("Pasajeros", M.l, y);
       y += 8;
+
       autoTable(doc, {
         startY: y,
-        head: [["Folio", "Nombre", "Tipo", "Pago", "Monto"]],
-        body: pasajeros.map(p => [p.folio, p.nombre, p.tipo, p.tipoPago, fmt(p.importe)]),
+        head: [[
+          "No. Asiento",
+          "Nombre completo",
+          "Folio",
+          "Origen",
+          "Destino",
+          "Tipo",
+          "Pagado en Yajalón",
+          "Pagado en Tuxtla"
+        ]],
+        body: pasajeros.map(p => {
+          const pago = splitPagoPorTerminal(p); // usa lugarPago Tuxtla/Yajalon
+          return [
+            p.asiento ?? "-",                 // No. Asiento
+            p.nombre ?? "-",                  // Nombre completo
+            p.folio ?? "-",                   // Folio
+            v.origen ?? "-",                  // Origen (del viaje)
+            v.destino ?? "-",                 // Destino (del viaje)
+            p.tipo ?? "-",                    // Tipo
+            fmt(pago.yajalon),                // Pagado en Yajalón
+            fmt(pago.tuxtla),                 // Pagado en Tuxtla
+          ];
+        }),
         theme: "grid",
-        styles: { fontSize: 9, cellPadding: 5 },
+        styles: { fontSize: 8, cellPadding: 4 },
         headStyles: { fillColor: [248,201,142], textColor: [69,43,28] },
         margin: { left: M.l, right: M.r },
         didDrawPage: ({ pageNumber }) => { if (pageNumber > 1) drawHeader(); }
       });
+
 
       y = doc.lastAutoTable.finalY + 20;
 
@@ -262,14 +316,15 @@ const agregarDescuento = async (e) => {
       doc.text("Resumen del Día", M.l, y);
       y += 8;
       const resumen = [
-        ["Pasajeros", fmt(totalPasajeros)],
+        ["Pasajes", fmt(totalPasajes)],
         ["Paquetería", fmt(totalPaqueteria)],
-        ["Paquetes por cobrar", fmt(paquetesPorCobrar)],
-        ["Pagado en Yajalón", fmt(pagadoEnYajalon)],
-        ["Viajes de SCLC", fmt(pagaAbordarSCLC)],
+        ["Subtotal", fmt(subtotal)],
+        ["Menos - Comisión 10%", fmt(comision10)],
+        ["Pagado en Yajalón (Boletos)", fmt(pagadoEnYajalon)],
+        ["Paquetería por cobrar", fmt(paquetesPorCobrar)],
         ["Otros descuentos", fmt(totalDescuentos)],
-        ["TOTAL", fmt(total)],
-      ];      
+        ["Total del despacho", fmt(total)],
+      ];
       autoTable(doc, {
         startY: y,
         body: resumen.map(([k,v]) => [{ content: k, styles: { halign: "left" } }, { content: v, styles: { halign: "right" } }]),
@@ -378,14 +433,16 @@ const agregarDescuento = async (e) => {
   
             <div className="min-h-0 overflow-auto">
               <ul className="space-y-2 text-[12px] md:text-[13px] text-orange-800">
-                <li className="flex justify-between"><span>Pasajeros</span> <span>${totalPasajeros.toFixed(2)}</span></li>
-                <li className="flex justify-between"><span>Paquetería</span> <span>${totalPaqueteria.toFixed(2)}</span></li>
-                <li className="flex justify-between"><span>Paquetes por cobrar</span> <span>${paquetesPorCobrar.toFixed(2)}</span></li>
-                <li className="flex justify-between"><span>Pagado en Yajalón</span> <span>${pagadoEnYajalon.toFixed(2)}</span></li>
-                <li className="flex justify-between"><span>Otros descuentos</span> <span>${totalDescuentos.toFixed(2)}</span></li>
-                <li className="flex justify-between"><span>Viajes de SCLC</span> <span>${pagaAbordarSCLC.toFixed(2)}</span></li>
-                <li className="flex justify-between font-bold text-base"><span>TOTAL</span> <span>${total.toFixed(2)}</span></li>
+                <li className="flex justify-between"><span>Pasajes</span> <span>{fmt(totalPasajes)}</span></li>
+                <li className="flex justify-between"><span>Paquetería</span> <span>{fmt(totalPaqueteria)}</span></li>
+                <li className="flex justify-between font-semibold"><span>Subtotal</span> <span>{fmt(subtotal)}</span></li>
+                <li className="flex justify-between"><span>Menos - Comisión 10%</span> <span>{fmt(comision10)}</span></li>
+                <li className="flex justify-between"><span>Pagado en Yajalón (Boletos)</span> <span>{fmt(pagadoEnYajalon)}</span></li>
+                <li className="flex justify-between"><span>Paquetería por cobrar (Paquetes)</span> <span>{fmt(paquetesPorCobrar)}</span></li>
+                <li className="flex justify-between"><span>Otros descuentos</span> <span>{fmt(totalDescuentos)}</span></li>
+                <li className="flex justify-between font-bold text-base"><span>Total del despacho</span> <span>{fmt(total)}</span></li>
               </ul>
+
             </div>
   
             <button
@@ -455,26 +512,38 @@ const agregarDescuento = async (e) => {
                 <thead className="bg-[#f8c98e] sticky top-0 z-10">
                   <tr className="h-9">
                     <th className="p-2 text-center text-[#452B1C]">Folio</th>
-                    <th className="p-2 text-center text-[#452B1C]">Nombre</th>
+                    <th className="p-2 text-center text-[#452B1C]">No. Asiento</th>
+                    <th className="p-2 text-center text-[#452B1C]">Nombre completo</th>
+                    <th className="p-2 text-center text-[#452B1C]">Origen</th>
+                    <th className="p-2 text-center text-[#452B1C]">Destino</th>
                     <th className="p-2 text-center text-[#452B1C]">Tipo</th>
-                    <th className="p-2 text-center text-[#452B1C]">Pago</th>
-                    <th className="p-2 text-center text-[#452B1C]">Monto</th>
+                    <th className="p-2 text-center text-[#452B1C]">Pagado en Yajalón</th>
+                    <th className="p-2 text-center text-[#452B1C]">Pagado en Tuxtla</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {pasajeros.map((p, i) => (
-                    <tr key={i} className={`h-9 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
-                      <td className="p-2 text-center whitespace-nowrap">{p.folio}</td>
-                      <td className="p-2 text-center truncate">{p.nombre}</td>
-                      <td className="p-2 text-center whitespace-nowrap">{p.tipo}</td>
-                      <td className="p-2 text-center whitespace-nowrap">{p.tipoPago}</td>
-                      <td className="p-2 text-center whitespace-nowrap">${Number(p.importe || 0).toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {pasajeros.map((p, i) => {
+                    const pago = splitPagoPorTerminal(p);
+                    return (
+                      <tr key={i} className={`h-9 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
+                        <td className="p-2 text-center whitespace-nowrap">{p.folio ?? "-"}</td>
+                        <td className="p-2 text-center whitespace-nowrap">{p.asiento ?? "-"}</td>
+                        <td className="p-2 text-center truncate">{p.nombre ?? "-"}</td>
+                        <td className="p-2 text-center whitespace-nowrap">{v.origen ?? "-"}</td>
+                        <td className="p-2 text-center whitespace-nowrap">{v.destino ?? "-"}</td>
+                        <td className="p-2 text-center whitespace-nowrap">{p.tipo ?? "-"}</td>
+                        <td className="p-2 text-center whitespace-nowrap">${pago.yajalon.toFixed(2)}</td>
+                        <td className="p-2 text-center whitespace-nowrap">${pago.tuxtla.toFixed(2)}</td>
+                      </tr>
+                    );
+                  })}
+
                   {pasajeros.length === 0 && (
-                    <tr><td colSpan="5" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
+                    <tr><td colSpan="8" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
                   )}
                 </tbody>
+
               </table>
             </div>
           </div>

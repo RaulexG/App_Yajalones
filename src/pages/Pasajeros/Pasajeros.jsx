@@ -15,27 +15,27 @@ import { useTerminal } from "../../hooks/useTerminal";
 const esTuxtla = (s = "") => s.toLowerCase().includes("tuxtla");
 const esYajalon = (s = "") => s.toLowerCase().includes("yajal");
 
+const normalizaLugarPago = (lp = "") => {
+  const x = String(lp).toLowerCase();
+  if (x.includes("tuxtla")) return "TUXTLA";
+  if (x.includes("yajal")) return "YAJALON";
+  return "";
+};
+
 const getCobroPorTerminal = (viaje, pasajero) => {
-  const origenViaje = viaje?.origen || "";
-  const destinoViaje = viaje?.destino || "";
-
-  const rutaTuxtlaYajalon = esTuxtla(origenViaje) && esYajalon(destinoViaje);
-  const rutaYajalonTuxtla = esYajalon(origenViaje) && esTuxtla(destinoViaje);
-
   const importe = Number(pasajero?.importe || 0);
 
-  // default: nada
   let pagoTuxtla = 0;
   let pagoYajalon = 0;
 
-  // Reglas:
-  // - tipoPago === "PAGADO": se cobra en el ORIGEN del viaje
-  // - tipoPago === "DESTINO": se cobra en el DESTINO del viaje
-  // - tipoPago === "SCLC": SIEMPRE se cobra en YAJALÓN (como dijiste)
-  if (pasajero?.tipoPago === "SCLC") {
-    pagoYajalon = importe;
-    return { pagoTuxtla, pagoYajalon };
-  }
+  // NUEVO: si el backend manda lugarPago, se respeta
+  const lp = normalizaLugarPago(pasajero?.lugarPago);
+  if (lp === "TUXTLA") return { pagoTuxtla: importe, pagoYajalon: 0 };
+  if (lp === "YAJALON") return { pagoTuxtla: 0, pagoYajalon: importe };
+
+  //  FALLBACK para pasajeros viejos (sin lugarPago):
+  const origenViaje = viaje?.origen || "";
+  const destinoViaje = viaje?.destino || "";
 
   if (pasajero?.tipoPago === "PAGADO") {
     if (esTuxtla(origenViaje)) pagoTuxtla = importe;
@@ -49,16 +49,10 @@ const getCobroPorTerminal = (viaje, pasajero) => {
     return { pagoTuxtla, pagoYajalon };
   }
 
-  // fallback por si llega algo raro
-  if (rutaTuxtlaYajalon) {
-    // si no sabemos, ponlo en origen
-    pagoTuxtla = importe;
-  } else if (rutaYajalonTuxtla) {
-    pagoYajalon = importe;
-  }
-
+  // si no sabemos, lo dejamos en 0/0
   return { pagoTuxtla, pagoYajalon };
 };
+
 
 const isTuxtlaToYajalon = (viaje) => esTuxtla(viaje?.origen || "") && esYajalon(viaje?.destino || "");
 const isYajalonToTuxtla = (viaje) => esYajalon(viaje?.origen || "") && esTuxtla(viaje?.destino || "");
@@ -69,16 +63,18 @@ const calcularTipoPagoDesdeUI = (viaje, f) => {
   const tuxtlaToYaj = isTuxtlaToYajalon(viaje);
   const yajToTuxtla = isYajalonToTuxtla(viaje);
 
-  // bandera SCLC según tu negocio
+  // SCLC solo si aplica por ruta
   if (tuxtlaToYaj && f.origenUI === "SCLC") return "SCLC";
   if (yajToTuxtla && f.destinoUI === "SCLC") return "SCLC";
 
-  // si no es SCLC, depende del lugar de pago vs ruta
-  if (f.lugarPagoUI === "Tuxtla" && esTuxtla(viaje.origen)) return "PAGADO";
-  if (f.lugarPagoUI === "Yajalón" && esYajalon(viaje.origen)) return "PAGADO";
+  // si no es SCLC: lugarPago decide si PAGADO o DESTINO
+  // PAGADO = pagó en el ORIGEN del viaje
+  if (f.lugarPagoUI === "TUXTLA" && esTuxtla(viaje.origen)) return "PAGADO";
+  if (f.lugarPagoUI === "YAJALON" && esYajalon(viaje.origen)) return "PAGADO";
 
   return "DESTINO";
 };
+
 
 
 const formatFecha = (dLike) => {
@@ -140,8 +136,7 @@ export default function Pasajeros() {
   const [filtroFecha, setFiltroFecha] = useState('HOY'); // HOY | TODOS
 
   const [choferes, setChoferes] = useState([]);
-  const esTuxtla = (s = "") => s.toLowerCase().includes("tuxtla");
-  const esYajalon = (s = "") => s.toLowerCase().includes("yajal");
+
 
 
 const [formulario, setFormulario] = useState({
@@ -166,7 +161,7 @@ const opcionesUI = useMemo(() => {
     return {
       origen: [],
       destino: [],
-      lugarPago: ["Tuxtla", "Yajalón"],
+      lugarPago: ["TUXTLA", "YAJALON"],
     };
   }
 
@@ -177,7 +172,7 @@ const opcionesUI = useMemo(() => {
     return {
       origen: ["Tuxtla", "SCLC"],
       destino: ["Yajalón"],
-      lugarPago: ["Tuxtla", "Yajalón"],
+      lugarPago: ["TUXTLA", "YAJALON"],
     };
   }
 
@@ -185,7 +180,7 @@ const opcionesUI = useMemo(() => {
     return {
       origen: ["Yajalón"],
       destino: ["Tuxtla", "SCLC"],
-      lugarPago: ["Tuxtla", "Yajalón"],
+      lugarPago: ["TUXTLA", "YAJALON"],
     };
   }
 
@@ -193,7 +188,7 @@ const opcionesUI = useMemo(() => {
   return {
     origen: ["Tuxtla", "Yajalón", "SCLC"],
     destino: ["Tuxtla", "Yajalón", "SCLC"],
-    lugarPago: ["Tuxtla", "Yajalón"],
+    lugarPago: ["TUXTLA", "YAJALON"],
   };
 }, [viajeSeleccionado]);
 
@@ -201,20 +196,17 @@ useEffect(() => {
   if (!viajeSeleccionado) return;
 
   setFormulario((prev) => {
-    // si el valor actual no está en opciones válidas, lo corrige
     const fix = (val, opts) => (opts.includes(val) ? val : (opts[0] || ''));
 
-    const origenUI = fix(prev.origenUI, opcionesUI.origen);
-    const destinoUI = fix(prev.destinoUI, opcionesUI.destino);
-    const lugarPagoUI = fix(prev.lugarPagoUI, opcionesUI.lugarPago);
-
-    // regla extra: si destinoUI es SCLC => pago siempre Yajalón (como tu regla)
-    const lugarPagoFinal =
-      prev.tipoPago === "SCLC" || destinoUI === "SCLC" ? "Yajalón" : lugarPagoUI;
-
-    return { ...prev, origenUI, destinoUI, lugarPagoUI: lugarPagoFinal };
+    return {
+      ...prev,
+      origenUI: fix(prev.origenUI, opcionesUI.origen),
+      destinoUI: fix(prev.destinoUI, opcionesUI.destino),
+      lugarPagoUI: fix(prev.lugarPagoUI, opcionesUI.lugarPago),
+    };
   });
-}, [viajeSeleccionado, opcionesUI.origen, opcionesUI.destino, opcionesUI.lugarPago]);
+}, [viajeSeleccionado, opcionesUI]);
+
 
 
   /* Carga inicial */
@@ -389,8 +381,10 @@ const manejarNombreCompleto = (e) => {
         tipo: formulario.tipo,
         tipoPago: calcularTipoPagoDesdeUI(viajeSeleccionado, formulario),
         asiento: formulario.asiento,
-        idViaje: viajeId
+        idViaje: viajeId,
+        lugarPago: formulario.lugarPagoUI,
       };
+      console.log(payload)
 
       if (idPasajeroEditando) {
         await ActualizarPasajero(idPasajeroEditando, payload);
@@ -430,6 +424,7 @@ const manejarNombreCompleto = (e) => {
     destino: viajeSeleccionado.destino,
     fechaSalida: formatFecha(viajeSeleccionado.fechaSalida),
     hora: '',
+    lugarPagoUI: pasajero?.lugarPago || prev.lugarPagoUI || "TUXTLA",
   }));
 };
 
@@ -478,7 +473,7 @@ setFormulario((prev) => {
 
   const origenUI = tuxtlaToYaj ? "Tuxtla" : "Yajalón";
   const destinoUI = tuxtlaToYaj ? "Yajalón" : "Tuxtla";
-  const lugarPagoUI = tuxtlaToYaj ? "Tuxtla" : "Yajalón";
+  const lugarPagoUI = tuxtlaToYaj ? "TUXTLA" : "YAJALON";
 
   return {
     ...prev,
@@ -531,7 +526,7 @@ const getLugarPago = (viaje, pasajero) => {
 
 function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) {
   const { origen, destino } = getOrigenDestinoPasajero(viaje, pasajero);
-  const lugarPago = getLugarPago(viaje, pasajero);
+  const lugarPago = pasajero?.lugarPago ?? formulario?.lugarPagoUI ?? "N/D";
 
   const fechaSalida = new Date(viaje?.fechaSalida);
   const fechaHoraStr = Number.isNaN(fechaSalida.getTime())
@@ -540,6 +535,7 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
         hour: "2-digit",
         minute: "2-digit",
       })}`;
+
 
   const costo = Number(pasajero?.importe ?? 0).toFixed(2);
 
@@ -693,12 +689,12 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
                     value={formulario.lugarPagoUI}
                     onChange={(e) => setFormulario(prev => ({ ...prev, lugarPagoUI: e.target.value }))}
                     className="w-full p-2 rounded-md bg-orange-100 text-gray-800"
-                    disabled={!viajeSeleccionado || formulario.destinoUI === "SCLC"} // si baja en SCLC, pago fijo en Yajalón
+                    disabled={!viajeSeleccionado}
                   >
-                    {opcionesUI.lugarPago.map(o => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
+                    <option value="TUXTLA">Tuxtla</option>
+                    <option value="YAJALON">Yajalón</option>
                   </select>
+
                 </div>
 
               </div>
