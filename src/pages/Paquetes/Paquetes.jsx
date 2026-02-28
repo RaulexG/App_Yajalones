@@ -409,7 +409,8 @@ const handleSubmit = async (e) => {
 
       <div class="center" style="font-size:3.2mm; margin-bottom:2.7mm;">
         Terminal Tuxtla Gutiérrez<br>
-        15 Oriente sur #817 entre 7ma y 8va sur<br>
+        15 Oriente sur #752 entre 6ta y 7ma sur<br>
+        A 2 cuadras del mercado de los ancianos<br>
         Tel: 961 106 6523
       </div>
 
