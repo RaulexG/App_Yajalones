@@ -7,7 +7,7 @@ const { registerPDFIpc } = require('./pdf.cjs'); // IPCs de PDF
 const { autoUpdater } = require("electron-updater");
 
 const isDev = !app.isPackaged;
-const API_BASE = process.env.VITE_API_BASE || 'https://yajalones-app-81c1abc5059e.herokuapp.com';
+const API_BASE = process.env.VITE_API_BASE || process.env.API_BASE || 'http://146.190.173.112:8081';
 const APP_ICON = path.join(__dirname, 'assets', 'icono.ico');
 
 const authState = { token: null, exp: null, timer: null };
