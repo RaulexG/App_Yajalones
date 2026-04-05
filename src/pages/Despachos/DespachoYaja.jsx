@@ -271,7 +271,7 @@ const generarPDF = async () => {
       head: [[ "No. de Asiento", "Nombre", "Destino", "Folio", "Importe" ]],
       body: pasajeros.map((p) => ([
         p.asiento ?? p.noAsiento ?? p.numAsiento ?? "",
-        p.nombre ?? "",
+        p.nombre + " " + p.apellido ? p.nombre + " " + p.apellido : p.nombre || "",
         p.destino ?? v?.destino ?? "",
         p.folio ?? "",
         `$ ${money(p.importe)}`
@@ -610,7 +610,8 @@ const generarPDF = async () => {
                       <td className="p-2 text-center whitespace-nowrap">
                         {p.asiento ?? p.noAsiento ?? p.numAsiento ?? ""}
                       </td>
-                      <td className="p-2 text-left whitespace-nowrap">{p.nombre ?? ""}</td>
+                      <td className="p-2 text-left whitespace-nowrap">{
+                      p.nombre + " " + p.apellido ? p.nombre + " " + p.apellido : p.nombre || ""}</td>
                       <td className="p-2 text-center whitespace-nowrap">
                         {p.destino ?? viajeSeleccionado?.destino ?? ""}
                       </td>
