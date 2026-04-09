@@ -5,6 +5,34 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
 
+/* ===== Helpers ===== */
+
+const esTuxtla = (s = "") => s.toLowerCase().includes("tuxtla");
+const esYajalon = (s = "") => s.toLowerCase().includes("yajal");
+
+const getOrigenDestinoPasajero = (viaje, pasajero) => {
+  const origenViaje = viaje?.origen || "";
+  const destinoViaje = viaje?.destino || "";
+
+  let origen = origenViaje;
+  let destino = destinoViaje;
+
+  if (pasajero?.tipoPago === "SCLC") {
+    if (esTuxtla(destinoViaje)) {
+      destino = "SCLC";
+    } else if (esYajalon(destinoViaje)) {
+      destino = "Yajalón";
+    }
+    if (esTuxtla(origenViaje)) {
+      origen = "SCLC";
+    } else if (esYajalon(origenViaje)) {
+      origen = "Yajalón";
+    }
+  }
+
+  return { origen, destino };
+};
+
 /* ===== Helpers para el nombre del PDF ===== */
 
 // Quita acentos y símbolos para que sea válido como nombre de archivo
@@ -253,6 +281,7 @@ const generarPDF = async () => {
     };
 
     let y = drawHeader() + 10;
+    const pageHeaderHeight = y;
 
     // ====== PASAJEROS ======
     doc.setFont("helvetica", "bold");
@@ -267,18 +296,16 @@ const generarPDF = async () => {
       theme: "grid",
       styles: { fontSize: 8.5, cellPadding: 4, lineWidth: 0.6 },
       headStyles: { fillColor: [230, 240, 233], textColor: [0, 0, 0], fontStyle: "bold" },
-      margin: { left: M.l, right: M.r },
+      margin: { top: pageHeaderHeight, left: M.l, right: M.r },
       head: [[ "No. de Asiento", "Nombre", "Destino", "Folio", "Importe" ]],
       body: pasajeros.map((p) => ([
         p.asiento ?? p.noAsiento ?? p.numAsiento ?? "",
         p.nombre + " " + p.apellido ? p.nombre + " " + p.apellido : p.nombre || "",
-        p.destino ?? v?.destino ?? "",
+        getOrigenDestinoPasajero(v, p).destino,
         p.folio ?? "",
         `$ ${money(p.importe)}`
       ])),
-      didDrawPage: (data) => {
-        if (data.pageNumber > 1) drawHeader();
-      }
+      pageBreak: 'auto'
     });
 
     y = doc.lastAutoTable.finalY;
@@ -288,7 +315,7 @@ const generarPDF = async () => {
       startY: y,
       theme: "grid",
       styles: { fontSize: 8.5, cellPadding: 4, lineWidth: 0.6 },
-      margin: { left: M.l, right: M.r },
+      margin: { top: pageHeaderHeight, left: M.l, right: M.r },
       body: [[
         { content: "SUB TOTAL", colSpan: 4, styles: { halign: "right", fontStyle: "bold", fillColor: [233, 244, 236] } },
         { content: `$ ${money(boletos)}`, styles: { halign: "right", fontStyle: "bold", fillColor: [233, 244, 236] } }
@@ -310,7 +337,7 @@ const generarPDF = async () => {
       theme: "grid",
       styles: { fontSize: 8.5, cellPadding: 4, lineWidth: 0.6 },
       headStyles: { fillColor: [230, 240, 233], textColor: [0, 0, 0], fontStyle: "bold" },
-      margin: { left: M.l, right: M.r },
+      margin: { top: pageHeaderHeight, left: M.l, right: M.r },
       head: [[ "Guia", "Remitente", "Destinatario", "Contenido", "Importe" ]],
       body: paquetes.map((p) => {
         const destinatario = `${p.destinatario ?? ""}${p.porCobrar ? "(POR COBRAR)" : ""}`;
@@ -322,9 +349,7 @@ const generarPDF = async () => {
           `$ ${money(p.importe)}`
         ];
       }),
-      didDrawPage: (data) => {
-        if (data.pageNumber > 1) drawHeader();
-      }
+      pageBreak: 'auto'
     });
 
     y = doc.lastAutoTable.finalY;
@@ -334,7 +359,7 @@ const generarPDF = async () => {
       startY: y,
       theme: "grid",
       styles: { fontSize: 8.5, cellPadding: 4, lineWidth: 0.6 },
-      margin: { left: M.l, right: M.r },
+      margin: { top: pageHeaderHeight, left: M.l, right: M.r },
       body: [[
         { content: "SUB TOTAL", colSpan: 4, styles: { halign: "right", fontStyle: "bold", fillColor: [233, 244, 236] } },
         { content: `$ ${money(paq)}`, styles: { halign: "right", fontStyle: "bold", fillColor: [233, 244, 236] } }
@@ -346,6 +371,15 @@ const generarPDF = async () => {
     // ====== DESCUENTOS + CUADRO FINAL ======
     const leftW = (pageW - M.l - M.r) * 0.62;
     const rightW = (pageW - M.l - M.r) - leftW - 12;
+    const discountTableHeight = 18 * 5; // header + 4 filas
+    const boxHeight = 16 * 5;
+    const discountBlockHeight = 18 + 22 + discountTableHeight + 10 + boxHeight;
+    const pageBottom = doc.internal.pageSize.getHeight() - M.b;
+
+    if (y + discountBlockHeight > pageBottom) {
+      doc.addPage();
+      y = M.t + 10;
+    }
 
     // Encabezado DESCUENTOS
     doc.setFont("helvetica", "bold");
@@ -374,7 +408,8 @@ const generarPDF = async () => {
       startY: y,
       theme: "grid",
       tableWidth: leftW,
-      margin: { left: M.l },
+      pageBreak: "avoid",
+      margin: { top: pageHeaderHeight, left: M.l },
       styles: { fontSize: 8.5, cellPadding: 4, lineWidth: 0.6 },
       headStyles: { fillColor: [230, 240, 233], textColor: [0, 0, 0], fontStyle: "bold" },
       head: [[ "", "Descripcion", "Concepto", "Cantidad" ]],
@@ -613,7 +648,7 @@ const generarPDF = async () => {
                       <td className="p-2 text-left whitespace-nowrap">{
                       p.nombre + " " + p.apellido ? p.nombre + " " + p.apellido : p.nombre || ""}</td>
                       <td className="p-2 text-center whitespace-nowrap">
-                        {p.destino ?? viajeSeleccionado?.destino ?? ""}
+                        {getOrigenDestinoPasajero(viajeSeleccionado, p).destino}
                       </td>
                       <td className="p-2 text-center whitespace-nowrap">{p.folio ?? ""}</td>
                       <td className="p-2 text-right whitespace-nowrap">

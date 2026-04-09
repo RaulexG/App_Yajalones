@@ -1,6 +1,6 @@
 // DespachosTuxtla.jsx
 import { useEffect, useMemo, useState } from "react";
-import { CrearDescuentoTuxtla, ListarViajes,ActualizarViaje } from "../../services/Admin/adminService";
+import { CrearDescuentoTuxtla, ListarViajes, ActualizarViaje, ListarChoferes } from "../../services/Admin/adminService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Swal from "sweetalert2";
@@ -24,6 +24,35 @@ const buildTuxtlaPdfName = (viaje) => {
   return `CorteTuxtla_${od}_${fecha}.pdf`;
 };
 
+const esTuxtla = (s = "") => s.toLowerCase().includes("tuxtla");
+const esYajalon = (s = "") => s.toLowerCase().includes("yajal");
+
+const getOrigenDestinoPasajero = (viaje, pasajero) => {
+  const origenViaje = viaje?.origen || "";
+  const destinoViaje = viaje?.destino || "";
+
+  const rutaTuxtlaYajalon = esTuxtla(origenViaje) && esYajalon(destinoViaje);
+  const rutaYajalonTuxtla = esYajalon(origenViaje) && esTuxtla(destinoViaje);
+
+  let origen = origenViaje;
+  let destino = destinoViaje;
+
+  if (pasajero?.origen) origen = pasajero.origen;
+  if (pasajero?.destino) destino = pasajero.destino;
+
+  if (pasajero?.tipoPago === "SCLC") {
+    if (rutaTuxtlaYajalon) {
+      origen = "SCLC";
+      destino = "Yajalón";
+    } else if (rutaYajalonTuxtla) {
+      origen = "Yajalón";
+      destino = "SCLC";
+    }
+  }
+
+  return { origen, destino };
+};
+
 /* ===================== Componente ===================== */
 
 export default function DespachosTuxtla() {
@@ -36,6 +65,8 @@ export default function DespachosTuxtla() {
     descripcion: "",
     importe: "",
   });
+  const [choferes, setChoferes] = useState([]);
+  const [choferSeleccionado, setChoferSeleccionado] = useState(null);
 
   // HOY | TODOS
   const [filtroFecha, setFiltroFecha] = useState("HOY");
@@ -43,10 +74,14 @@ export default function DespachosTuxtla() {
   useEffect(() => {
     (async () => {
       try {
-        const listaViajes = await ListarViajes();
+        const [listaViajes, listaChoferes] = await Promise.all([
+          ListarViajes(),
+          ListarChoferes(),
+        ]);
         setViajes(Array.isArray(listaViajes) ? listaViajes : []);
+        setChoferes(Array.isArray(listaChoferes) ? listaChoferes : []);
       } catch (e) {
-        console.error("Error al listar viajes", e);
+        console.error("Error al listar viajes o choferes", e);
       }
     })();
   }, []);
@@ -64,9 +99,21 @@ export default function DespachosTuxtla() {
   // Viajes que se muestran en el select según HOY/TODOS
   const viajesFiltrados = useMemo(() => {
     const hoy = new Date();
-    const arr = (viajes || []).filter(v =>
-      filtroFecha === "HOY" ? esMismoDia(v.fechaSalida, hoy) : true
-    );
+    const ayer = new Date(hoy);
+    ayer.setDate(ayer.getDate() - 1);
+    ayer.setHours(0, 0, 0, 0);
+
+    const arr = (viajes || []).filter((v) => {
+      const salida = new Date(v.fechaSalida);
+      if (Number.isNaN(salida.getTime())) return false;
+
+      if (filtroFecha === "HOY") {
+        return esMismoDia(v.fechaSalida, hoy);
+      }
+
+      return salida >= ayer;
+    });
+
     arr.sort((a, b) => new Date(a.fechaSalida) - new Date(b.fechaSalida));
     return arr;
   }, [viajes, filtroFecha]);
@@ -210,20 +257,40 @@ const agregarDescuento = async (e) => {
         return;
       }
 
+      if (!choferSeleccionado) {
+        Swal.fire({ icon: "warning", title: "Selecciona un chofer" });
+        return;
+      }
+
       const fechaHoy = obtenerFechaFormateada();
       const doc = new jsPDF({ unit: "pt", format: "letter" });
       const M = { l: 40, r: 40, t: 40, b: 40 };
 
       const drawHeader = () => {
-        doc.setFontSize(12);
-        doc.text("TRANSPORTES LOS YAJALONES S.A. DE C.V.", M.l, M.t);
-        doc.setFontSize(9);
-        doc.text("Dirección: Segunda calle Poniente Norte s/n, Centro. Yajalón, Chiapas", M.l, M.t + 16);
-        doc.text("Teléfono fijo: 919 674 21 14", M.l, M.t + 30);
-        doc.text("Teléfono Celular: 919 145 97 11", M.l, M.t + 40);
-        doc.text(`Fecha de corte: ${fechaHoy}`, doc.internal.pageSize.getWidth() - M.r, M.t, { align: "right" });
+        const fechaSalida = viajeSeleccionado?.fechaSalida ? new Date(viajeSeleccionado.fechaSalida) : new Date();
+        const fechaStr = fechaSalida.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
+        const horaStr = fechaSalida.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+        const unidad = viajeSeleccionado?.unidad?.nombre ?? "-";
+        const conductor = choferSeleccionado?.nombre ?? viajeSeleccionado?.conductor ?? viajeSeleccionado?.chofer ?? viajeSeleccionado?.nombreChofer ?? "-";
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const rightColumn = pageWidth / 2 + 20;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("UNIÓN TRANSPORTISTA LOS YAJALONES S.C. DE R.L. DE CV", M.l, M.t);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text("Terminal Tuxtla Gutiérrez", M.l, M.t + 18);
+        doc.text("15 Ote Sur #752 entre 6 y 7 Sur", M.l, M.t + 34);
+
+        doc.setFontSize(10);
+        doc.text(`Fecha: ${fechaStr}`, M.l, M.t + 56);
+        doc.text(`Unidad: ${unidad}`, rightColumn, M.t + 56);
+        doc.text(`Hora: ${horaStr}`, M.l, M.t + 72);
+        doc.text(`Nombre del conductor: ${conductor}`, rightColumn, M.t + 72);
+
         doc.setLineWidth(0.5);
-        doc.line(M.l, M.t + 45, doc.internal.pageSize.getWidth() - M.r, M.t + 45);
+        doc.line(M.l, M.t + 80, pageWidth - M.r, M.t + 80);
       };
 
       const drawFooter = () => {
@@ -238,60 +305,62 @@ const agregarDescuento = async (e) => {
       };
 
       drawHeader();
-      let y = M.t + 60;
+      let y = M.t + 100;
 
       doc.setFontSize(12);
-      doc.setFontSize(12);
-      doc.text("Pasajeros", M.l, y);
-      y += 8;
+      doc.text("PASAJEROS", M.l, y);
+      y += 14;
 
       autoTable(doc, {
         startY: y,
         head: [[
-          "No. Asiento",
+          "Número de asiento",
           "Nombre completo",
-          "Folio",
           "Origen",
-          "Destino",
-          "Tipo",
+          "Folio",
           "Pagado en Yajalón",
-          "Pagado en Tuxtla"
+          "Pagado en Tuxtla",
+
         ]],
         body: pasajeros.map(p => {
-          const pago = splitPagoPorTerminal(p); // usa lugarPago Tuxtla/Yajalon
+          const { origen } = getOrigenDestinoPasajero(v, p);
+          const pago = splitPagoPorTerminal(p);
           return [
-            p.asiento ?? "-",                 // No. Asiento
-            p.nombre ?? "-",                  // Nombre completo
-            p.folio ?? "-",                   // Folio
-            v.origen ?? "-",                  // Origen (del viaje)
-            v.destino ?? "-",                 // Destino (del viaje)
-            p.tipo ?? "-",                    // Tipo
-            fmt(pago.yajalon),                // Pagado en Yajalón
-            fmt(pago.tuxtla),                 // Pagado en Tuxtla
+            p.asiento ?? "-",
+            p.nombre ? `${p.nombre} ${p.apellido ?? ""}`.trim() : "-",
+            origen,
+            p.folio ?? "-",
+            fmt(pago.yajalon),
+            fmt(pago.tuxtla),
           ];
         }),
         theme: "grid",
         styles: { fontSize: 8, cellPadding: 4 },
         headStyles: { fillColor: [248,201,142], textColor: [69,43,28] },
         margin: { left: M.l, right: M.r },
-        didDrawPage: ({ pageNumber }) => { if (pageNumber > 1) drawHeader(); }
       });
 
 
       y = doc.lastAutoTable.finalY + 20;
 
       doc.setFontSize(12);
-      doc.text("Paquetería", M.l, y);
+      doc.text("PAQUETERÍA", M.l, y);
       y += 8;
       autoTable(doc, {
         startY: y,
-        head: [["Folio","Remitente","Destinatario","Por Cobrar","Monto"]],
-        body: paquetes.map(p => [p.folio, p.remitente, p.destinatario, p.porCobrar ? "Sí" : "No", fmt(p.importe)]),
+        head: [["Guía","Remitente","Destinatario","Contenido","Por cobrar","Importe"]],
+        body: paquetes.map(p => [
+          p.folio ?? "-",
+          p.remitente ?? "-",
+          p.destinatario ?? "-",
+          p.contenido ?? "-",
+          p.porCobrar ? "Sí" : "No",
+          fmt(p.importe),
+        ]),
         theme: "grid",
-        styles: { fontSize: 9, cellPadding: 5 },
+        styles: { fontSize: 8, cellPadding: 4 },
         headStyles: { fillColor: [248,201,142], textColor: [69,43,28] },
         margin: { left: M.l, right: M.r },
-        didDrawPage: ({ pageNumber }) => { if (pageNumber > 1) drawHeader(); }
       });
 
       y = doc.lastAutoTable.finalY + 20;
@@ -307,7 +376,6 @@ const agregarDescuento = async (e) => {
         styles: { fontSize: 9, cellPadding: 5 },
         headStyles: { fillColor: [248,201,142], textColor: [69,43,28] },
         margin: { left: M.l, right: M.r },
-        didDrawPage: ({ pageNumber }) => { if (pageNumber > 1) drawHeader(); }
       });
 
       y = doc.lastAutoTable.finalY + 30;
@@ -332,7 +400,6 @@ const agregarDescuento = async (e) => {
         styles: { fontSize: 10, cellPadding: 6 },
         columnStyles: { 0: { cellWidth: 240 }, 1: { cellWidth: 160 } },
         margin: { left: M.l, right: M.r },
-        didDrawPage: ({ pageNumber }) => { if (pageNumber > 1) drawHeader(); }
       });
 
       y = doc.lastAutoTable.finalY + 30;
@@ -425,6 +492,27 @@ const agregarDescuento = async (e) => {
             >
               Guardar descuento
             </button>
+
+            <div className="mt-4">
+              <label className="block text-orange-700 font-semibold mb-1 text-xs md:text-sm">Chofer</label>
+              <select
+                value={choferSeleccionado?.idChofer || ""}
+                onChange={(e) => {
+                  const id = Number(e.target.value);
+                  const chofer = choferes.find((c) => c.idChofer === id) || null;
+                  setChoferSeleccionado(chofer);
+                }}
+                className="w-full p-2 rounded-md bg-[#ffe0b2] outline-none ring-1 ring-orange-200 focus:ring-2 focus:ring-orange-300 text-sm"
+                required
+              >
+                <option value="">-- Selecciona un Chofer --</option>
+                {choferes.map((chofer) => (
+                  <option key={chofer.idChofer} value={chofer.idChofer}>
+                    {chofer.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
   
           {/* Resumen (toma el resto y scrollea si hace falta) */}
@@ -525,13 +613,14 @@ const agregarDescuento = async (e) => {
                 <tbody>
                   {pasajeros.map((p, i) => {
                     const pago = splitPagoPorTerminal(p);
+                    const { origen, destino } = getOrigenDestinoPasajero(v, p);
                     return (
                       <tr key={i} className={`h-9 ${i % 2 === 0 ? "bg-[#fffaf3]" : ""}`}>
                         <td className="p-2 text-center whitespace-nowrap">{p.folio ?? "-"}</td>
                         <td className="p-2 text-center whitespace-nowrap">{p.asiento ?? "-"}</td>
-                        <td className="p-2 text-center truncate">{p.nombre ?? "-"}</td>
-                        <td className="p-2 text-center whitespace-nowrap">{v.origen ?? "-"}</td>
-                        <td className="p-2 text-center whitespace-nowrap">{v.destino ?? "-"}</td>
+                        <td className="p-2 text-center truncate">{p.nombre} {p.apellido ?? "-"}</td>
+                        <td className="p-2 text-center whitespace-nowrap">{origen}</td>
+                        <td className="p-2 text-center whitespace-nowrap">{destino}</td>
                         <td className="p-2 text-center whitespace-nowrap">{p.tipo ?? "-"}</td>
                         <td className="p-2 text-center whitespace-nowrap">${pago.yajalon.toFixed(2)}</td>
                         <td className="p-2 text-center whitespace-nowrap">${pago.tuxtla.toFixed(2)}</td>

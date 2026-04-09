@@ -21,10 +21,10 @@ export default function Paqueteria() {
   const [formulario, setFormulario] = useState({
     remitente: "",
     destinatario: "",
-    importe: 70,
+    importe: "",
     contenido: "",
     pendiente: false,
-    porCobrar: false,
+    porCobrar: "",
     idViaje: "",
     destino: "",          // NUEVO: destino del paquete
   });
@@ -202,13 +202,22 @@ const handleSubmit = async (e) => {
   // Aquí calculamos el destino que SÍ se debe guardar
   const destinoFinal = obtenerDestinoFinal(formulario, viajes);
 
+  if (!formulario.porCobrar) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Llene los campos obligatorios",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  }
+
   if (formulario.pendiente) {
     const dataPendiente = {
       remitente: formulario.remitente,
       destinatario: formulario.destinatario,
       importe: parseFloat(formulario.importe),
       contenido: formulario.contenido,
-      porCobrar: formulario.porCobrar,
+      porCobrar: formulario.porCobrar === "si",
       idViaje: formulario.idViaje ? parseInt(formulario.idViaje) : null,
       destino: destinoFinal,   // ⬅️ ya no va null si es mismo destino del viaje
     };
@@ -236,7 +245,7 @@ const handleSubmit = async (e) => {
       destinatario: formulario.destinatario,
       importe: parseFloat(formulario.importe),
       contenido: formulario.contenido,
-      porCobrar: formulario.porCobrar,
+      porCobrar: formulario.porCobrar === "si",
       idViaje: parseInt(formulario.idViaje),
       destino: destinoFinal,   // ⬅️ aquí también
     };
@@ -252,10 +261,10 @@ const handleSubmit = async (e) => {
   setFormulario({
     remitente: "",
     destinatario: "",
-    importe: 70,
+    importe: "",
     contenido: "",
     pendiente: false,
-    porCobrar: false,
+    porCobrar: "",
     idViaje: "",
     destino: "",
   });
@@ -281,7 +290,7 @@ const handleSubmit = async (e) => {
       importe: paquete.importe,
       contenido: paquete.contenido,
       pendiente: paquete.pendiente || false,
-      porCobrar: paquete.porCobrar || false,
+      porCobrar: paquete.porCobrar ? "si" : "no",
       idViaje: idViajeEncontrado,
       destino: paquete.destino || "",     // NUEVO: cargar destino guardado
     });
@@ -571,18 +580,18 @@ const handleSubmit = async (e) => {
           required
         />
 
-        <div className="flex gap-4 text-orange-700">
-          <label>
-            <input
-              type="checkbox"
-              name="porCobrar"
-              checked={formulario.porCobrar}
-              onChange={handleChange}
-              className="mr-2"
-            />
-            Por Cobrar
-          </label>
-        </div>
+        <label className="font-semibold text-orange-700">Por Cobrar</label>
+        <select
+          name="porCobrar"
+          value={formulario.porCobrar}
+          onChange={handleChange}
+          className="p-2 rounded-md bg-[#ffe0b2]"
+          required
+        >
+          <option value="">Seleccione...</option>
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+        </select>
 
         <div className="flex gap-3">
           <button
