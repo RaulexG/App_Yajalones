@@ -155,13 +155,40 @@ const viajesFiltrados = useMemo(() => {
   const paq = totalPaqueteria;
   const subTotal = boletos + paq;
   const viaticos = totalDescuentos;
-  const totalFormato = subTotal - viaticos;
+  
+  const metodoPagoPasajero = (p) =>
+  String(p?.metodoPago || p?.tipoPagoMetodo || "EFECTIVO")
+    .toUpperCase()
+    .trim();
 
+const esTarjeta = (p) =>
+  metodoPagoPasajero(p).includes("TARJETA");
+
+const metodoPagoPaquete = (p) =>
+  String(p?.metodoPago || "EFECTIVO")
+    .toUpperCase()
+    .trim();
+
+const paqueteEsTarjeta = (p) =>
+  metodoPagoPaquete(p).includes("TARJETA");
+
+const totalTarjetaPasajeros = pasajeros.reduce((acc, p) => {
+  return acc + (esTarjeta(p) ? N(p.importe) : 0);
+}, 0);
+
+const totalTarjetaPaqueteria = paquetes.reduce((acc, p) => {
+  return acc + (paqueteEsTarjeta(p) ? N(p.importe) : 0);
+}, 0);
+
+const totalPagosTarjeta =
+  totalTarjetaPasajeros + totalTarjetaPaqueteria;
+
+const totalFormato = subTotal - viaticos - totalPagosTarjeta;
 
 
 
   // TOTAL (Yajalón): todo – (lo cobrado en Tuxtla) – por cobrar – descuentos
-  const total = (totalPasajeros + totalPaqueteria )- totalDescuentos;
+  const total = (totalPasajeros + totalPaqueteria )- totalPagosTarjeta - totalDescuentos;
 
   const fmt = (n) =>
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" })
@@ -224,8 +251,9 @@ const generarPDF = async () => {
 
     const N = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
     const boletos = N(v?.totalPasajeros);
+    const tarjeta = N(totalPagosTarjeta)
     const paq = N(v?.totalPaqueteria);
-    const subTotal = boletos + paq;
+    const subTotal = boletos + paq - tarjeta;
     const viaticos = descuentos.reduce((acc, d) => acc + N(d.importe), 0);
     const totalFormato = subTotal - viaticos;
 
@@ -297,13 +325,14 @@ const generarPDF = async () => {
       styles: { fontSize: 8.5, cellPadding: 4, lineWidth: 0.6 },
       headStyles: { fillColor: [230, 240, 233], textColor: [0, 0, 0], fontStyle: "bold" },
       margin: { top: pageHeaderHeight, left: M.l, right: M.r },
-      head: [[ "No. de Asiento", "Nombre", "Destino", "Folio", "Importe" ]],
+      head: [[ "No. de Asiento", "Nombre", "Destino", "Folio", "Importe", "Metodo Pago" ]],
       body: pasajeros.map((p) => ([
         p.asiento ?? p.noAsiento ?? p.numAsiento ?? "",
         p.nombre + " " + p.apellido ? p.nombre + " " + p.apellido : p.nombre || "",
         getOrigenDestinoPasajero(v, p).destino,
         p.folio ?? "",
-        `$ ${money(p.importe)}`
+        `$ ${money(p.importe)}`,
+        p.metodoPago
       ])),
       pageBreak: 'auto'
     });
@@ -338,7 +367,7 @@ const generarPDF = async () => {
       styles: { fontSize: 8.5, cellPadding: 4, lineWidth: 0.6 },
       headStyles: { fillColor: [230, 240, 233], textColor: [0, 0, 0], fontStyle: "bold" },
       margin: { top: pageHeaderHeight, left: M.l, right: M.r },
-      head: [[ "Guia", "Remitente", "Destinatario", "Contenido", "Importe" ]],
+      head: [[ "Guia", "Remitente", "Destinatario", "Contenido", "Importe","Metodo Pago" ]],
       body: paquetes.map((p) => {
         const destinatario = `${p.destinatario ?? ""}${p.porCobrar ? "(POR COBRAR)" : ""}`;
         return [
@@ -346,7 +375,8 @@ const generarPDF = async () => {
           p.remitente ?? "",
           destinatario,
           p.contenido ?? "",
-          `$ ${money(p.importe)}`
+          `$ ${money(p.importe)}`,
+          p.metodoPago,
         ];
       }),
       pageBreak: 'auto'
@@ -426,6 +456,7 @@ const generarPDF = async () => {
       ["PAQUETERIA", `$ ${money(paq)}`],
       ["SUB TOTAL", `$ ${money(subTotal)}`],
       ["VIATICOS", `$ ${money(viaticos)}`],
+      ["TARJETA", `$ ${money(tarjeta)}`],
       ["TOTAL", `$ ${money(totalFormato)}`],
     ];
 
@@ -561,6 +592,7 @@ const generarPDF = async () => {
             <li className="flex justify-between"><span>PAQUETERÍA</span> <span>${paq.toFixed(2)}</span></li>
             <li className="flex justify-between font-semibold"><span>SUB TOTAL</span> <span>${subTotal.toFixed(2)}</span></li>
             <li className="flex justify-between"><span>VIÁTICOS</span> <span>${viaticos.toFixed(2)}</span></li>
+            <li className="flex justify-between"><span>TARJETA</span> <span>${totalPagosTarjeta.toFixed(2)}</span></li>
             <li className="flex justify-between font-bold text-base"><span>TOTAL</span> <span>${totalFormato.toFixed(2)}</span></li>
           </ul>
 
@@ -635,7 +667,9 @@ const generarPDF = async () => {
                     <th className="p-2 text-center text-[#452B1C]">Nombre</th>
                     <th className="p-2 text-center text-[#452B1C] w-[90px]">Destino</th>
                     <th className="p-2 text-center text-[#452B1C] w-[90px]">Folio</th>
+                    <th className="p-2 text-center text-[#452B1C] w-[90px]">Metodo Pago</th>
                     <th className="p-2 text-center text-[#452B1C] w-[90px]">Importe</th>
+                    
                   </tr>
                 </thead>
 
@@ -651,20 +685,22 @@ const generarPDF = async () => {
                         {getOrigenDestinoPasajero(viajeSeleccionado, p).destino}
                       </td>
                       <td className="p-2 text-center whitespace-nowrap">{p.folio ?? ""}</td>
+                      <td className="p-2 text-center whitespace-nowrap">{p.metodoPago ?? ""}</td>
                       <td className="p-2 text-right whitespace-nowrap">
                         ${Number(p.importe || 0).toFixed(2)}
                       </td>
+                      
                     </tr>
                   ))}
 
                   {/* SUBTOTAL como el formato */}
                   <tr className="font-bold bg-[#f8c98e]">
-                    <td colSpan={4} className="p-2 text-right">SUB TOTAL</td>
+                    <td colSpan={5} className="p-2 text-right">SUB TOTAL</td>
                     <td className="p-2 text-right">${Number(totalPasajeros || 0).toFixed(2)}</td>
                   </tr>
 
                   {pasajeros.length === 0 && (
-                    <tr><td colSpan="5" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
+                    <tr><td colSpan="6" className="text-center py-3 text-gray-500">Sin registros.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -684,7 +720,9 @@ const generarPDF = async () => {
                   <th className="p-2 text-center text-[#452B1C]">Remitente</th>
                   <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
                   <th className="p-2 text-center text-[#452B1C] w-[120px]">Contenido</th>
+                  <th className="p-2 text-center text-[#452B1C] w-[90px]">Metodo Pago</th>
                   <th className="p-2 text-center text-[#452B1C] w-[90px]">Importe</th>
+                  
                 </tr>
               </thead>
 
@@ -697,14 +735,16 @@ const generarPDF = async () => {
                       <td className="p-2 text-left whitespace-nowrap">{p.remitente ?? ""}</td>
                       <td className="p-2 text-left whitespace-nowrap">{destinatario}</td>
                       <td className="p-2 text-center whitespace-nowrap">{p.contenido ?? ""}</td>
+                      <td className="p-2 text-center whitespace-nowrap">{p.metodoPago ?? ""}</td>
                       <td className="p-2 text-right whitespace-nowrap">${Number(p.importe || 0).toFixed(2)}</td>
+                      
                     </tr>
                   );
                 })}
 
                 {/* SUBTOTAL */}
                 <tr className="font-bold bg-[#f8c98e]">
-                  <td colSpan={4} className="p-2 text-right">SUB TOTAL</td>
+                  <td colSpan={5} className="p-2 text-right">SUB TOTAL</td>
                   <td className="p-2 text-right">${Number(totalPaqueteria || 0).toFixed(2)}</td>
                 </tr>
 

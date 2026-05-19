@@ -226,42 +226,6 @@ export const eliminarPaquete = async (id) => {
   }
 }
 
-// paquete pendiente
-export const paquetePendiente = async (data) => {
-  try {
-    const response = await axios.post(`/paquetes/pendiente`, data, {
-      headers: { "Content-Type": "application/json" }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error marcando paquete como pendiente:', error.response?.data || error);
-    throw error;
-  }
-};
-
-// Poner paquete como pendiente
-export const ponerPaqueteComoPendiente = async (idPaquete,idViaje) => {
-  try {
-    const response = await axios.put(`/paquetes/baja/${idPaquete}/${idViaje}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error poniendo paquete como pendiente:', error);
-    throw error;
-  }
-}
-
-
-// Obtener paquetes pendientes
-export const obtenerPaquetesPendientes = async () => {
-  try {
-    const response = await axios.get('/paquetes/pendientes');
-    return response.data;
-  } catch (error) {
-    console.error('Error obteniendo paquetes pendientes:', error);
-    throw error;
-  }
-}
-
 // Asignar paquete a viaje
 export const asignarPaqueteAViaje = async (idPaquete, idViaje) => {
   try {

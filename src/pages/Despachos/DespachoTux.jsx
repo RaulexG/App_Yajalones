@@ -147,7 +147,19 @@ const terminalFromLugarPago = (lugarPago) => {
   return "OTRO";
 };
 
+  const N = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+
 const montoPasajero = (p) => N(p?.importe ?? p?.monto ?? p?.precio ?? 0);
+
+const metodoPagoPasajero = (p) =>
+  String(p?.metodoPago || p?.tipoPagoMetodo || "EFECTIVO")
+    .toUpperCase()
+    .trim();
+
+const esTarjeta = (p) =>
+  metodoPagoPasajero(p).includes("TARJETA");
+
+
 
 const splitPagoPorTerminal = (p) => {
   const t = terminalFromLugarPago(p?.lugarPago);
@@ -160,19 +172,69 @@ const splitPagoPorTerminal = (p) => {
 
 const montoPaquete = (p) => N(p?.importe ?? p?.monto ?? 0);
 
+const metodoPagoPaquete = (p) =>
+  String(p?.metodoPago || "EFECTIVO")
+    .toUpperCase()
+    .trim();
 
-  const N = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+const paqueteEsTarjeta = (p) =>
+  metodoPagoPaquete(p).includes("TARJETA");
+
+const esRutaTuxtlaYajalon =
+  esTuxtla(viajeSeleccionado?.origen) && esYajalon(viajeSeleccionado?.destino);
+const esRutaYajalonTuxtla =
+  esYajalon(viajeSeleccionado?.origen) && esTuxtla(viajeSeleccionado?.destino);
+
+const paqueteCuentaComoPorCobrar = (p) => {
+  if (esRutaTuxtlaYajalon) {
+    return !!p?.porCobrar;
+  }
+  if (esRutaYajalonTuxtla) {
+    return true;
+  }
+  return false;
+};
+
+const paqueteCuentaComoTarjeta = (p) => {
+  if (!paqueteEsTarjeta(p)) return false;
+
+  if (esRutaTuxtlaYajalon) {
+    return !p?.porCobrar;
+  }
+
+  if (esRutaYajalonTuxtla) {
+    return !!p?.porCobrar;
+  }
+
+  return false;
+};
+
+const totalTarjetaPasajeros = pasajeros.reduce((acc, p) => {
+  const pagoYajalon = terminalFromLugarPago(p?.lugarPago) === "YAJALON";
+  return acc + (esTarjeta(p) && !pagoYajalon ? montoPasajero(p) : 0);
+}, 0);
+
+const totalTarjetaPaqueteria = paquetes.reduce((acc, p) => {
+  return acc + (paqueteCuentaComoTarjeta(p) ? montoPaquete(p) : 0);
+}, 0);
+
+const totalPagosTarjeta =
+  totalTarjetaPasajeros + totalTarjetaPaqueteria;
+
+
+
 
   const v                      = viajeSeleccionado || {};
   const totalPasajes = pasajeros.reduce((acc, p) => acc + montoPasajero(p), 0);
   const totalPaqueteria = paquetes.reduce((acc, p) => acc + montoPaquete(p), 0);
 
-  const paquetesPorCobrar = paquetes
-    .filter(p => !!p.porCobrar)
-    .reduce((acc, p) => acc + montoPaquete(p), 0);
+  const paquetesPorCobrar = paquetes.reduce((acc, p) => {
+    return acc + (paqueteCuentaComoPorCobrar(p) ? montoPaquete(p) : 0);
+  }, 0);
 
   const pagadoEnYajalon = pasajeros.reduce((acc, p) => acc + splitPagoPorTerminal(p).yajalon, 0);
   const pagadoEnTuxtla  = pasajeros.reduce((acc, p) => acc + splitPagoPorTerminal(p).tuxtla, 0);
+
 
   // descuentos: usa el estado local
   const totalDescuentos = descuentos.reduce((sum, d) => sum + N(d.importe), 0);
@@ -181,7 +243,7 @@ const montoPaquete = (p) => N(p?.importe ?? p?.monto ?? 0);
   const comision10 = subtotal * 0.10;
 
   // TOTAL DESPACHO (igual Excel)
-  const total = subtotal - comision10 - pagadoEnYajalon - paquetesPorCobrar - totalDescuentos;
+  const total = subtotal - comision10 - pagadoEnYajalon - paquetesPorCobrar - totalPagosTarjeta - totalDescuentos;
 
 
 
@@ -320,6 +382,7 @@ const agregarDescuento = async (e) => {
           "Folio",
           "Pagado en Yajalón",
           "Pagado en Tuxtla",
+          "Metodo Pago"
 
         ]],
         body: pasajeros.map(p => {
@@ -332,6 +395,7 @@ const agregarDescuento = async (e) => {
             p.folio ?? "-",
             fmt(pago.yajalon),
             fmt(pago.tuxtla),
+            p.metodoPago,
           ];
         }),
         theme: "grid",
@@ -348,7 +412,7 @@ const agregarDescuento = async (e) => {
       y += 8;
       autoTable(doc, {
         startY: y,
-        head: [["Guía","Remitente","Destinatario","Contenido","Por cobrar","Importe"]],
+        head: [["Guía","Remitente","Destinatario","Contenido","Por cobrar","Importe","Metodo Pago"]],
         body: paquetes.map(p => [
           p.folio ?? "-",
           p.remitente ?? "-",
@@ -356,6 +420,7 @@ const agregarDescuento = async (e) => {
           p.contenido ?? "-",
           p.porCobrar ? "Sí" : "No",
           fmt(p.importe),
+          p.metodoPago
         ]),
         theme: "grid",
         styles: { fontSize: 8, cellPadding: 4 },
@@ -390,6 +455,7 @@ const agregarDescuento = async (e) => {
         ["Menos - Comisión 10%", fmt(comision10)],
         ["Pagado en Yajalón (Boletos)", fmt(pagadoEnYajalon)],
         ["Paquetería por cobrar", fmt(paquetesPorCobrar)],
+        ["Pagos en tarjeta"],
         ["Otros descuentos", fmt(totalDescuentos)],
         ["Total del despacho", fmt(total)],
       ];
@@ -516,7 +582,7 @@ const agregarDescuento = async (e) => {
           </div>
   
           {/* Resumen (toma el resto y scrollea si hace falta) */}
-          <div className="bg-white rounded-lg shadow-md p-3 md:p-4 min-h-0 flex flex-col">
+          <div className="bg-white rounded-lg shadow-md p-3 md:p-2 min-h-0 flex flex-col">
             <h3 className="text-orange-700 font-bold mb-2 text-sm md:text-base">Resumen del viaje</h3>
   
             <div className="min-h-0 overflow-auto">
@@ -527,6 +593,7 @@ const agregarDescuento = async (e) => {
                 <li className="flex justify-between"><span>Menos - Comisión 10%</span> <span>{fmt(comision10)}</span></li>
                 <li className="flex justify-between"><span>Pagado en Yajalón (Boletos)</span> <span>{fmt(pagadoEnYajalon)}</span></li>
                 <li className="flex justify-between"><span>Paquetería por cobrar (Paquetes)</span> <span>{fmt(paquetesPorCobrar)}</span></li>
+                <li className="flex justify-between"><span>Pagado Tarjeta</span> <span>{fmt(totalPagosTarjeta)}</span></li>
                 <li className="flex justify-between"><span>Otros descuentos</span> <span>{fmt(totalDescuentos)}</span></li>
                 <li className="flex justify-between font-bold text-base"><span>Total del despacho</span> <span>{fmt(total)}</span></li>
               </ul>
@@ -607,6 +674,7 @@ const agregarDescuento = async (e) => {
                     <th className="p-2 text-center text-[#452B1C]">Tipo</th>
                     <th className="p-2 text-center text-[#452B1C]">Pagado en Yajalón</th>
                     <th className="p-2 text-center text-[#452B1C]">Pagado en Tuxtla</th>
+                    <th className="p-2 text-center text-[#452B1C]">Metodo Pago</th>
                   </tr>
                 </thead>
 
@@ -624,6 +692,7 @@ const agregarDescuento = async (e) => {
                         <td className="p-2 text-center whitespace-nowrap">{p.tipo ?? "-"}</td>
                         <td className="p-2 text-center whitespace-nowrap">${pago.yajalon.toFixed(2)}</td>
                         <td className="p-2 text-center whitespace-nowrap">${pago.tuxtla.toFixed(2)}</td>
+                        <td className="p-2 text-center whitespace-nowrap">{p.metodoPago}</td>
                       </tr>
                     );
                   })}
@@ -650,6 +719,7 @@ const agregarDescuento = async (e) => {
                     <th className="p-2 text-center text-[#452B1C]">Destinatario</th>
                     <th className="p-2 text-center text-[#452B1C]">Por cobrar</th>
                     <th className="p-2 text-center text-[#452B1C]">Monto</th>
+                    <th className="p-2 text-center text-[#452B1C]">Metodo Pago</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -660,6 +730,7 @@ const agregarDescuento = async (e) => {
                       <td className="p-2 text-center truncate">{p.destinatario}</td>
                       <td className="p-2 text-center whitespace-nowrap">{p.porCobrar ? "Sí" : "No"}</td>
                       <td className="p-2 text-center whitespace-nowrap">${Number(p.importe || 0).toFixed(2)}</td>
+                      <td className="p-2 text-center truncate">{p.metodoPago}</td>
                     </tr>
                   ))}
                   {paquetes.length === 0 && (

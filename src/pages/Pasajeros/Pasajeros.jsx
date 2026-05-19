@@ -134,6 +134,7 @@ export default function Pasajeros() {
 
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('');
   const [filtroFecha, setFiltroFecha] = useState('HOY'); // HOY | TODOS
+  const [isGuardando, setIsGuardando] = useState(false);
 
   const [choferes, setChoferes] = useState([]);
 
@@ -153,7 +154,8 @@ const [formulario, setFormulario] = useState({
   lugarPagoUI: '',
   tipoPago: 'PAGADO',
   asiento: null,
-  viaje: null
+  viaje: null,
+  metodoPago: 'EFECTIVO',
 });
 
 const opcionesUI = useMemo(() => {
@@ -335,7 +337,8 @@ const manejarNombreCompleto = (e) => {
         lugarPagoUI: '',
         tipoPago: 'PAGADO',
         asiento: null,
-        viaje: null
+        viaje: null,
+        metodoPago: 'EFECTIVO',
       });
       setIdPasajeroEditando(null);
       return;
@@ -352,13 +355,15 @@ const manejarNombreCompleto = (e) => {
       tipo: 'ADULTO',
       tipoPago: 'PAGADO',
       asiento: null,
-      viaje: viajeSeleccionado
+      viaje: viajeSeleccionado,
+      metodoPago: 'EFECTIVO',
     });
     setIdPasajeroEditando(null);
   };
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
+    if (isGuardando) return;
 
     if (!formulario.nombre.trim()) {
       Swal.fire({ icon: 'warning', title: 'Falta nombre' });
@@ -373,6 +378,7 @@ const manejarNombreCompleto = (e) => {
       return;
     }
 
+    setIsGuardando(true);
     try {
       const viajeId = formulario.viaje.idViaje;
       const payload = {
@@ -383,6 +389,7 @@ const manejarNombreCompleto = (e) => {
         asiento: formulario.asiento,
         idViaje: viajeId,
         lugarPago: formulario.lugarPagoUI,
+        metodoPago: formulario.metodoPago,
       };
       console.log(payload)
 
@@ -402,6 +409,8 @@ const manejarNombreCompleto = (e) => {
     } catch (error) {
       console.error(error);
       Swal.fire({ icon: 'error', title: 'Error al guardar pasajero' });
+    } finally {
+      setIsGuardando(false);
     }
   };
 
@@ -425,6 +434,7 @@ const manejarNombreCompleto = (e) => {
     fechaSalida: formatFecha(viajeSeleccionado.fechaSalida),
     hora: '',
     lugarPagoUI: pasajero?.lugarPago || prev.lugarPagoUI || "TUXTLA",
+    metodoPago: pasajero?.metodoPago || 'EFECTIVO',
   }));
 };
 
@@ -487,6 +497,7 @@ setFormulario((prev) => {
     destinoUI,
     lugarPagoUI,
     tipoPago: "PAGADO",
+    metodoPago: "EFECTIVO",
   };
 });
 
@@ -612,6 +623,7 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
         <div class="row"><span class="label">Destino:</span> ${destino ?? ""}</div>
         <div class="row"><span class="label">Lugar de pago:</span> ${lugarPago}</div>
         <div class="row"><span class="label">Costo del boleto:</span> $${costo}</div>
+        <div class="row"><span class="label">Metodo de pago:</span> ${pasajero?.metodoPago ?? "EFECTIVO"}</div>
       </div>
 
       <div style="font-size:3.0mm; margin-top:10px; text-align:justify;">
@@ -734,6 +746,16 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
 
                 
               </div>
+               <label className="block text-orange-700 font-semibold mb-1">MetodoPago</label>
+              <select
+              name="metodoPago"
+              value={formulario.metodoPago}
+              onChange={manejarCambio}
+              className="w-full p-2 rounded-md bg-[#ffe0b2]"
+              required>
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="TARJETA">Tarjeta</option>
+                </select>
 
               {/* Asientos */}
               <div className="bg-orange-50 p-3 rounded-md mt-3">
@@ -772,8 +794,22 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
   
               {/* Botón */}
               <div className="flex justify-center mt-3">
-                <button type="submit" className="bg-[#C44706] text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-800 transition">
-                  Guardar
+                <button
+                  type="submit"
+                  disabled={isGuardando}
+                  className={`bg-[#C44706] text-white px-4 py-2 rounded-lg font-semibold transition w-full ${isGuardando ? 'opacity-70 cursor-not-allowed' : 'hover:bg-orange-800'}`}
+                >
+                  {isGuardando ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="10" strokeOpacity="0.2" />
+                        <path d="M22 12a10 10 0 0 1-10 10" />
+                      </svg>
+                      Guardando...
+                    </span>
+                  ) : (
+                    'Guardar'
+                  )}
                 </button>
               </div>
             </form>
@@ -861,13 +897,13 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
                     <tr>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Folio</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Asiento</th>
-                      <th className="px-2 py-2 text-center font-bold text-[#452B1C] whitespace-nowrap">Fecha de salida</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Nombre</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Tipo</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Origen</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Destino</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Pago Tuxtla</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Pago Yajalon</th>
+                      <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Metodo Pago</th>
                       <th className="px-2 py-2 text-center font-bold text-[#452B1C]">Acciones</th>
                     </tr>
                   </thead>
@@ -885,9 +921,6 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
                           >
                             <td className="px-2 py-1.5 text-center break-words">{p.folio ?? '-'}</td>
                             <td className="px-2 py-1.5 text-center">{p.asiento}</td>
-                            <td className="px-2 py-1.5 text-center whitespace-nowrap">
-                              {formatFecha(viajeSeleccionado.fechaSalida)}
-                            </td>
                             <td className="px-2 py-1.5 text-center overflow-hidden text-ellipsis whitespace-nowrap">
                               {`${p.nombre ?? ''} ${p.apellido ?? ''}`.trim()}
                             </td>
@@ -903,6 +936,7 @@ function generarTicketHTML(pasajero, viaje, escala = 1, width = 58, margin = 0) 
                               <td className="px-2 py-1.5 text-center font-semibold">
                                 {pagoYajalon > 0 ? `$${pagoYajalon.toFixed(2)}` : "-"}
                               </td>
+                              <td className="px-2 py-1.5 text-center break-words">{p.metodoPago}</td>
                             <td className="px-1 py-1.5 text-center">
                               {/* Botón Ticket */}
                               <button
