@@ -253,9 +253,9 @@ const generarPDF = async () => {
     const boletos = N(v?.totalPasajeros);
     const tarjeta = N(totalPagosTarjeta)
     const paq = N(v?.totalPaqueteria);
-    const subTotal = boletos + paq - tarjeta;
+    const subTotal = boletos + paq;
     const viaticos = descuentos.reduce((acc, d) => acc + N(d.importe), 0);
-    const totalFormato = subTotal - viaticos;
+    const totalFormato = subTotal - viaticos - tarjeta;
 
     const money = (n) =>
       new Intl.NumberFormat("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n || 0));
