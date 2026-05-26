@@ -455,7 +455,7 @@ const agregarDescuento = async (e) => {
         ["Menos - Comisión 10%", fmt(comision10)],
         ["Pagado en Yajalón (Boletos)", fmt(pagadoEnYajalon)],
         ["Paquetería por cobrar", fmt(paquetesPorCobrar)],
-        ["Pagos en tarjeta"],
+        ["Pagos en tarjeta", fmt(totalPagosTarjeta)],
         ["Otros descuentos", fmt(totalDescuentos)],
         ["Total del despacho", fmt(total)],
       ];
